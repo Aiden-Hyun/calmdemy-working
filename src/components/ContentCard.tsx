@@ -27,8 +27,8 @@ export interface ContentCardProps {
   onPress: () => void;
   // For sleep page only (uses sleep-specific colors)
   darkMode?: boolean;
-  // Premium content - shows lock icon when true and user doesn't have subscription
-  isPremium?: boolean;
+  // Content access: true means free, false means subscription required
+  isFree?: boolean;
 }
 
 export function ContentCard({
@@ -41,7 +41,7 @@ export function ContentCard({
   subtitle,
   onPress,
   darkMode = false,
-  isPremium = false,
+  isFree,
 }: ContentCardProps) {
   const { theme, isDark } = useTheme();
   const { isPremium: hasSubscription } = useSubscription();
@@ -51,8 +51,8 @@ export function ContentCard({
   const isSleepPage = darkMode;
   const isRegularDark = isDark && !darkMode;
 
-  // Show lock if content is premium and user doesn't have subscription
-  const showLock = isPremium && !hasSubscription;
+  // Show lock if content is not free and user doesn't have subscription
+  const showLock = isFree === false && !hasSubscription;
 
   const styles = React.useMemo(
     () => createStyles(theme, isSleepPage, isRegularDark),

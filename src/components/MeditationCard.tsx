@@ -88,7 +88,7 @@ export function MeditationCard({
               </View>
             )}
             
-            {meditation.is_premium && (
+            {!meditation.isFree && (
               <View style={styles.premiumBadge}>
                 <Ionicons name="star" size={12} color={theme.colors.primary} />
                 <Text style={[styles.premiumText, { color: theme.colors.primary }]}>PRO</Text>

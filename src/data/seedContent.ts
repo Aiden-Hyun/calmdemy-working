@@ -18,7 +18,7 @@ export interface SeedMeditation {
   instructor: string;
   audio_file: string;
   image: string;
-  is_premium: boolean;
+  isFree: boolean;
   tags: string[];
 }
 
@@ -34,7 +34,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_gratitude",
     image: "meditation_morning_sunrise",
-    is_premium: false,
+    isFree: true,
     tags: ["morning", "gratitude", "intentions", "peaceful"],
   },
   {
@@ -47,7 +47,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_gratitude",
     image: "meditation_golden_light",
-    is_premium: false,
+    isFree: true,
     tags: ["gratitude", "appreciation", "blessings", "mindful"],
   },
   {
@@ -60,7 +60,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_gratitude",
     image: "meditation_flower_bloom",
-    is_premium: false,
+    isFree: true,
     tags: ["thankful", "heart", "appreciation", "warmth"],
   },
   {
@@ -73,7 +73,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_gratitude",
     image: "meditation_sunset_glow",
-    is_premium: false,
+    isFree: true,
     tags: ["evening", "reflection", "gratitude", "peace"],
   },
   {
@@ -86,7 +86,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_gratitude",
     image: "meditation_abundance",
-    is_premium: true,
+    isFree: false,
     tags: ["abundance", "prosperity", "mindset", "positive"],
   },
 
@@ -101,7 +101,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_stress",
     image: "meditation_calm_water",
-    is_premium: false,
+    isFree: true,
     tags: ["stress", "relaxation", "calm", "relief"],
   },
   {
@@ -114,7 +114,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_stress",
     image: "meditation_zen_stones",
-    is_premium: false,
+    isFree: true,
     tags: ["tension", "release", "body", "relaxation"],
   },
   {
@@ -127,7 +127,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_stress",
     image: "meditation_peaceful_lake",
-    is_premium: false,
+    isFree: true,
     tags: ["chaos", "calm", "center", "peace"],
   },
   {
@@ -140,7 +140,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "James",
     audio_file: "meditation_stress",
     image: "meditation_soft_clouds",
-    is_premium: false,
+    isFree: true,
     tags: ["work", "office", "quick", "reset"],
   },
   {
@@ -153,7 +153,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_stress",
     image: "meditation_deep_relax",
-    is_premium: true,
+    isFree: false,
     tags: ["deep", "relaxation", "calm", "peaceful"],
   },
 
@@ -168,7 +168,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_focus",
     image: "meditation_sharp_mountain",
-    is_premium: false,
+    isFree: true,
     tags: ["focus", "concentration", "productivity", "clarity"],
   },
   {
@@ -181,7 +181,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "James",
     audio_file: "meditation_focus",
     image: "meditation_clear_sky",
-    is_premium: false,
+    isFree: true,
     tags: ["laser", "concentration", "training", "mind"],
   },
   {
@@ -194,7 +194,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_calm",
     image: "meditation_morning_dew",
-    is_premium: false,
+    isFree: true,
     tags: ["morning", "clarity", "productive", "fresh"],
   },
   {
@@ -207,7 +207,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_focus",
     image: "meditation_study_focus",
-    is_premium: false,
+    isFree: true,
     tags: ["study", "learning", "students", "memory"],
   },
   {
@@ -220,7 +220,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_calm",
     image: "meditation_creative_flow",
-    is_premium: true,
+    isFree: false,
     tags: ["creative", "flow", "ideas", "inspiration"],
   },
 
@@ -235,7 +235,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_anxiety",
     image: "meditation_safe_harbor",
-    is_premium: false,
+    isFree: true,
     tags: ["anxiety", "calm", "peace", "grounding"],
   },
   {
@@ -248,7 +248,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_anxiety",
     image: "meditation_grounding",
-    is_premium: false,
+    isFree: true,
     tags: ["panic", "emergency", "grounding", "support"],
   },
   {
@@ -261,7 +261,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_anxiety",
     image: "meditation_gentle_waves",
-    is_premium: false,
+    isFree: true,
     tags: ["worry", "future", "present", "release"],
   },
   {
@@ -274,7 +274,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_anxiety",
     image: "meditation_calm_presence",
-    is_premium: false,
+    isFree: true,
     tags: ["social", "confidence", "calm", "preparation"],
   },
   {
@@ -287,7 +287,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_anxiety",
     image: "meditation_inner_peace",
-    is_premium: true,
+    isFree: false,
     tags: ["thoughts", "observation", "freedom", "mindful"],
   },
 
@@ -302,7 +302,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_sleep",
     image: "meditation_night_sky",
-    is_premium: false,
+    isFree: true,
     tags: ["evening", "sleep", "relaxation", "wind-down"],
   },
   {
@@ -315,7 +315,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_sleep",
     image: "meditation_moonlit",
-    is_premium: false,
+    isFree: true,
     tags: ["deep", "sleep", "restorative", "rest"],
   },
   {
@@ -328,7 +328,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_sleep",
     image: "meditation_twilight",
-    is_premium: false,
+    isFree: true,
     tags: ["insomnia", "sleepless", "relief", "rest"],
   },
   {
@@ -341,7 +341,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "James",
     audio_file: "meditation_sleep",
     image: "meditation_cozy_rest",
-    is_premium: false,
+    isFree: true,
     tags: ["bedtime", "reset", "transition", "peaceful"],
   },
   {
@@ -354,7 +354,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_sleep",
     image: "meditation_dream",
-    is_premium: true,
+    isFree: false,
     tags: ["dreams", "visualization", "pleasant", "journey"],
   },
 
@@ -369,7 +369,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_bodyscan",
     image: "meditation_body_awareness",
-    is_premium: false,
+    isFree: true,
     tags: ["body", "awareness", "relaxation", "tension"],
   },
   {
@@ -382,7 +382,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_bodyscan",
     image: "meditation_relaxed_body",
-    is_premium: false,
+    isFree: true,
     tags: ["full", "body", "relaxation", "complete"],
   },
   {
@@ -394,7 +394,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_bodyscan",
     image: "meditation_quick_scan",
-    is_premium: false,
+    isFree: true,
     tags: ["quick", "check", "busy", "awareness"],
   },
   {
@@ -407,7 +407,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_bodyscan",
     image: "meditation_healing",
-    is_premium: false,
+    isFree: true,
     tags: ["pain", "relief", "discomfort", "healing"],
   },
   {
@@ -420,7 +420,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "James",
     audio_file: "meditation_bodyscan",
     image: "meditation_recovery",
-    is_premium: true,
+    isFree: false,
     tags: ["athletic", "recovery", "muscles", "healing"],
   },
 
@@ -435,7 +435,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_selfesteem",
     image: "meditation_self_love",
-    is_premium: false,
+    isFree: true,
     tags: ["self-love", "compassion", "kindness", "acceptance"],
   },
   {
@@ -448,7 +448,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_selfesteem",
     image: "meditation_confidence",
-    is_premium: false,
+    isFree: true,
     tags: ["confidence", "belief", "worthy", "capable"],
   },
   {
@@ -461,7 +461,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_selfesteem",
     image: "meditation_worthy",
-    is_premium: false,
+    isFree: true,
     tags: ["worth", "value", "love", "respect"],
   },
   {
@@ -474,7 +474,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_selfesteem",
     image: "meditation_inner_child",
-    is_premium: true,
+    isFree: false,
     tags: ["inner-child", "healing", "nurture", "comfort"],
   },
   {
@@ -487,7 +487,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_selfesteem",
     image: "meditation_positive",
-    is_premium: false,
+    isFree: true,
     tags: ["positive", "self-talk", "dialogue", "encouragement"],
   },
 
@@ -502,7 +502,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_lovingkindness",
     image: "meditation_heart_open",
-    is_premium: false,
+    isFree: true,
     tags: ["love", "kindness", "compassion", "metta"],
   },
   {
@@ -515,7 +515,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_lovingkindness",
     image: "meditation_metta",
-    is_premium: false,
+    isFree: true,
     tags: ["heart", "opening", "love", "expand"],
   },
   {
@@ -528,7 +528,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Sarah",
     audio_file: "meditation_lovingkindness",
     image: "meditation_forgiveness",
-    is_premium: false,
+    isFree: true,
     tags: ["forgiveness", "release", "peace", "freedom"],
   },
   {
@@ -541,7 +541,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Michael",
     audio_file: "meditation_lovingkindness",
     image: "meditation_compassion",
-    is_premium: false,
+    isFree: true,
     tags: ["compassion", "others", "humanity", "connection"],
   },
   {
@@ -554,7 +554,7 @@ export const seedMeditations: SeedMeditation[] = [
     instructor: "Emma",
     audio_file: "meditation_lovingkindness",
     image: "meditation_universal_love",
-    is_premium: true,
+    isFree: false,
     tags: ["universal", "boundless", "existence", "oneness"],
   },
 ];
@@ -871,7 +871,7 @@ export interface SeedBedtimeStory {
   narrator: string;
   audio_file: string;
   image: string;
-  is_premium: boolean;
+  isFree: boolean;
 }
 
 export const seedBedtimeStories: SeedBedtimeStory[] = [
@@ -884,7 +884,7 @@ export const seedBedtimeStories: SeedBedtimeStory[] = [
     narrator: "Rachel",
     audio_file: "story_shoemaker_elves",
     image: "story_fairytale_shoemaker",
-    is_premium: false,
+    isFree: true,
   },
 ];
 

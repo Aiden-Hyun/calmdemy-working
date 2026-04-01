@@ -11,10 +11,10 @@ import { Skeleton } from '../../src/components/Skeleton';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';
-import { useCourses } from '../../src/hooks/queries/useMeditateQueries';
+import { useCourses, useGuidedMeditations } from '../../src/hooks/queries/useMeditateQueries';
 import { Theme } from '../../src/theme';
 import { FirestoreCourse } from '../../src/services/firestoreService';
-import { MeditationTechnique } from '../../src/types';
+import { GuidedMeditation, MeditationTechnique } from '../../src/types';
 
 const themeCategories = [
   { id: 'focus', label: 'Focus', icon: 'eye-outline' as const, color: '#8B9F82' },
@@ -54,7 +54,8 @@ function MeditateScreen() {
   const { theme, isDark } = useTheme();
   const { isPremium: hasSubscription } = useSubscription();
   const { data: courses = [] } = useCourses();
-  
+  const { data: guidedMeditations = [] } = useGuidedMeditations();
+
   const [showPaywall, setShowPaywall] = useState(false);
 
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
@@ -82,6 +83,13 @@ function MeditateScreen() {
 
   const handleCoursePress = (course: FirestoreCourse) => {
     router.push(`/course/${course.id}`);
+  };
+
+  const handleGuidedMeditationPress = (meditation: GuidedMeditation) => {
+    router.push({
+      pathname: '/meditation/[id]',
+      params: { id: meditation.id },
+    });
   };
 
   // Skeleton cards for loading state
@@ -209,6 +217,55 @@ function MeditateScreen() {
           </AnimatedView>
         </View>
 
+        {/* Guided Meditation */}
+        <View style={styles.section}>
+          <AnimatedView delay={300} duration={400}>
+            <AnimatedPressable
+              onPress={() => router.push('/meditations')}
+              style={styles.sectionHeader}
+            >
+              <View style={styles.titleRow}>
+                <Text style={styles.sectionTitle}>Guided Meditation</Text>
+                {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+              </View>
+              <View style={styles.seeAllContainer}>
+                <Text style={styles.seeAllText}>See all</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+              </View>
+            </AnimatedPressable>
+          </AnimatedView>
+
+          <AnimatedView delay={350} duration={400}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardsScroll}
+            >
+              {guidedMeditations.slice(0, 6).map((meditation) => (
+                <ContentCard
+                  key={meditation.id}
+                  title={meditation.title}
+                  thumbnailUrl={meditation.thumbnailUrl}
+                  fallbackIcon="leaf"
+                  fallbackColor={
+                    meditation.difficulty_level === 'advanced'
+                      ? '#C07D6C'
+                      : meditation.difficulty_level === 'intermediate'
+                      ? '#8B9F82'
+                      : '#7DAFB4'
+                  }
+                  meta={`${meditation.duration_minutes} min`}
+                  onPress={() => handleGuidedMeditationPress(meditation)}
+                />
+              ))}
+            </ScrollView>
+          </AnimatedView>
+        </View>
+
         {/* Browse by Techniques */}
         <View style={styles.section}>
           <AnimatedView delay={300} duration={400}>
@@ -216,7 +273,10 @@ function MeditateScreen() {
               onPress={() => router.push('/meditations/techniques')}
               style={styles.sectionHeader}
             >
-              <Text style={styles.sectionTitle}>Browse by Techniques</Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.sectionTitle}>Browse by Techniques</Text>
+                {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+              </View>
               <View style={styles.seeAllContainer}>
                 <Text style={styles.seeAllText}>See all</Text>
                 <Ionicons
@@ -262,7 +322,10 @@ function MeditateScreen() {
               onPress={() => router.push('/meditations')}
               style={styles.sectionHeader}
             >
-              <Text style={styles.sectionTitle}>Browse by Theme</Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.sectionTitle}>Browse by Theme</Text>
+                {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+              </View>
               <View style={styles.seeAllContainer}>
                 <Text style={styles.seeAllText}>See all</Text>
                 <Ionicons
@@ -378,6 +441,20 @@ const createStyles = (theme: Theme, isDark: boolean) =>
     cardsScroll: {
       paddingHorizontal: theme.spacing.lg,
       gap: theme.spacing.md,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  freeBadge: {
+    fontFamily: theme.fonts.ui.semiBold,
+    fontSize: 11,
+    color: theme.colors.primary,
+    backgroundColor: isDark ? theme.colors.gray[200] : `${theme.colors.primary}18`,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.full,
   },
   themeCard: {
       width: 100,

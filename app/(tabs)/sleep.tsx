@@ -64,8 +64,7 @@ function SleepScreen() {
   };
 
   const handleStoryPress = (story: BedtimeStory) => {
-    // Check is_premium field from Firestore (inverted from isFree)
-    if (story.is_premium && !hasSubscription) {
+    if (!story.isFree && !hasSubscription) {
       setShowPaywall(true);
       return;
     }
@@ -111,7 +110,10 @@ function SleepScreen() {
             <View style={styles.section}>
               <AnimatedView delay={100} duration={400}>
                 <View style={styles.sectionHeaderNoLink}>
-                  <Text style={styles.sectionTitle}>Series</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.sectionTitle}>Series</Text>
+                    {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+                  </View>
                   <Text style={styles.sectionSubtitle}>
                     Multi-chapter story collections
                   </Text>
@@ -132,7 +134,7 @@ function SleepScreen() {
                       fallbackIcon={getCategoryIcon(seriesItem.category)}
                       fallbackColor={seriesItem.color}
                       meta={`${seriesItem.chapterCount} chapters`}
-                      isPremium={true}
+                      isFree={true}
                       onPress={() => handleSeriesPress(seriesItem)}
                       darkMode
                     />
@@ -148,7 +150,10 @@ function SleepScreen() {
                   onPress={() => router.push("/sleep/bedtime-stories")}
                   style={styles.sectionHeader}
                 >
-                  <Text style={styles.sectionTitle}>Bedtime Stories</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.sectionTitle}>Bedtime Stories</Text>
+                    {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+                  </View>
                   <View style={styles.seeAllContainer}>
                     <Text style={styles.seeAllText}>See all</Text>
                     <Ionicons
@@ -174,7 +179,7 @@ function SleepScreen() {
                       fallbackIcon={getCategoryIcon(story.category)}
                       fallbackColor={theme.colors.sleepAccent}
                       meta={`${story.duration_minutes} min`}
-                      isPremium={story.is_premium}
+                      isFree={story.isFree}
                       onPress={() => handleStoryPress(story)}
                       darkMode
                     />
@@ -190,7 +195,10 @@ function SleepScreen() {
                   onPress={() => router.push("/sleep/sleep-meditations")}
                   style={styles.sectionHeader}
                 >
-                  <Text style={styles.sectionTitle}>Sleep Meditations</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.sectionTitle}>Sleep Meditations</Text>
+                    {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+                  </View>
                   <View style={styles.seeAllContainer}>
                     <Text style={styles.seeAllText}>See all</Text>
                     <Ionicons
@@ -216,7 +224,7 @@ function SleepScreen() {
                       fallbackIcon={meditation.icon as keyof typeof Ionicons.glyphMap}
                       fallbackColor={meditation.color}
                       meta={`${meditation.duration_minutes} min`}
-                      isPremium={!meditation.isFree}
+                      isFree={meditation.isFree}
                       onPress={() => handleMeditationPress(meditation)}
                       darkMode
                     />
@@ -313,6 +321,20 @@ const createStyles = (theme: Theme) =>
     },
     cardsScroll: {
       gap: theme.spacing.md,
+    },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    freeBadge: {
+      fontFamily: theme.fonts.ui.semiBold,
+      fontSize: 11,
+      color: theme.colors.sleepAccent,
+      backgroundColor: "rgba(201, 184, 150, 0.16)",
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: theme.borderRadius.full,
     },
     skeletonCard: {
       width: 150,

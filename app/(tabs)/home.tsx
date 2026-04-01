@@ -595,7 +595,7 @@ function HomeScreen() {
                   fallbackIcon={meditation.icon as keyof typeof Ionicons.glyphMap}
                   fallbackColor={meditation.color}
                   meta={`${meditation.duration_minutes} min`}
-                  isPremium={!meditation.isFree}
+                  isFree={meditation.isFree}
                   onPress={() => handleEmergencyPress(meditation)}
                 />
               ))}

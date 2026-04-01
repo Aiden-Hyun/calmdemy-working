@@ -72,7 +72,10 @@ function MusicScreen() {
     <View style={styles.section}>
       <AnimatedView delay={baseDelay} duration={400}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{title}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+          </View>
           <AnimatedPressable
             onPress={() => router.push(route as any)}
             style={styles.seeAllButton}
@@ -104,7 +107,7 @@ function MusicScreen() {
               fallbackIcon={`${sound.icon}-outline` as keyof typeof Ionicons.glyphMap}
               fallbackColor={sound.color}
               meta={sound.duration_minutes ? `${sound.duration_minutes} min` : undefined}
-              isPremium={!sound.isFree}
+              isFree={sound.isFree}
               onPress={() => handleSoundPress(sound)}
             />
           </AnimatedView>
@@ -122,7 +125,10 @@ function MusicScreen() {
     <View style={styles.section}>
       <AnimatedView delay={baseDelay} duration={400}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{title}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+          </View>
           <AnimatedPressable
             onPress={() => router.push(route as any)}
             style={styles.seeAllButton}
@@ -153,7 +159,7 @@ function MusicScreen() {
               thumbnailUrl={sound.thumbnailUrl}
               fallbackIcon={`${sound.icon}-outline` as keyof typeof Ionicons.glyphMap}
               fallbackColor={sound.color}
-              isPremium={!sound.isFree}
+              isFree={sound.isFree}
               onPress={() => handleSoundPress(sound)}
             />
           </AnimatedView>
@@ -187,7 +193,10 @@ function MusicScreen() {
             <View style={styles.section}>
               <AnimatedView delay={100} duration={400}>
                 <View style={styles.sectionHeaderNoLink}>
-                  <Text style={styles.sectionTitle}>Albums</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.sectionTitle}>Albums</Text>
+                    {!hasSubscription && <Text style={styles.freeBadge}>Free</Text>}
+                  </View>
                   <Text style={styles.sectionSubtitle}>Curated music collections</Text>
                 </View>
               </AnimatedView>
@@ -209,7 +218,7 @@ function MusicScreen() {
                   fallbackIcon={getCategoryIcon(album.category)}
                   fallbackColor={album.color}
                   meta={`${album.trackCount} tracks`}
-                  isPremium={true}
+                  isFree={true}
                       onPress={() => handleAlbumPress(album)}
                 />
                   </AnimatedView>
@@ -315,6 +324,20 @@ const createStyles = (theme: Theme, isDark: boolean) =>
     cardsScroll: {
       paddingHorizontal: theme.spacing.lg,
       gap: theme.spacing.md,
+    },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    freeBadge: {
+      fontFamily: theme.fonts.ui.semiBold,
+      fontSize: 11,
+      color: theme.colors.primary,
+      backgroundColor: isDark ? theme.colors.gray[200] : `${theme.colors.primary}18`,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: theme.borderRadius.full,
     },
     loadingContainer: {
       flex: 1,
