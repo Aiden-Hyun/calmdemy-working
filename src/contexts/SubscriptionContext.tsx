@@ -25,6 +25,15 @@ const REVENUECAT_API_KEY = "appl_JhsFtEMqcEsdxXadtbKkjhXGoZT";
 // not the display name (often something simple like "premium")
 export const PREMIUM_ENTITLEMENT_ID = "Calmdemy Premium";
 
+// Admin UIDs that always get premium access (no subscription required)
+const ADMIN_UIDS = [
+  "JYsGeh2x20Xpv9nkZxVLyh02PUQ2",
+];
+
+function isAdminUser(uid: string | null | undefined): boolean {
+  return !!uid && ADMIN_UIDS.includes(uid);
+}
+
 // Lazy load RevenueCat to prevent crash when native modules aren't available
 let Purchases: any = null;
 let LOG_LEVEL: any = null;
@@ -184,7 +193,7 @@ export function SubscriptionProvider({
             const hasPremium =
               typeof info.entitlements.active[PREMIUM_ENTITLEMENT_ID] !==
               "undefined";
-            setIsPremium(hasPremium);
+            setIsPremium(hasPremium || isAdminUser(currentUid));
           }
           setLastSyncedUid(currentUid);
         } else {
@@ -211,7 +220,7 @@ export function SubscriptionProvider({
     const customerInfoListener = (info: CustomerInfo) => {
       setCustomerInfo(info);
       const hasPremium = typeof info.entitlements.active[PREMIUM_ENTITLEMENT_ID] !== "undefined";
-      setIsPremium(hasPremium);
+      setIsPremium(hasPremium || isAdminUser(user?.uid));
     };
 
     Purchases.addCustomerInfoUpdateListener(customerInfoListener);
@@ -230,7 +239,7 @@ export function SubscriptionProvider({
       const info = await Purchases.getCustomerInfo();
       setCustomerInfo(info);
       const hasPremium = typeof info.entitlements.active[PREMIUM_ENTITLEMENT_ID] !== "undefined";
-      setIsPremium(hasPremium);
+      setIsPremium(hasPremium || isAdminUser(user?.uid));
     } catch (error) {
       console.error("Error checking subscription status:", error);
     } finally {
@@ -282,8 +291,8 @@ export function SubscriptionProvider({
       const { customerInfo: newInfo } = await Purchases.purchasePackage(pkg);
       setCustomerInfo(newInfo);
       const hasPremium = typeof newInfo.entitlements.active[PREMIUM_ENTITLEMENT_ID] !== "undefined";
-      setIsPremium(hasPremium);
-      return hasPremium;
+      setIsPremium(hasPremium || isAdminUser(user?.uid));
+      return hasPremium || isAdminUser(user?.uid);
     } catch (error: any) {
       if (!error.userCancelled) {
         console.error("Error purchasing package:", error);
@@ -315,7 +324,7 @@ export function SubscriptionProvider({
       setCustomerInfo(info);
       const hasPremium =
         typeof info.entitlements.active[PREMIUM_ENTITLEMENT_ID] !== "undefined";
-      setIsPremium(hasPremium);
+      setIsPremium(hasPremium || isAdminUser(user?.uid));
 
       if (hasPremium) {
         Alert.alert("Success", "Your purchases have been restored!");
@@ -360,7 +369,7 @@ export function SubscriptionProvider({
           const hasPremium = hasPremiumEntitlement(
             result.customerInfo as ManagerCustomerInfo
           );
-          setIsPremium(hasPremium);
+          setIsPremium(hasPremium || isAdminUser(user?.uid));
         }
 
         return {
