@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Meditation sessions - users can only access their own
+    match /meditation_sessions/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+    }
+
+    // User favorites - users can only access their own
+    match /user_favorites/{favoriteId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+    }
+
+    // Public read-only content
+    match /guided_meditations/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /breathing_exercises/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /bedtime_stories/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /meditation_programs/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /daily_quotes/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
+
