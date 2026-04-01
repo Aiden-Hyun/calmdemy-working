@@ -8,11 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		2D9F0D5D69E1AD847E762540 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8003EAF8B8DC1F1AE25E7B42 /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		AEE78BCBE11815B9FB9C9163 /* libPods-Calmdemy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4105D99EDF60031CF70B3C2F /* libPods-Calmdemy.a */; };
+		3FF7C69A7B8E67FC05A7A049 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 462D739710CB12E52EA710DE /* PrivacyInfo.xcprivacy */; };
+		92B649509AAEEA47703B6282 /* libPods-Calmdemy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 839D15ECDB5A023F3E1087BF /* libPods-Calmdemy.a */; };
+		B28BA955F21932AA9D0D8130 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CECF821038C86ABE43D552D /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		E46BA86EE3CF7B37B79F1D2C /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC177339DF8288B58C92247C /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -20,13 +20,13 @@
 		13B07F961A680F5B00A75B9A /* Calmdemy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Calmdemy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Calmdemy/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Calmdemy/Info.plist; sourceTree = "<group>"; };
-		4105D99EDF60031CF70B3C2F /* libPods-Calmdemy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Calmdemy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		8003EAF8B8DC1F1AE25E7B42 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Calmdemy/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		462D739710CB12E52EA710DE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Calmdemy/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		6CECF821038C86ABE43D552D /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Calmdemy/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		839D15ECDB5A023F3E1087BF /* libPods-Calmdemy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Calmdemy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Calmdemy/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		BC177339DF8288B58C92247C /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Calmdemy/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		DAB520FE0C83EF14EE0AC7AA /* Pods-Calmdemy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Calmdemy.debug.xcconfig"; path = "Target Support Files/Pods-Calmdemy/Pods-Calmdemy.debug.xcconfig"; sourceTree = "<group>"; };
-		EA22023D3DBFBF97EE4AE062 /* Pods-Calmdemy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Calmdemy.release.xcconfig"; path = "Target Support Files/Pods-Calmdemy/Pods-Calmdemy.release.xcconfig"; sourceTree = "<group>"; };
+		D2501C2D1EDFEA1C12FD60B3 /* Pods-Calmdemy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Calmdemy.debug.xcconfig"; path = "Target Support Files/Pods-Calmdemy/Pods-Calmdemy.debug.xcconfig"; sourceTree = "<group>"; };
+		D2D14128DDDB919800750398 /* Pods-Calmdemy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Calmdemy.release.xcconfig"; path = "Target Support Files/Pods-Calmdemy/Pods-Calmdemy.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Calmdemy/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Calmdemy-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Calmdemy-Bridging-Header.h"; path = "Calmdemy/Calmdemy-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AEE78BCBE11815B9FB9C9163 /* libPods-Calmdemy.a in Frameworks */,
+				92B649509AAEEA47703B6282 /* libPods-Calmdemy.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,25 +53,16 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				8003EAF8B8DC1F1AE25E7B42 /* PrivacyInfo.xcprivacy */,
+				462D739710CB12E52EA710DE /* PrivacyInfo.xcprivacy */,
 			);
 			name = Calmdemy;
-			sourceTree = "<group>";
-		};
-		27070A4872E7F3FA2FC84BE0 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				DAB520FE0C83EF14EE0AC7AA /* Pods-Calmdemy.debug.xcconfig */,
-				EA22023D3DBFBF97EE4AE062 /* Pods-Calmdemy.release.xcconfig */,
-			);
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				4105D99EDF60031CF70B3C2F /* libPods-Calmdemy.a */,
+				839D15ECDB5A023F3E1087BF /* libPods-Calmdemy.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -90,8 +81,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				27070A4872E7F3FA2FC84BE0 /* Pods */,
-				F8AF8A6DEF4717AE851FFC99 /* ExpoModulesProviders */,
+				ABCCFA0FABEF9F69D5F743EA /* Pods */,
+				A7FD6EFE3D2C58E44335E24A /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -106,10 +97,28 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AFD3B27727CCDCC085CC75A8 /* Calmdemy */ = {
+		A7FD6EFE3D2C58E44335E24A /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				BC177339DF8288B58C92247C /* ExpoModulesProvider.swift */,
+				AEB541819913223F0A7B2951 /* Calmdemy */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
+		ABCCFA0FABEF9F69D5F743EA /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				D2501C2D1EDFEA1C12FD60B3 /* Pods-Calmdemy.debug.xcconfig */,
+				D2D14128DDDB919800750398 /* Pods-Calmdemy.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		AEB541819913223F0A7B2951 /* Calmdemy */ = {
+			isa = PBXGroup;
+			children = (
+				6CECF821038C86ABE43D552D /* ExpoModulesProvider.swift */,
 			);
 			name = Calmdemy;
 			sourceTree = "<group>";
@@ -123,14 +132,6 @@
 			path = Calmdemy/Supporting;
 			sourceTree = "<group>";
 		};
-		F8AF8A6DEF4717AE851FFC99 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				AFD3B27727CCDCC085CC75A8 /* Calmdemy */,
-			);
-			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -139,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Calmdemy" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				B83A5E4FDECDF83A4DAF757D /* [Expo] Configure project */,
+				87C3A7E32D8A96B05EB17AF7 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				3F9915B8353641019BA61C2F /* [CP] Embed Pods Frameworks */,
+				5269E23B23F80FE25B40DDC9 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -166,6 +167,8 @@
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
+						DevelopmentTeam = "5LF39MCL5Q";
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -195,7 +198,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				2D9F0D5D69E1AD847E762540 /* PrivacyInfo.xcprivacy in Resources */,
+				3FF7C69A7B8E67FC05A7A049 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,7 +244,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		3F9915B8353641019BA61C2F /* [CP] Embed Pods Frameworks */ = {
+		5269E23B23F80FE25B40DDC9 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -319,7 +322,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Calmdemy/Pods-Calmdemy-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		B83A5E4FDECDF83A4DAF757D /* [Expo] Configure project */ = {
+		87C3A7E32D8A96B05EB17AF7 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -351,7 +354,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				E46BA86EE3CF7B37B79F1D2C /* ExpoModulesProvider.swift in Sources */,
+				B28BA955F21932AA9D0D8130 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -360,13 +363,12 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = DAB520FE0C83EF14EE0AC7AA /* Pods-Calmdemy.debug.xcconfig */;
+			baseConfigurationReference = D2501C2D1EDFEA1C12FD60B3 /* Pods-Calmdemy.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Calmdemy/Calmdemy.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5LF39MCL5Q;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -392,18 +394,20 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
+				DEVELOPMENT_TEAM = "5LF39MCL5Q";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Debug;
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = EA22023D3DBFBF97EE4AE062 /* Pods-Calmdemy.release.xcconfig */;
+			baseConfigurationReference = D2D14128DDDB919800750398 /* Pods-Calmdemy.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Calmdemy/Calmdemy.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5LF39MCL5Q;
 				INFOPLIST_FILE = Calmdemy/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -423,6 +427,9 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
+				DEVELOPMENT_TEAM = "5LF39MCL5Q";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Release;
 		};

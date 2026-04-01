@@ -53,8 +53,8 @@ function MeditateScreen() {
   const router = useRouter();
   const { theme, isDark } = useTheme();
   const { isPremium: hasSubscription } = useSubscription();
-  const { data: courses = [] } = useCourses();
-  const { data: guidedMeditations = [] } = useGuidedMeditations();
+  const { data: courses = [], isLoading: coursesLoading } = useCourses();
+  const { data: guidedMeditations = [], isLoading: meditationsLoading } = useGuidedMeditations();
 
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -149,6 +149,7 @@ function MeditateScreen() {
           </AnimatedView>
 
           <AnimatedView delay={150} duration={400}>
+            {coursesLoading ? renderSkeletonCards() : (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -167,6 +168,7 @@ function MeditateScreen() {
                 />
               ))}
             </ScrollView>
+            )}
           </AnimatedView>
         </View>
 
@@ -240,6 +242,7 @@ function MeditateScreen() {
           </AnimatedView>
 
           <AnimatedView delay={350} duration={400}>
+            {meditationsLoading ? renderSkeletonCards() : (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -263,6 +266,7 @@ function MeditateScreen() {
                 />
               ))}
             </ScrollView>
+            )}
           </AnimatedView>
         </View>
 

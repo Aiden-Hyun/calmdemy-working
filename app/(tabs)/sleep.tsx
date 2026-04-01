@@ -24,13 +24,25 @@ function SleepScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { isPremium: hasSubscription } = useSubscription();
-  const { data: bedtimeStories = [] } = useBedtimeStories();
-  const { data: sleepMeditations = [] } = useSleepMeditations();
-  const { data: series = [] } = useSeries();
+  const { data: bedtimeStories = [], isLoading: storiesLoading } = useBedtimeStories();
+  const { data: sleepMeditations = [], isLoading: meditationsLoading } = useSleepMeditations();
+  const { data: series = [], isLoading: seriesLoading } = useSeries();
   
   const [showPaywall, setShowPaywall] = useState(false);
 
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const renderSkeletonCards = () => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsScroll}>
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={{ width: 150 }}>
+          <Skeleton width={150} height={120} style={{ borderRadius: 16 }} />
+          <Skeleton width={120} height={14} style={{ marginTop: 8 }} />
+          <Skeleton width={60} height={12} style={{ marginTop: 4 }} />
+        </View>
+      ))}
+    </ScrollView>
+  );
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -121,6 +133,7 @@ function SleepScreen() {
               </AnimatedView>
 
               <AnimatedView delay={150} duration={400}>
+                {seriesLoading ? renderSkeletonCards() : (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -140,6 +153,7 @@ function SleepScreen() {
                     />
                   ))}
                 </ScrollView>
+                )}
               </AnimatedView>
             </View>
 
@@ -166,6 +180,7 @@ function SleepScreen() {
               </AnimatedView>
 
               <AnimatedView delay={250} duration={400}>
+                {storiesLoading ? renderSkeletonCards() : (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -185,6 +200,7 @@ function SleepScreen() {
                     />
                   ))}
                 </ScrollView>
+                )}
               </AnimatedView>
             </View>
 
@@ -211,6 +227,7 @@ function SleepScreen() {
               </AnimatedView>
 
               <AnimatedView delay={350} duration={400}>
+                {meditationsLoading ? renderSkeletonCards() : (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -230,6 +247,7 @@ function SleepScreen() {
                     />
                   ))}
                 </ScrollView>
+                )}
               </AnimatedView>
             </View>
           </ScrollView>

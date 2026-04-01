@@ -7,6 +7,7 @@ import { ProtectedRoute } from "../../src/components/ProtectedRoute";
 import { AnimatedView } from "../../src/components/AnimatedView";
 import { AnimatedPressable } from "../../src/components/AnimatedPressable";
 import { ContentCard } from "../../src/components/ContentCard";
+import { Skeleton } from "../../src/components/Skeleton";
 import { PaywallModal } from "../../src/components/PaywallModal";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { useSubscription } from "../../src/contexts/SubscriptionContext";
@@ -22,11 +23,11 @@ function MusicScreen() {
   const router = useRouter();
   const { theme, isDark } = useTheme();
   const { isPremium: hasSubscription } = useSubscription();
-  const { data: sleepSounds = [] } = useSleepSounds();
-  const { data: whiteNoise = [] } = useWhiteNoise();
-  const { data: music = [] } = useMusic();
-  const { data: asmr = [] } = useAsmr();
-  const { data: albums = [] } = useAlbums();
+  const { data: sleepSounds = [], isLoading: soundsLoading } = useSleepSounds();
+  const { data: whiteNoise = [], isLoading: whiteNoiseLoading } = useWhiteNoise();
+  const { data: music = [], isLoading: musicLoading } = useMusic();
+  const { data: asmr = [], isLoading: asmrLoading } = useAsmr();
+  const { data: albums = [], isLoading: albumsLoading } = useAlbums();
   
   const [showPaywall, setShowPaywall] = useState(false);
 
@@ -40,6 +41,18 @@ function MusicScreen() {
     }
     router.push(`/music/${sound.id}`);
   };
+
+  const renderSkeletonCards = () => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsScroll}>
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={{ width: 150 }}>
+          <Skeleton width={150} height={120} style={{ borderRadius: 16 }} />
+          <Skeleton width={120} height={14} style={{ marginTop: 8 }} />
+          <Skeleton width={60} height={12} style={{ marginTop: 4 }} />
+        </View>
+      ))}
+    </ScrollView>
+  );
 
   const handleAlbumPress = (album: FirestoreAlbum) => {
     // Allow browsing albums - gating happens at track level
@@ -67,7 +80,8 @@ function MusicScreen() {
     title: string,
     sounds: Array<FirestoreMusicItem>,
     route: string,
-    baseDelay: number
+    baseDelay: number,
+    loading: boolean = false
   ) => (
     <View style={styles.section}>
       <AnimatedView delay={baseDelay} duration={400}>
@@ -90,6 +104,7 @@ function MusicScreen() {
         </View>
       </AnimatedView>
 
+      {loading ? renderSkeletonCards() : (
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -113,6 +128,7 @@ function MusicScreen() {
           </AnimatedView>
         ))}
       </ScrollView>
+      )}
     </View>
   );
 
@@ -120,7 +136,8 @@ function MusicScreen() {
     title: string,
     sounds: FirestoreSleepSound[],
     route: string,
-    baseDelay: number
+    baseDelay: number,
+    loading: boolean = false
   ) => (
     <View style={styles.section}>
       <AnimatedView delay={baseDelay} duration={400}>
@@ -143,6 +160,7 @@ function MusicScreen() {
         </View>
       </AnimatedView>
 
+      {loading ? renderSkeletonCards() : (
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -165,6 +183,7 @@ function MusicScreen() {
           </AnimatedView>
         ))}
       </ScrollView>
+      )}
     </View>
   );
 
@@ -201,6 +220,7 @@ function MusicScreen() {
                 </View>
               </AnimatedView>
 
+              {albumsLoading ? renderSkeletonCards() : (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -224,19 +244,20 @@ function MusicScreen() {
                   </AnimatedView>
                 ))}
               </ScrollView>
+              )}
             </View>
 
             {/* White Noise Section */}
-        {renderSoundSection("White Noise", whiteNoise.slice(0, 6), "/music/white-noise", 300)}
+        {renderSoundSection("White Noise", whiteNoise.slice(0, 6), "/music/white-noise", 300, whiteNoiseLoading)}
 
             {/* Nature Sounds Section */}
-        {renderNatureSoundsSection("Nature Sounds", sleepSounds.slice(0, 6), "/music/nature-sounds", 500)}
+        {renderNatureSoundsSection("Nature Sounds", sleepSounds.slice(0, 6), "/music/nature-sounds", 500, soundsLoading)}
 
             {/* Music Section */}
-        {renderSoundSection("Music", music.slice(0, 6), "/music/music", 700)}
+        {renderSoundSection("Music", music.slice(0, 6), "/music/music", 700, musicLoading)}
 
             {/* ASMR Section */}
-        {renderSoundSection("ASMR", asmr.slice(0, 6), "/music/asmr", 900)}
+        {renderSoundSection("ASMR", asmr.slice(0, 6), "/music/asmr", 900, asmrLoading)}
 
             {/* Bottom spacing */}
             <View style={{ height: 40 }} />

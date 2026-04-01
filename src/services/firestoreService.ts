@@ -533,7 +533,14 @@ export async function toggleFavorite(
     | "album_track"
     | "emergency"
     | "course_session"
-    | "sleep_meditation"
+    | "sleep_meditation",
+  metadata?: {
+    title: string;
+    thumbnail_url?: string;
+    duration_minutes: number;
+    course_code?: string;
+    session_code?: string;
+  }
 ): Promise<boolean> {
   try {
     // Query ALL favorites for this content (any type) to handle legacy data
@@ -550,12 +557,20 @@ export async function toggleFavorite(
       await Promise.all(deletePromises);
       return false;
     } else {
-      // Add favorite with correct content type
+      // Add favorite with content type and denormalized metadata
       await addDoc(favoritesCollection, {
         user_id: userId,
         content_id: contentId,
         content_type: contentType,
         favorited_at: serverTimestamp(),
+        // Denormalized fields for fast reads (avoids N+1 lookups)
+        ...(metadata && {
+          title: metadata.title,
+          thumbnail_url: metadata.thumbnail_url || null,
+          duration_minutes: metadata.duration_minutes,
+          ...(metadata.course_code && { course_code: metadata.course_code }),
+          ...(metadata.session_code && { session_code: metadata.session_code }),
+        }),
       });
       return true;
     }
@@ -752,9 +767,25 @@ export async function getFavoritesWithDetails(
     const resolvedContent: ResolvedContent[] = [];
 
     for (const fav of favorites) {
-      const content = await getContentById(fav.content_id, fav.content_type);
-      if (content) {
-        resolvedContent.push(content);
+      const favData = fav as any; // Raw Firestore doc may have denormalized fields
+
+      // Use denormalized data if available (new favorites), fall back to lookup (legacy)
+      if (favData.title) {
+        resolvedContent.push({
+          id: fav.content_id,
+          title: favData.title,
+          thumbnail_url: favData.thumbnail_url,
+          duration_minutes: favData.duration_minutes || 0,
+          content_type: fav.content_type,
+          course_code: favData.course_code,
+          session_code: favData.session_code,
+        });
+      } else {
+        // Legacy favorite without denormalized data — resolve via lookup
+        const content = await getContentById(fav.content_id, fav.content_type);
+        if (content) {
+          resolvedContent.push(content);
+        }
       }
     }
 
@@ -909,23 +940,15 @@ async function getCourseSessionsByCourseId(
 export async function getCourses(): Promise<FirestoreCourse[]> {
   try {
     const snapshot = await getDocs(collection(db, "courses"));
-    const courses = snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-          sessions: [],
-          sessionCount: 0,
-        } as FirestoreCourse)
-    );
-
-    // Fetch sessions for each course and compute sessionCount
-    for (const course of courses) {
-      course.sessions = await getCourseSessionsByCourseId(course.id);
-      course.sessionCount = course.sessions.length;
-    }
-
-    return courses;
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        sessions: [], // Sessions loaded on-demand in getCourseById()
+        sessionCount: data.session_count || data.sessionCount || 0,
+      } as FirestoreCourse;
+    });
   } catch (error) {
     console.error("Error fetching courses:", error);
     return [];
@@ -954,6 +977,41 @@ export async function getCourseById(
     console.error("Error fetching course:", error);
     return null;
   }
+}
+
+// ==================== PARENT LOOKUP HELPERS ====================
+// Lightweight lookups to find parent ID for child content (used for navigation)
+
+export async function findSeriesIdByChapterId(chapterId: string): Promise<string | null> {
+  try {
+    const allSeries = await getSeries();
+    for (const s of allSeries) {
+      if (s.chapters?.some(ch => ch.id === chapterId)) return s.id;
+    }
+    return null;
+  } catch { return null; }
+}
+
+export async function findAlbumIdByTrackId(trackId: string): Promise<string | null> {
+  try {
+    const allAlbums = await getAlbums();
+    for (const a of allAlbums) {
+      if (a.tracks?.some(t => t.id === trackId)) return a.id;
+    }
+    return null;
+  } catch { return null; }
+}
+
+export async function findCourseIdBySessionId(sessionId: string): Promise<string | null> {
+  try {
+    const q = query(
+      collection(db, "course_sessions"),
+      where("__name__", "==", sessionId)
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data().courseId || null;
+  } catch { return null; }
 }
 
 // ==================== SERIES ====================

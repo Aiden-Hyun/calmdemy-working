@@ -1,17 +1,15 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';
 import { ProtectedRoute } from '../../src/components/ProtectedRoute';
-import { useTodayQuote, useListeningHistory, useFavorites, useDownloadedContent } from '../../src/hooks/queries/useHomeQueries';
-import { useEmergencyMeditations, useCourses } from '../../src/hooks/queries/useMeditateQueries';
-import { useSleepSounds, useWhiteNoise, useMusic, useAsmr, useAlbums } from '../../src/hooks/queries/useMusicQueries';
-import { useSeries, useSleepMeditations } from '../../src/hooks/queries/useSleepQueries';
+import { useTodayQuote, useListeningHistory, useFavorites } from '../../src/hooks/queries/useHomeQueries';
+import { useEmergencyMeditations } from '../../src/hooks/queries/useMeditateQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatedView } from '../../src/components/AnimatedView';
 import { AnimatedPressable } from '../../src/components/AnimatedPressable';
@@ -22,13 +20,10 @@ import { useStats } from '../../src/hooks/useStats';
 import { parseSessionCode } from '../../src/utils/courseCodeParser';
 import {
   ResolvedContent,
-  FirestoreSeries,
-  FirestoreAlbum,
-  FirestoreCourse,
   FirestoreEmergencyMeditation,
-  FirestoreSleepSound,
-  FirestoreMusicItem,
-  FirestoreSleepMeditation,
+  findSeriesIdByChapterId,
+  findAlbumIdByTrackId,
+  findCourseIdBySessionId,
 } from '../../src/services/firestoreService';
 import { Theme } from '../../src/theme';
 import { ListeningHistoryItem } from '../../src/types';
@@ -41,50 +36,15 @@ function HomeScreen() {
   const { restorePurchases, isPremium: hasSubscription } = useSubscription();
   const queryClient = useQueryClient();
 
-  // React Query hooks
+  // React Query hooks — only fetch what's directly rendered on Home
   const { data: quote } = useTodayQuote();
-  const { data: recentlyPlayed = [] } = useListeningHistory();
-  const { data: favorites = [] } = useFavorites();
-  const { data: downloadedContent = [] } = useDownloadedContent();
-  const { data: emergencyMeditations = [] } = useEmergencyMeditations();
-  const { data: coursesData = [] } = useCourses();
-  const { data: seriesData = [] } = useSeries();
-  const { data: albumsData = [] } = useAlbums();
-  const { data: sleepSoundsData = [] } = useSleepSounds();
-  const { data: whiteNoiseData = [] } = useWhiteNoise();
-  const { data: musicData = [] } = useMusic();
-  const { data: asmrData = [] } = useAsmr();
-  const { data: sleepMeditationsData = [] } = useSleepMeditations();
+  const { data: recentlyPlayed = [], isLoading: historyLoading } = useListeningHistory();
+  const { data: favorites = [], isLoading: favoritesLoading } = useFavorites();
+  const { data: emergencyMeditations = [], isLoading: emergencyLoading } = useEmergencyMeditations();
 
   // Refreshing state for pull-to-refresh
   const [refreshing, setRefreshing] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-
-  // Content data refs for navigation lookups
-  const seriesDataRef = useRef<FirestoreSeries[]>([]);
-  const albumsDataRef = useRef<FirestoreAlbum[]>([]);
-  const coursesDataRef = useRef<FirestoreCourse[]>([]);
-  const emergencyDataRef = useRef<FirestoreEmergencyMeditation[]>([]);
-  const sleepSoundsDataRef = useRef<FirestoreSleepSound[]>([]);
-  const whiteNoiseDataRef = useRef<FirestoreMusicItem[]>([]);
-  const musicDataRef = useRef<FirestoreMusicItem[]>([]);
-  const asmrDataRef = useRef<FirestoreMusicItem[]>([]);
-  const sleepMeditationsDataRef = useRef<FirestoreSleepMeditation[]>([]);
-
-  // Sync query data to refs for navigation lookups
-  useFocusEffect(
-    useCallback(() => {
-      seriesDataRef.current = seriesData;
-      emergencyDataRef.current = emergencyMeditations;
-      coursesDataRef.current = coursesData;
-      sleepSoundsDataRef.current = sleepSoundsData;
-      whiteNoiseDataRef.current = whiteNoiseData;
-      musicDataRef.current = musicData;
-      asmrDataRef.current = asmrData;
-      albumsDataRef.current = albumsData;
-      sleepMeditationsDataRef.current = sleepMeditationsData;
-    }, [seriesData, emergencyMeditations, coursesData, sleepSoundsData, whiteNoiseData, musicData, asmrData, albumsData, sleepMeditationsData])
-  );
 
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   
@@ -131,7 +91,6 @@ function HomeScreen() {
     await queryClient.invalidateQueries({ queryKey: ['todayQuote'] });
     await queryClient.invalidateQueries({ queryKey: ['listeningHistory'] });
     await queryClient.invalidateQueries({ queryKey: ['favorites'] });
-    await queryClient.invalidateQueries({ queryKey: ['downloadedContent'] });
     setRefreshing(false);
   }, [user, queryClient]);
 
@@ -189,99 +148,17 @@ function HomeScreen() {
     return dots;
   };
 
-  // Helper to find series chapter by ID
-  const findSeriesChapter = (chapterId: string) => {
-    for (const series of seriesDataRef.current) {
-      const chapter = series.chapters.find(ch => ch.id === chapterId);
-      if (chapter) {
-        return { series, chapter };
-      }
-    }
-    return null;
-  };
-
-  // Helper to find album track by ID
-  const findAlbumTrack = (trackId: string) => {
-    for (const album of albumsDataRef.current) {
-      const track = album.tracks?.find(t => t.id === trackId);
-      if (track) {
-        return { album, track };
-      }
-    }
-    return null;
-  };
-
-  // Helper to find course session by ID
-  const findCourseSession = (sessionId: string) => {
-    for (const course of coursesDataRef.current) {
-      const session = course.sessions?.find(s => s.id === sessionId);
-      if (session) {
-        return { course, session };
-      }
-    }
-    return null;
-  };
-
-  // Helper to get thumbnail for content from Firestore data
-  const getThumbnailForContent = (contentId: string, contentType: string): string | undefined => {
-    switch (contentType) {
-      case 'emergency':
-        return emergencyDataRef.current.find(e => e.id === contentId)?.thumbnailUrl;
-      case 'series_chapter':
-        for (const series of seriesDataRef.current) {
-          if (series.chapters.some(c => c.id === contentId)) {
-            return series.thumbnailUrl;
-          }
-        }
-        return undefined;
-      case 'album_track':
-        for (const album of albumsDataRef.current) {
-          if (album.tracks?.some(t => t.id === contentId)) {
-            return album.thumbnailUrl;
-          }
-        }
-        return undefined;
-      case 'course_session':
-        for (const course of coursesDataRef.current) {
-          if (course.sessions?.some(s => s.id === contentId)) {
-            return course.thumbnailUrl;
-          }
-        }
-        return undefined;
-      case 'nature_sound':
-        // Check sleep sounds and white noise
-        const sleepSound = sleepSoundsDataRef.current.find(s => s.id === contentId);
-        if (sleepSound) return sleepSound.thumbnailUrl;
-        const whiteNoise = whiteNoiseDataRef.current.find(w => w.id === contentId);
-        if (whiteNoise) return whiteNoise.thumbnailUrl;
-        const music = musicDataRef.current.find(m => m.id === contentId);
-        if (music) return music.thumbnailUrl;
-        const asmr = asmrDataRef.current.find(a => a.id === contentId);
-        if (asmr) return asmr.thumbnailUrl;
-        return undefined;
-      case 'sleep_meditation':
-        return sleepMeditationsDataRef.current.find(m => m.id === contentId)?.thumbnailUrl;
-      default:
-        return undefined;
-    }
-  };
-
-  const navigateToContent = (contentId: string, contentType: string) => {
+  const navigateToContent = useCallback(async (contentId: string, contentType: string) => {
     // Handle emergency content that may have been saved with wrong type
     if (contentId.startsWith('emergency_')) {
-      const emergency = emergencyDataRef.current.find(e => e.id === contentId);
-      if (emergency) {
+      const em = emergencyMeditations.find(e => e.id === contentId);
+      if (em) {
         router.push({
           pathname: '/emergency/[id]',
           params: {
-            id: emergency.id,
-            title: emergency.title,
-            description: emergency.description,
-            duration: String(emergency.duration_minutes),
-            audioPath: emergency.audioPath,
-            color: emergency.color,
-            icon: emergency.icon,
-            narrator: emergency.narrator || ''
+            id: em.id, title: em.title, description: em.description,
+            duration: String(em.duration_minutes), audioPath: em.audioPath,
+            color: em.color, icon: em.icon, narrator: em.narrator || ''
           }
         });
       } else {
@@ -303,77 +180,54 @@ function HomeScreen() {
       case 'nature_sound':
         router.push({ pathname: '/music/[id]', params: { id: contentId } });
         break;
-      case 'series_chapter':
-        // Navigate to series detail page, which will auto-open the chapter
-        const result = findSeriesChapter(contentId);
-        if (result) {
-          router.push({
-            pathname: '/series/[id]',
-            params: {
-              id: result.series.id,
-              autoOpenItemId: contentId
-            }
-          });
+      case 'series_chapter': {
+        const seriesId = await findSeriesIdByChapterId(contentId);
+        if (seriesId) {
+          router.push({ pathname: '/series/[id]', params: { id: seriesId, autoOpenItemId: contentId } });
         } else {
           router.push('/(tabs)/sleep');
         }
         break;
-      case 'album_track':
-        // Navigate to album detail page, which will auto-open the track
-        const albumResult = findAlbumTrack(contentId);
-        if (albumResult) {
-          router.push({
-            pathname: '/album/[id]',
-            params: {
-              id: albumResult.album.id,
-              autoOpenItemId: contentId
-            }
-          });
+      }
+      case 'album_track': {
+        const albumId = await findAlbumIdByTrackId(contentId);
+        if (albumId) {
+          router.push({ pathname: '/album/[id]', params: { id: albumId, autoOpenItemId: contentId } });
         } else {
           router.push('/(tabs)/music');
         }
         break;
-      case 'emergency':
-        // Look up emergency meditation data from Firestore
-        const emergency = emergencyDataRef.current.find(e => e.id === contentId);
+      }
+      case 'emergency': {
+        const emergency = emergencyMeditations.find(e => e.id === contentId);
         if (emergency) {
           router.push({
             pathname: '/emergency/[id]',
             params: {
-              id: emergency.id,
-              title: emergency.title,
-              description: emergency.description,
-              duration: String(emergency.duration_minutes),
-              audioPath: emergency.audioPath,
-              color: emergency.color,
-              icon: emergency.icon,
-              narrator: emergency.narrator || ''
+              id: emergency.id, title: emergency.title, description: emergency.description,
+              duration: String(emergency.duration_minutes), audioPath: emergency.audioPath,
+              color: emergency.color, icon: emergency.icon, narrator: emergency.narrator || ''
             }
           });
         } else {
           router.push('/(tabs)/meditate');
         }
         break;
-      case 'course_session':
-        // Navigate to course detail page, which will auto-open the session
-        const courseResult = findCourseSession(contentId);
-        if (courseResult) {
-          router.push({
-            pathname: '/course/[id]',
-            params: {
-              id: courseResult.course.id,
-              autoOpenItemId: contentId
-            }
-          });
+      }
+      case 'course_session': {
+        const courseId = await findCourseIdBySessionId(contentId);
+        if (courseId) {
+          router.push({ pathname: '/course/[id]', params: { id: courseId, autoOpenItemId: contentId } });
         } else {
           router.push('/(tabs)/meditate');
         }
         break;
+      }
       case 'sleep_meditation':
         router.push({ pathname: '/sleep/meditation/[id]', params: { id: contentId } });
         break;
     }
-  };
+  }, [emergencyMeditations, router]);
 
   const getContentIcon = (contentType: string): keyof typeof Ionicons.glyphMap => {
     switch (contentType) {
@@ -405,7 +259,7 @@ function HomeScreen() {
 
   const renderRecentlyPlayedItem = useCallback(({ item }: { item: ListeningHistoryItem }) => {
     // Use stored thumbnail or look up from local data
-    const thumbnailUrl = item.content_thumbnail || getThumbnailForContent(item.content_id, item.content_type);
+    const thumbnailUrl = item.content_thumbnail;
     
     // For course sessions, show code badge and module info
     const isCourseSession = item.content_type === 'course_session';
@@ -520,6 +374,8 @@ function HomeScreen() {
                   <Text style={styles.signInPromptInlineButtonText}>{hasSubscription ? "Link Account" : "Sign In"}</Text>
                 </View>
               </AnimatedPressable>
+            ) : historyLoading ? (
+              renderSkeletonCards()
             ) : recentlyPlayed.length > 0 ? (
               <FlatList
                 horizontal
@@ -554,6 +410,8 @@ function HomeScreen() {
                   <Text style={styles.signInPromptInlineButtonText}>{hasSubscription ? "Link Account" : "Sign In"}</Text>
                 </View>
               </AnimatedPressable>
+            ) : favoritesLoading ? (
+              renderSkeletonCards()
             ) : favorites.length > 0 ? (
               <FlatList
                 horizontal
@@ -582,6 +440,7 @@ function HomeScreen() {
           </AnimatedView>
 
           <AnimatedView delay={350} duration={400}>
+            {emergencyLoading ? renderSkeletonCards() : (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -600,6 +459,7 @@ function HomeScreen() {
                 />
               ))}
             </ScrollView>
+            )}
           </AnimatedView>
         </View>
 
