@@ -654,59 +654,74 @@ export async function getContentById(
       return null;
     }
 
-    // Handle series_chapter from Firestore (check cache first)
-    if (contentType === "series_chapter") {
-      const allSeries = _seriesCache ?? await getSeries();
-      for (const series of allSeries) {
-        const chapter = series.chapters?.find((c) => c.id === contentId);
-        if (chapter) {
-          return {
-            id: contentId,
-            title: `${series.title}: ${chapter.title}`,
-            thumbnail_url: series.thumbnailUrl,
-            duration_minutes: chapter.duration_minutes,
-            content_type: contentType,
-          };
-        }
-      }
-      return null;
-    }
+    // Handle series_chapter, album_track, course_session via content_index (single doc read)
+    if (contentType === "series_chapter" || contentType === "album_track" || contentType === "course_session") {
+      // Try content_index first (1 read instead of fetching entire collections)
+      const indexRef = doc(db, "content_index", contentId);
+      const indexSnap = await getDoc(indexRef);
 
-    // Handle album_track from Firestore (check cache first)
-    if (contentType === "album_track") {
-      const allAlbums = _albumsCache ?? await getAlbums();
-      for (const album of allAlbums) {
-        const track = album.tracks?.find((t) => t.id === contentId);
-        if (track) {
-          return {
-            id: contentId,
-            title: `${album.title}: ${track.title}`,
-            thumbnail_url: album.thumbnailUrl,
-            duration_minutes: track.duration_minutes,
-            content_type: contentType,
-          };
-        }
+      if (indexSnap.exists()) {
+        const idx = indexSnap.data();
+        return {
+          id: contentId,
+          title: contentType === "course_session"
+            ? idx.contentTitle
+            : `${idx.parentTitle}: ${idx.contentTitle}`,
+          thumbnail_url: idx.parentThumbnailUrl,
+          duration_minutes: idx.duration_minutes || 0,
+          content_type: contentType,
+          course_code: idx.courseCode,
+          session_code: idx.sessionCode,
+        };
       }
-      return null;
-    }
 
-    // Handle course_session from Firestore
-    if (contentType === "course_session") {
-      const allCourses = await getCourses();
-      for (const course of allCourses) {
-        const session = course.sessions?.find((s) => s.id === contentId);
-        if (session) {
-          return {
-            id: contentId,
-            title: session.title, // Just session title, not "Course: Session"
-            thumbnail_url: course.thumbnailUrl,
-            duration_minutes: session.duration_minutes,
-            content_type: contentType,
-            course_code: course.code,
-            session_code: session.code,
-          };
+      // Fallback: check in-memory cache, then fetch (for content not yet indexed)
+      if (contentType === "series_chapter") {
+        const allSeries = _seriesCache ?? await getSeries();
+        for (const series of allSeries) {
+          const chapter = series.chapters?.find((c: any) => c.id === contentId);
+          if (chapter) {
+            return {
+              id: contentId,
+              title: `${series.title}: ${chapter.title}`,
+              thumbnail_url: series.thumbnailUrl,
+              duration_minutes: chapter.duration_minutes,
+              content_type: contentType,
+            };
+          }
+        }
+      } else if (contentType === "album_track") {
+        const allAlbums = _albumsCache ?? await getAlbums();
+        for (const album of allAlbums) {
+          const track = album.tracks?.find((t: any) => t.id === contentId);
+          if (track) {
+            return {
+              id: contentId,
+              title: `${album.title}: ${track.title}`,
+              thumbnail_url: album.thumbnailUrl,
+              duration_minutes: track.duration_minutes,
+              content_type: contentType,
+            };
+          }
+        }
+      } else if (contentType === "course_session") {
+        const allCourses = await getCourses();
+        for (const course of allCourses) {
+          const session = course.sessions?.find((s: any) => s.id === contentId);
+          if (session) {
+            return {
+              id: contentId,
+              title: session.title,
+              thumbnail_url: course.thumbnailUrl,
+              duration_minutes: session.duration_minutes,
+              content_type: contentType,
+              course_code: course.code,
+              session_code: session.code,
+            };
+          }
         }
       }
+
       return null;
     }
 
@@ -988,6 +1003,11 @@ export async function getCourseById(
 
 export async function findSeriesIdByChapterId(chapterId: string): Promise<string | null> {
   try {
+    // Try content_index first (1 read)
+    const indexSnap = await getDoc(doc(db, "content_index", chapterId));
+    if (indexSnap.exists()) return indexSnap.data().parentId;
+
+    // Fallback: scan cache or fetch
     const allSeries = _seriesCache ?? await getSeries();
     for (const s of allSeries) {
       if (s.chapters?.some(ch => ch.id === chapterId)) return s.id;
@@ -998,6 +1018,11 @@ export async function findSeriesIdByChapterId(chapterId: string): Promise<string
 
 export async function findAlbumIdByTrackId(trackId: string): Promise<string | null> {
   try {
+    // Try content_index first (1 read)
+    const indexSnap = await getDoc(doc(db, "content_index", trackId));
+    if (indexSnap.exists()) return indexSnap.data().parentId;
+
+    // Fallback: scan cache or fetch
     const allAlbums = _albumsCache ?? await getAlbums();
     for (const a of allAlbums) {
       if (a.tracks?.some(t => t.id === trackId)) return a.id;
@@ -1008,6 +1033,11 @@ export async function findAlbumIdByTrackId(trackId: string): Promise<string | nu
 
 export async function findCourseIdBySessionId(sessionId: string): Promise<string | null> {
   try {
+    // Try content_index first (1 read)
+    const indexSnap = await getDoc(doc(db, "content_index", sessionId));
+    if (indexSnap.exists()) return indexSnap.data().parentId;
+
+    // Fallback: query course_sessions collection
     const q = query(
       collection(db, "course_sessions"),
       where("__name__", "==", sessionId)
