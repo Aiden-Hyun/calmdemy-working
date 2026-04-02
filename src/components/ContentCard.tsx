@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressable } from "./AnimatedPressable";
 import { useTheme } from "../contexts/ThemeContext";
@@ -81,7 +82,7 @@ export function ContentCard({
     >
       <View style={styles.thumbnailContainer}>
         {thumbnailUrl ? (
-          <Image source={{ uri: thumbnailUrl }} style={styles.thumbnail} />
+          <Image source={{ uri: thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
         ) : (
           <View
             style={[
@@ -158,7 +159,6 @@ const createStyles = (
     thumbnail: {
       width: "100%",
       height: "100%",
-      resizeMode: "cover",
     },
     thumbnailPlaceholder: {
       alignItems: "center",

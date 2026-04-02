@@ -11,7 +11,7 @@ import { DownloadButton } from "../../src/components/DownloadButton";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { FirestoreMusicItem } from "../../src/services/firestoreService";
 import { useMusic } from '../../src/hooks/queries/useMusicQueries';
-import { getAudioUrlFromPath } from "../../src/constants/audioFiles";
+import { useAudioUrls } from '../../src/hooks/queries/useAudioUrlQueries';
 import { getDownloadedContentIds } from "../../src/services/downloadService";
 import { Theme } from "../../src/theme";
 import { useSubscription } from "../../src/contexts/SubscriptionContext";
@@ -22,8 +22,8 @@ function MusicListScreen() {
   const { theme } = useTheme();
   const { isPremium: hasSubscription } = useSubscription();
   const { data: sounds = [], isLoading: loading } = useMusic();
+  const { data: audioUrls = new Map() } = useAudioUrls(sounds);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map());
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -31,19 +31,10 @@ function MusicListScreen() {
 
   useEffect(() => {
     if (sounds.length === 0) return;
-    (async () => {
-      const urls = new Map<string, string>();
-      for (const sound of sounds) {
-        if (sound.audioPath) {
-          const url = await getAudioUrlFromPath(sound.audioPath);
-          if (url) urls.set(sound.id, url);
-        }
-      }
-      setAudioUrls(urls);
-      const ids = await getDownloadedContentIds('sound');
+    getDownloadedContentIds('sound').then((ids) => {
       setDownloadedIds(ids);
       setRefreshKey(prev => prev + 1);
-    })();
+    });
   }, [sounds]);
 
   const handleSoundPress = (sound: FirestoreMusicItem) => {

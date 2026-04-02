@@ -5,8 +5,8 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -135,6 +135,7 @@ function AllMeditationsScreen() {
           <Image
             source={{ uri: item.thumbnailUrl }}
             style={styles.sessionImage}
+            contentFit="cover"
           />
         ) : (
           <View style={styles.sessionIcon}>
@@ -445,7 +446,6 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       width: 56,
       height: 56,
       borderRadius: 16,
-      resizeMode: "cover",
     },
     sessionInfo: {
       flex: 1,

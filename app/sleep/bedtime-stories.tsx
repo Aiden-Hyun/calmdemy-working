@@ -4,8 +4,8 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,7 +102,7 @@ function BedtimeStoriesScreen() {
         style={styles.storyCard}
       >
         {item.thumbnail_url ? (
-          <Image source={{ uri: item.thumbnail_url }} style={styles.storyImage} />
+          <Image source={{ uri: item.thumbnail_url }} style={styles.storyImage} contentFit="cover" />
         ) : (
           <View style={styles.storyIcon}>
             <Ionicons
@@ -380,7 +380,6 @@ const createStyles = (theme: Theme) =>
       width: 56,
       height: 56,
       borderRadius: 16,
-      resizeMode: 'cover',
     },
     storyInfo: {
       flex: 1,

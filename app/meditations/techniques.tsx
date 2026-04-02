@@ -5,8 +5,8 @@ import {
   StyleSheet,
   FlatList,
   ScrollView,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -142,7 +142,7 @@ function TechniquesScreen() {
         style={styles.meditationCard}
       >
         {item.thumbnailUrl ? (
-          <Image source={{ uri: item.thumbnailUrl }} style={styles.meditationImage} />
+          <Image source={{ uri: item.thumbnailUrl }} style={styles.meditationImage} contentFit="cover" />
         ) : (
           <View style={[styles.meditationIcon, { backgroundColor: `${currentTechnique?.color || theme.colors.primary}20` }]}>
             <Ionicons
@@ -435,7 +435,6 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       width: 56,
       height: 56,
       borderRadius: 16,
-      resizeMode: 'cover',
     },
     meditationInfo: {
       flex: 1,

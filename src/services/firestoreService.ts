@@ -28,6 +28,10 @@ import {
   ReportCategory,
 } from "../types";
 
+// In-memory cache for collection data (populated by getSeries/getAlbums, used by getContentById)
+let _seriesCache: any[] | null = null;
+let _albumsCache: any[] | null = null;
+
 // Collection references
 const meditationsCollection = collection(db, "guided_meditations");
 const sessionsCollection = collection(db, "meditation_sessions");
@@ -650,9 +654,9 @@ export async function getContentById(
       return null;
     }
 
-    // Handle series_chapter from Firestore
+    // Handle series_chapter from Firestore (check cache first)
     if (contentType === "series_chapter") {
-      const allSeries = await getSeries();
+      const allSeries = _seriesCache ?? await getSeries();
       for (const series of allSeries) {
         const chapter = series.chapters?.find((c) => c.id === contentId);
         if (chapter) {
@@ -668,9 +672,9 @@ export async function getContentById(
       return null;
     }
 
-    // Handle album_track from Firestore
+    // Handle album_track from Firestore (check cache first)
     if (contentType === "album_track") {
-      const allAlbums = await getAlbums();
+      const allAlbums = _albumsCache ?? await getAlbums();
       for (const album of allAlbums) {
         const track = album.tracks?.find((t) => t.id === contentId);
         if (track) {
@@ -984,7 +988,7 @@ export async function getCourseById(
 
 export async function findSeriesIdByChapterId(chapterId: string): Promise<string | null> {
   try {
-    const allSeries = await getSeries();
+    const allSeries = _seriesCache ?? await getSeries();
     for (const s of allSeries) {
       if (s.chapters?.some(ch => ch.id === chapterId)) return s.id;
     }
@@ -994,7 +998,7 @@ export async function findSeriesIdByChapterId(chapterId: string): Promise<string
 
 export async function findAlbumIdByTrackId(trackId: string): Promise<string | null> {
   try {
-    const allAlbums = await getAlbums();
+    const allAlbums = _albumsCache ?? await getAlbums();
     for (const a of allAlbums) {
       if (a.tracks?.some(t => t.id === trackId)) return a.id;
     }
@@ -1042,11 +1046,13 @@ export interface FirestoreSeries {
 export async function getSeries(): Promise<FirestoreSeries[]> {
   try {
     const snapshot = await getDocs(collection(db, "series"));
-    return snapshot.docs.map((doc) => {
+    const result = snapshot.docs.map((doc) => {
       const data = doc.data();
       const chapters = (data.chapters || []).map((ch: FirestoreSeriesChapter) => ({ ...ch, isFree: true }));
       return { id: doc.id, ...data, chapters } as FirestoreSeries;
     });
+    _seriesCache = result;
+    return result;
   } catch (error) {
     console.error("Error fetching series:", error);
     return [];
@@ -1096,11 +1102,13 @@ export interface FirestoreAlbum {
 export async function getAlbums(): Promise<FirestoreAlbum[]> {
   try {
     const snapshot = await getDocs(collection(db, "albums"));
-    return snapshot.docs.map((doc) => {
+    const result = snapshot.docs.map((doc) => {
       const data = doc.data();
       const tracks = (data.tracks || []).map((t: FirestoreAlbumTrack) => ({ ...t, isFree: true }));
       return { id: doc.id, ...data, tracks } as FirestoreAlbum;
     });
+    _albumsCache = result;
+    return result;
   } catch (error) {
     console.error("Error fetching albums:", error);
     return [];
