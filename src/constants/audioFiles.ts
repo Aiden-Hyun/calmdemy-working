@@ -1,21 +1,63 @@
 /**
- * Audio file mapping for meditation and sleep content
- * 
- * All audio files are hosted on Firebase Storage (private)
- * Use getAudioUrl() to get download URLs with access tokens
- * 
- * Sources: Fragrant Heart (meditations), Pixabay (sounds)
- * All audio is free for personal use.
+ * ============================================================
+ * audioFiles.ts — Audio Asset Registry & Download URL Manager
+ * ============================================================
+ *
+ * Architectural Role:
+ *   This module is the single source of truth for all audio content.
+ *   It maps logical audio file keys (e.g., "meditation_relaxation") to:
+ *   1. Firebase Storage paths (for hosted audio)
+ *   2. External URLs (for third-party audio from Fragrant Heart, Pixabay)
+ *
+ *   The module also manages URL caching (tokens expire after 30 minutes)
+ *   and provides async/sync helpers for audio playback screens.
+ *
+ * Design Patterns:
+ *   - Registry/Lookup Table: storagePaths and externalUrls are maps
+ *     for O(1) key-based audio asset lookups.
+ *   - Cache Strategy (Token Expiry): Firebase download URLs include
+ *     access tokens valid for ~30 minutes. We cache them to avoid
+ *     re-fetching. After 30 minutes, the cache is invalidated.
+ *   - Prefetch/Preload: preloadAudioUrls() eagerly fetches tokens
+ *     for a list of audio keys, so screens don't show spinners.
+ *   - Graceful Fallback: If a key isn't found, returns null with
+ *     a warning. Screens should have placeholder UI for missing audio.
+ *
+ * Sources:
+ *   - Firebase Cloud Storage: privately hosted meditations, sound effects
+ *   - Fragrant Heart: external public meditation library
+ *   - Pixabay: external free stock audio
+ *
+ * Key Concepts:
+ *   - Audio keys: logical identifiers (e.g., "meditation_body_scan")
+ *   - Storage paths: Firebase paths (e.g., "audio/meditate/meditations/body-scan.mp3")
+ *   - Download URLs: temporary signed URLs with access tokens
+ *   - Cache: 30-minute lifetime to balance freshness vs. request volume
+ * ============================================================
  */
 
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 
-// Fragrant Heart base URL for guided meditations (external - public)
-const fragrantheart = (path: string) => 
+/**
+ * Fragrant Heart base URL factory.
+ *
+ * Fragrant Heart is an external public meditation library.
+ * URLs don't require authentication (public).
+ *
+ * @param path - Audio path within Fragrant Heart (e.g., "relaxation/deep-relaxation")
+ * @returns Full URL to the .mp3 file
+ */
+const fragrantheart = (path: string) =>
   `https://www.fragrantheart.com/audio/${path}.mp3`;
 
-// Storage paths for Firebase-hosted audio (private - needs download URL)
+/**
+ * Firebase Storage paths for privately hosted audio.
+ *
+ * Each path maps a logical audio key to its location in Cloud Storage.
+ * These are private resources and require download URLs (with temporary
+ * access tokens) for playback. Use getAudioUrl(key) to fetch the URL.
+ */
 const storagePaths: Record<string, string> = {
   // ========== BEDTIME STORIES (Firebase Storage) ==========
   story_midnight_crossing: 'audio/sleep/stories/midnight-crossing-chapter-1.mp3',
@@ -98,9 +140,15 @@ const storagePaths: Record<string, string> = {
   course_foundational_session3: 'audio/meditate/courses/foundational-series/a-place-to-rest.mp3',
 };
 
-// External URLs (public, no token needed)
+/**
+ * External URLs for publicly accessible audio.
+ *
+ * These are public, third-party sources (Fragrant Heart, Pixabay, etc.).
+ * They don't require Firebase download tokens or authentication.
+ * These URLs are stable and can be shared directly.
+ */
 const externalUrls: Record<string, string> = {
-  // Additional meditation keys from Fragrant Heart (external)
+  // Fragrant Heart meditations (public, external source)
   meditation_relaxation: fragrantheart('relaxation/deep-relaxation'),
   meditation_peace: fragrantheart('relaxation/2mins-inner-peace'),
   meditation_calming: fragrantheart('relaxation/1min-calming'),
@@ -117,45 +165,63 @@ const externalUrls: Record<string, string> = {
   meditation_sleep: fragrantheart('relaxation/peaceful-sleep'),
 };
 
-// Cache for download URLs (they include tokens that are valid for a while)
+/**
+ * In-memory cache for Firebase download URLs.
+ *
+ * Firebase download URLs include temporary access tokens that expire
+ * after ~30 minutes. We cache them to avoid re-fetching and to minimize
+ * API calls. The cache is checked before making a new request.
+ *
+ * Structure: key -> { url, timestamp }
+ * The timestamp lets us invalidate entries after CACHE_DURATION.
+ */
 const urlCache: Map<string, { url: string; timestamp: number }> = new Map();
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes: Firebase token expiry
 
 /**
- * Get audio URL by file key
- * For Firebase Storage files, fetches a download URL with access token
- * For external URLs, returns directly
- * 
- * @param key - The audio file key (e.g., 'meditation_gratitude', 'story_midnight_crossing')
- * @returns Promise<string | null> - The audio URL or null if not found
+ * Get audio URL by logical key (async).
+ *
+ * Three-tier lookup strategy:
+ *   1. Check externalUrls first (no token needed, instant)
+ *   2. Check cache for Firebase URLs (still valid, instant)
+ *   3. Fetch fresh download URL from Firebase (requires API call)
+ *
+ * Caches Firebase URLs for 30 minutes to avoid token re-fetching.
+ * Returns null if the key is unknown; screens should handle with fallback UI.
+ *
+ * Use this for playback screens that display UI while loading.
+ * For pre-loading, use preloadAudioUrls() instead.
+ *
+ * @param key - Audio file key (e.g., 'meditation_body_scan', 'story_midnight_crossing')
+ * @returns Promise resolving to the audio URL, or null if not found
  */
 export async function getAudioUrl(key: string): Promise<string | null> {
-  // Check external URLs first (no token needed)
+  // --- Tier 1: External URLs (instant, no token) ---
   if (externalUrls[key]) {
     return externalUrls[key];
   }
-  
-  // Check if it's a Firebase Storage file
+
+  // --- Tier 2: Firebase Storage path lookup ---
   const storagePath = storagePaths[key];
   if (!storagePath) {
     console.warn(`Audio key not found: ${key}`);
     return null;
   }
-  
-  // Check cache
+
+  // --- Tier 3: Cache check ---
   const cached = urlCache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.url;
   }
-  
+
+  // --- Tier 4: Fetch fresh download URL from Firebase ---
   try {
-    // Get download URL from Firebase Storage
     const storageRef = ref(storage, storagePath);
     const url = await getDownloadURL(storageRef);
-    
-    // Cache the URL
+
+    // Cache for future requests
     urlCache.set(key, { url, timestamp: Date.now() });
-    
+
     return url;
   } catch (error) {
     console.error(`Failed to get download URL for ${key}:`, error);
@@ -164,52 +230,82 @@ export async function getAudioUrl(key: string): Promise<string | null> {
 }
 
 /**
- * Synchronous version - returns cached URL or null
- * Use getAudioUrl() for guaranteed fresh URLs
- * 
- * @deprecated Use getAudioUrl() instead for reliable access
+ * Synchronous version: returns cached URL or null (no network request).
+ *
+ * Returns immediately without fetching from Firebase. Useful in render
+ * paths where you can't await. For Firebase Storage files not in cache,
+ * triggers a background fetch and returns null (caller must have fallback UI).
+ *
+ * DEPRECATED: Use getAudioUrl() instead. This function is only for
+ * backwards compatibility with legacy code that can't await.
+ *
+ * @param key - Audio file key
+ * @returns Cached URL, external URL, or null if Firebase URL not cached
  */
 export function getAudioFile(key: string): string | null {
-  // Check external URLs first
+  // --- Check external URLs first (instant) ---
   if (externalUrls[key]) {
     return externalUrls[key];
   }
-  
-  // Check cache for Firebase Storage URLs
+
+  // --- Check cache for Firebase Storage URLs ---
   const cached = urlCache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.url;
   }
-  
-  // For Firebase Storage files, trigger async fetch and return null for now
-  // The caller should use getAudioUrl() instead
+
+  // --- For uncached Firebase files, trigger background fetch ---
+  // Don't block: fire and forget. Caller must have fallback UI for null.
   if (storagePaths[key]) {
-    // Trigger background fetch
     getAudioUrl(key).catch(() => {});
     return null;
   }
-  
+
   return null;
 }
 
 /**
- * Preload audio URLs into cache
- * Call this on app startup or before navigating to audio screens
+ * Prefetch audio URLs into cache (Cache Warming).
+ *
+ * Eagerly fetches and caches a list of audio URLs. Use before navigating
+ * to audio-heavy screens (e.g., listening history, meditation library) to
+ * ensure download URLs are cached and ready.
+ *
+ * This is the Cache Warming pattern: preload frequently-used data on
+ * app startup or screen navigation to minimize spinners and improve UX.
+ *
+ * Errors are silently caught; cache is populated for successful keys only.
+ *
+ * @param keys - Array of audio file keys to preload
+ * @returns Promise that resolves after all preload attempts complete
  */
 export async function preloadAudioUrls(keys: string[]): Promise<void> {
   const promises = keys.map(key => getAudioUrl(key).catch(() => null));
   await Promise.all(promises);
 }
 
-// Cache for path-based download URLs
+/**
+ * Separate cache for path-based lookups.
+ *
+ * Some Firestore documents store the full Firebase Storage path
+ * (e.g., "audio/sleep/meditations/my-file.mp3") instead of a key.
+ * This cache handles that scenario separately.
+ */
 const pathUrlCache: Map<string, { url: string; timestamp: number }> = new Map();
 
 /**
- * Get audio URL directly from a Firebase Storage path
- * This is the preferred method for Firestore content that stores audioPath
- * 
- * @param audioPath - The Firebase Storage path (e.g., 'audio/sleep/meditations/my-file.mp3')
- * @returns Promise<string | null> - The download URL or null if not found
+ * Get audio URL directly from a Firebase Storage path (async).
+ *
+ * Use this when Firestore documents contain the full audioPath
+ * rather than a key. Example:
+ *   - Firestore doc: { audioPath: "audio/meditate/meditations/body-scan.mp3" }
+ *   - Call: getAudioUrlFromPath("audio/meditate/meditations/body-scan.mp3")
+ *   - Result: signed download URL with access token
+ *
+ * Caches results for 30 minutes (same strategy as getAudioUrl).
+ *
+ * @param audioPath - Full Firebase Storage path (e.g., "audio/sleep/meditations/my-file.mp3")
+ * @returns Promise resolving to signed URL, or null if fetch fails
  */
 export async function getAudioUrlFromPath(audioPath: string): Promise<string | null> {
   if (!audioPath) {
@@ -217,20 +313,20 @@ export async function getAudioUrlFromPath(audioPath: string): Promise<string | n
     return null;
   }
 
-  // Check cache
+  // --- Cache check ---
   const cached = pathUrlCache.get(audioPath);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.url;
   }
 
+  // --- Fetch fresh download URL from Firebase ---
   try {
-    // Get download URL from Firebase Storage
     const storageRef = ref(storage, audioPath);
     const url = await getDownloadURL(storageRef);
-    
-    // Cache the URL
+
+    // Cache for future requests
     pathUrlCache.set(audioPath, { url, timestamp: Date.now() });
-    
+
     return url;
   } catch (error) {
     console.error(`Failed to get download URL for path ${audioPath}:`, error);
@@ -238,5 +334,10 @@ export async function getAudioUrlFromPath(audioPath: string): Promise<string | n
   }
 }
 
-// Export storage paths for reference
+/**
+ * Export: Storage path and external URL registries.
+ *
+ * Allows consuming code to iterate over all known audio keys or paths.
+ * Example: preloadAudioUrls(Object.keys(storagePaths)) to cache all Firebase audio.
+ */
 export { storagePaths, externalUrls };

@@ -1,17 +1,42 @@
 /**
- * Utility functions for parsing course and session codes
- * 
- * Course codes: e.g., "CBT101", "ACT201"
- * Session codes: e.g., "CBT101INT", "CBT101M1L", "CBT101M1P"
- * 
- * Suffix Types:
- * - INT = Course Intro (no module number)
- * - L = Lesson
- * - P = Practice
+ * ============================================================
+ * courseCodeParser.ts — Course Code Parsing & Formatting Utilities
+ * ============================================================
+ *
+ * Architectural Role:
+ *   This module parses structured course and session codes to extract
+ *   human-readable metadata for display in the UI. Course codes encode
+ *   course info (e.g., "CBT101" = Cognitive Behavioral Therapy, course 101).
+ *   Session codes append module/type info (e.g., "CBT101M1L" = Module 1 Lesson).
+ *
+ * Code Structures:
+ *   - Course codes: "{Prefix}{Number}" e.g., "CBT101", "ACT201"
+ *   - Session codes (course intro): "{CourseCode}INT" e.g., "CBT101INT"
+ *   - Session codes (module): "{CourseCode}M{ModuleNumber}{Type}" e.g., "CBT101M1L"
+ *     - Type: L (Lesson) or P (Practice)
+ *
+ * Design Patterns:
+ *   - String Parsing: Uses regex pattern matching to extract module number
+ *     and session type from session codes.
+ *   - Formatting: String interpolation for display output.
+ *   - Map/Dictionary: SESSION_TYPE_MAP translates single-char type codes
+ *     to human-readable labels (L -> "Lesson", P -> "Practice").
+ *
+ * Consumed By:
+ *   Course screens and listening history UI to display course metadata.
+ * ============================================================
  */
 
+/**
+ * Session type discriminator: Lesson or Practice.
+ */
 type SessionType = 'L' | 'P';
 
+/**
+ * Map: single-char session type to display label.
+ *
+ * Used in parseSessionCode to convert 'L' -> 'Lesson', 'P' -> 'Practice'.
+ */
 const SESSION_TYPE_MAP: Record<SessionType, string> = {
   L: 'Lesson',
   P: 'Practice',
@@ -74,12 +99,23 @@ export function parseSessionCode(sessionCode: string, courseCode: string): strin
  * formatCourseCode("CBT101") // "CBT 101"
  * formatCourseCode("ACT201") // "ACT 201"
  */
+/**
+ * Format a course code for display.
+ *
+ * Inserts a space between the prefix and number for readability.
+ * Example: "CBT101" -> "CBT 101"
+ *
+ * Regex breakdown: (\D+)(\d+) matches letters followed by digits.
+ * Replacement: $1 $2 inserts a space between captured groups.
+ *
+ * @param courseCode - The course code (e.g., "CBT101", "ACT201")
+ * @returns Formatted string with space before digits (e.g., "CBT 101")
+ */
 export function formatCourseCode(courseCode: string): string {
   if (!courseCode) {
     return '';
   }
-  
-  // Insert space before the first digit
+
   return courseCode.replace(/(\D+)(\d+)/, '$1 $2');
 }
 

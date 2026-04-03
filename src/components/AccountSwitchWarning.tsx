@@ -1,3 +1,30 @@
+/**
+ * ============================================================
+ * AccountSwitchWarning.tsx — Account Switch Confirmation (Modal Pattern)
+ * ============================================================
+ *
+ * Architectural Role:
+ *   Warns the user before executing an account switch that originated from
+ *   a credential collision. This is the second confirmation layer in the
+ *   multi-step authentication state machine. It emphasizes data loss risk.
+ *
+ * Design Patterns:
+ *   - Modal Pattern: Transient confirmation dialog
+ *   - State Machine: Part of the credential collision flow:
+ *     1. Collision error -> CredentialCollisionModal
+ *     2. "Sign in to other" -> This AccountSwitchWarning
+ *     3. Confirm -> execute actual account switch
+ *   - Gatekeeper: Requires explicit confirmation before proceeding
+ *
+ * Key Dependencies:
+ *   - useTheme (style injection)
+ *   - useSafeAreaInsets (notch-aware layout)
+ *
+ * Consumed By:
+ *   AccountPromptModal as the second step of account switching
+ * ============================================================
+ */
+
 import React, { useMemo, useState } from "react";
 import {
   View,
@@ -18,6 +45,19 @@ interface AccountSwitchWarningProps {
   onConfirmSwitch: () => Promise<void>;
 }
 
+/**
+ * AccountSwitchWarning — Secondary confirmation before account switch.
+ *
+ * This warning modal is shown as a confirmation gate when a user has
+ * a credential collision and chooses to sign into the other account.
+ * It warns them about data loss and requires explicit confirmation
+ * before executing the actual account switch operation.
+ *
+ * This is part of a defensive confirmation chain:
+ *   1. CredentialCollisionModal: "This email is registered elsewhere"
+ *   2. AccountSwitchWarning (this): "Confirm you understand the consequences"
+ *   3. Actual switch: signInWithPendingCredential in AccountPromptModal
+ */
 export function AccountSwitchWarning({
   visible,
   onClose,
@@ -26,8 +66,13 @@ export function AccountSwitchWarning({
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+  // --- Loading state during account switch execution ---
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Handles the confirmation: executes the account switch and closes modal.
+   * Wraps the parent callback with loading state and error handling.
+   */
   const handleConfirm = async () => {
     setIsLoading(true);
     try {
@@ -49,7 +94,7 @@ export function AccountSwitchWarning({
     >
       <View style={styles.overlay}>
         <View style={[styles.container, { paddingBottom: insets.bottom + 24 }]}>
-          {/* Warning Icon */}
+          {/* Warning Icon: Alert symbol */}
           <View style={styles.iconContainer}>
             <Ionicons
               name="warning-outline"
@@ -61,13 +106,22 @@ export function AccountSwitchWarning({
           {/* Title */}
           <Text style={styles.title}>Switch Accounts?</Text>
 
-          {/* Description */}
+          {/*
+            --- Description: Highlights data loss risk ---
+            This is crucial information: switching accounts means losing
+            access to the current account's data (favorites, history, etc.)
+            unless they're synced or backed up. This prevents accidental loss.
+          */}
           <Text style={styles.description}>
             If you switch accounts, you may not see data from your current
             account unless it's backed up or synced.
           </Text>
 
-          {/* Warning note */}
+          {/*
+            --- Information Note: Specifics about what transfers ---
+            Clarifies that favorites, history, and preferences are tied to
+            the specific account and won't follow the user to the new account.
+          */}
           <View style={styles.warningNote}>
             <Ionicons
               name="information-circle-outline"
@@ -80,7 +134,12 @@ export function AccountSwitchWarning({
             </Text>
           </View>
 
-          {/* Switch Account button */}
+          {/*
+            --- Confirm Button: Proceed with account switch ---
+            Warning color (orange/red) to emphasize destructive nature.
+            After confirmation, the parent executes signInWithPendingCredential
+            to complete the account switch.
+          */}
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
@@ -97,7 +156,7 @@ export function AccountSwitchWarning({
             )}
           </Pressable>
 
-          {/* Cancel button */}
+          {/* Cancel: Return without switching */}
           <Pressable
             style={({ pressed }) => [
               styles.cancelButton,
@@ -114,8 +173,14 @@ export function AccountSwitchWarning({
   );
 }
 
+/**
+ * createStyles — Theme-aware stylesheet factory.
+ *
+ * Memoized to ensure style object stability across renders.
+ */
 const createStyles = (theme: Theme, isDark: boolean) =>
   StyleSheet.create({
+    // --- Semi-transparent overlay covering screen ---
     overlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.6)",
@@ -123,6 +188,7 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       alignItems: "center",
       padding: 24,
     },
+    // --- Centered modal card with elevation ---
     container: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.xl,

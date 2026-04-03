@@ -1,3 +1,34 @@
+/**
+ * ============================================================
+ * SleepTimerPicker.tsx — Sleep Timer Duration Selector (Modal Pattern)
+ * ============================================================
+ *
+ * Architectural Role:
+ *   Provides a modal UI for starting a new sleep timer or managing
+ *   an existing one. When a timer is active, shows remaining time and
+ *   extend/cancel buttons. When no timer is active, shows preset duration
+ *   options for the user to select from.
+ *
+ * Design Patterns:
+ *   - Modal Pattern: Bottom-sheet style modal for timer management
+ *   - State Machine: Two distinct UI states:
+ *     1. Active: Shows timer display, extend/cancel actions
+ *     2. Inactive: Shows preset duration selection and start button
+ *   - Strategy Pattern: PRESET_DURATIONS provides predefined options
+ *     to reduce user input burden (vs. free-form time entry)
+ *   - Observer Pattern: useSleepTimer subscribes to global timer state
+ *     via context, re-renders reactively when remaining time changes
+ *
+ * Key Dependencies:
+ *   - useSleepTimer (context hook for timer state and actions)
+ *   - formatTimerDisplay (utility for MM:SS formatting)
+ *   - useTheme (style injection)
+ *
+ * Consumed By:
+ *   Sleep/meditation content screens with sleep timer affordances
+ * ============================================================
+ */
+
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -18,7 +49,13 @@ interface SleepTimerPickerProps {
   onClose: () => void;
 }
 
-// Preset durations in minutes
+/**
+ * Preset duration options in minutes.
+ *
+ * Provides common sleep timer durations to avoid forcing users to
+ * enter custom times. These are typical durations for meditation
+ * and sleep content.
+ */
 const PRESET_DURATIONS = [
   { label: '5 min', minutes: 5 },
   { label: '10 min', minutes: 10 },
@@ -30,16 +67,40 @@ const PRESET_DURATIONS = [
   { label: '2 hours', minutes: 120 },
 ];
 
+/**
+ * SleepTimerPicker — Modal for sleep timer selection and management.
+ *
+ * This component uses the useSleepTimer context hook to synchronize with
+ * global timer state. It presents two distinct UIs:
+ *
+ *   1. When isActive: Shows running timer, extend buttons, and cancel
+ *   2. When !isActive: Shows preset duration selection and start button
+ *
+ * The selectedMinutes local state tracks which duration the user has tapped
+ * in the duration list (before starting). This is separate from the global
+ * timer state managed by useSleepTimer.
+ */
 export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  // --- Global timer state from context: isActive, remainingSeconds ---
   const { isActive, remainingSeconds, startTimer, cancelTimer, extendTimer } = useSleepTimer();
+  // --- Local state: tracks which preset duration is selected in the UI ---
   const [selectedMinutes, setSelectedMinutes] = useState<number | null>(null);
 
+  /**
+   * Selects a duration from the preset list.
+   * Updates local state; actual timer starts when handleStartTimer is called.
+   */
   const handleSelectDuration = (minutes: number) => {
     setSelectedMinutes(minutes);
   };
 
+  /**
+   * Starts the timer with the selected duration.
+   * Converts minutes to seconds (startTimer expects seconds).
+   * Resets local selection state and closes the modal.
+   */
   const handleStartTimer = () => {
     if (selectedMinutes) {
       startTimer(selectedMinutes * 60);
@@ -48,11 +109,20 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
     }
   };
 
+  /**
+   * Cancels an active timer and closes this modal.
+   * Delegates to useSleepTimer.cancelTimer to update global state.
+   */
   const handleCancelTimer = () => {
     cancelTimer();
     onClose();
   };
 
+  /**
+   * Extends the current running timer by the specified minutes.
+   * Useful for "just 5 more minutes" interactions.
+   * Takes minutes, converts to seconds for the context API.
+   */
   const handleExtend = (minutes: number) => {
     extendTimer(minutes * 60);
   };
@@ -65,9 +135,10 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
+        {/* Dismissible backdrop: tapping outside the modal closes it */}
         <Pressable style={styles.backdrop} onPress={onClose} />
         <View style={styles.container}>
-          {/* Header */}
+          {/* Header: Title + Close button */}
           <View style={styles.header}>
             <Text style={styles.title}>Sleep Timer</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -75,17 +146,25 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Active Timer Display */}
+          {/*
+            --- State Machine: Two distinct UI modes ---
+            1. isActive: Display active timer with extend/cancel actions
+            2. !isActive: Display duration selection form with start button
+          */}
+
+          {/* --- Mode 1: Active Timer Display --- */}
           {isActive && (
             <View style={styles.activeTimerSection}>
+              {/* Large timer display showing remaining time */}
               <View style={styles.timerDisplay}>
                 <Ionicons name="timer-outline" size={24} color="#7DAFB4" />
                 <Text style={styles.timerText}>{formatTimerDisplay(remainingSeconds)}</Text>
               </View>
               <Text style={styles.timerSubtext}>Time remaining</Text>
-              
-              {/* Extend / Cancel buttons */}
+
+              {/* Quick extend and cancel actions */}
               <View style={styles.activeActions}>
+                {/* Extend button: adds 5 minutes */}
                 <TouchableOpacity
                   style={styles.extendButton}
                   onPress={() => handleExtend(5)}
@@ -93,6 +172,8 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
                   <Ionicons name="add" size={18} color="white" />
                   <Text style={styles.extendButtonText}>+5 min</Text>
                 </TouchableOpacity>
+
+                {/* Extend button: adds 15 minutes */}
                 <TouchableOpacity
                   style={styles.extendButton}
                   onPress={() => handleExtend(15)}
@@ -100,6 +181,8 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
                   <Ionicons name="add" size={18} color="white" />
                   <Text style={styles.extendButtonText}>+15 min</Text>
                 </TouchableOpacity>
+
+                {/* Cancel: Stops the active timer */}
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={handleCancelTimer}
@@ -110,11 +193,13 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
             </View>
           )}
 
-          {/* Duration Selection (when no timer active) */}
+          {/* --- Mode 2: Duration Selection (no timer active) --- */}
           {!isActive && (
             <>
               <Text style={styles.sectionLabel}>Select Duration</Text>
-              <ScrollView 
+
+              {/* Scrollable list of preset durations */}
+              <ScrollView
                 style={styles.durationList}
                 contentContainerStyle={styles.durationListContent}
                 showsVerticalScrollIndicator={false}
@@ -124,6 +209,7 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
                     key={duration.minutes}
                     style={[
                       styles.durationItem,
+                      // --- Highlight selected duration with border and color change ---
                       selectedMinutes === duration.minutes && styles.durationItemSelected,
                     ]}
                     onPress={() => handleSelectDuration(duration.minutes)}
@@ -131,11 +217,13 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
                     <Text
                       style={[
                         styles.durationText,
+                        // --- Text brightens when this duration is selected ---
                         selectedMinutes === duration.minutes && styles.durationTextSelected,
                       ]}
                     >
                       {duration.label}
                     </Text>
+                    {/* Checkmark icon appears when selected */}
                     {selectedMinutes === duration.minutes && (
                       <Ionicons name="checkmark-circle" size={22} color="#7DAFB4" />
                     )}
@@ -143,10 +231,16 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
                 ))}
               </ScrollView>
 
-              {/* Start Button */}
+              {/*
+                --- Start Button: Disabled until a duration is selected ---
+                This enforces client-side validation: user must select a duration
+                before the button becomes active. Visual feedback (opacity) indicates
+                the disabled state.
+              */}
               <TouchableOpacity
                 style={[
                   styles.startButton,
+                  // --- Disabled opacity when no duration selected ---
                   !selectedMinutes && styles.startButtonDisabled,
                 ]}
                 onPress={handleStartTimer}
@@ -165,16 +259,26 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
   );
 }
 
+/**
+ * createStyles — Stylesheet factory for dark-mode sleep timer UI.
+ *
+ * The sleep timer has a specialized dark background (#1A1D29) distinct from
+ * the main theme colors. This memoized factory ensures style stability across
+ * re-renders while accommodating theme changes.
+ */
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    // --- Flex container for bottom-sheet positioning ---
     overlay: {
       flex: 1,
       justifyContent: 'flex-end',
     },
+    // --- Transparent dark overlay covering entire screen ---
     backdrop: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
+    // --- Bottom-sheet container with dark background ---
     container: {
       backgroundColor: '#1A1D29',
       borderTopLeftRadius: 24,

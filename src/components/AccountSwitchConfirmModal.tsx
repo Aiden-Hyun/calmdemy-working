@@ -1,3 +1,27 @@
+/**
+ * ============================================================
+ * AccountSwitchConfirmModal.tsx — Account Switch Confirmation (Modal Pattern)
+ * ============================================================
+ *
+ * Architectural Role:
+ *   Final confirmation modal before switching the user's active account.
+ *   Warns about data consequences (subscription won't transfer) and requires
+ *   explicit user confirmation. Part of the authentication state machine.
+ *
+ * Design Patterns:
+ *   - Modal Pattern: Transient dialog requiring user decision
+ *   - Adapter Pattern: getProviderDisplayName translates provider IDs to UX strings
+ *   - Gatekeeper: Requires explicit confirmation before destructive account switch
+ *
+ * Key Dependencies:
+ *   - useTheme (style injection)
+ *   - useSafeAreaInsets (safe area padding for notch-aware layout)
+ *
+ * Consumed By:
+ *   CredentialCollisionModal as a follow-up confirmation step
+ * ============================================================
+ */
+
 import React, { useMemo, useState } from "react";
 import {
   View,
@@ -20,6 +44,10 @@ interface AccountSwitchConfirmModalProps {
   onCancel: () => void;
 }
 
+/**
+ * Adapter: Maps Firebase provider ID to display name.
+ * Centralizes the mapping to prevent duplication across auth modals.
+ */
 const getProviderDisplayName = (
   providerType: "google.com" | "apple.com" | "password"
 ): string => {
@@ -35,6 +63,17 @@ const getProviderDisplayName = (
   }
 };
 
+/**
+ * AccountSwitchConfirmModal — Final confirmation before account switch.
+ *
+ * This modal is shown after the user selects "Sign in to other account"
+ * from the collision modal. It's a final sanity check warning them that:
+ *   - The current guest account will be replaced
+ *   - Subscription will remain on the guest account and won't transfer
+ *
+ * Only after explicit "Switch Account" confirmation does the parent
+ * actually execute signInWithPendingCredential.
+ */
 export function AccountSwitchConfirmModal({
   visible,
   email,
@@ -45,11 +84,18 @@ export function AccountSwitchConfirmModal({
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+  // --- Loading state while executing the account switch ---
   const [isLoading, setIsLoading] = useState(false);
 
+  // --- Derive display strings from provider and email ---
   const providerName = getProviderDisplayName(providerType);
   const displayAccount = email || `this ${providerName} account`;
 
+  /**
+   * Handles confirmation: wraps parent callback with loading state.
+   * The actual account switch (signInWithPendingCredential) is managed
+   * by the parent component.
+   */
   const handleConfirm = async () => {
     setIsLoading(true);
     try {
@@ -68,7 +114,7 @@ export function AccountSwitchConfirmModal({
     >
       <View style={styles.overlay}>
         <View style={[styles.container, { paddingBottom: insets.bottom + 24 }]}>
-          {/* Warning Icon */}
+          {/* Warning Icon: Swap symbol to indicate account change */}
           <View style={styles.iconContainer}>
             <Ionicons
               name="swap-horizontal-outline"
@@ -80,13 +126,20 @@ export function AccountSwitchConfirmModal({
           {/* Title */}
           <Text style={styles.title}>Switch Account?</Text>
 
-          {/* Description */}
+          {/* Description: Highlight the target account */}
           <Text style={styles.description}>
             Sign in to{" "}
             <Text style={styles.emailHighlight}>{displayAccount}</Text>?
           </Text>
 
-          {/* Warning note */}
+          {/*
+            --- Warning Note: Critical information about consequences ---
+            This is a destructive operation. The warning emphasizes that:
+            1. Current guest account will be replaced (lost)
+            2. Subscription stays on guest account (won't transfer)
+
+            This is critical UX to prevent accidental data loss.
+          */}
           <View style={styles.warningNote}>
             <Ionicons
               name="warning-outline"
@@ -99,7 +152,11 @@ export function AccountSwitchConfirmModal({
             </Text>
           </View>
 
-          {/* Switch Account button */}
+          {/*
+            --- Primary Action: Confirm account switch ---
+            Warning color (orange/red) emphasizes the destructive nature.
+            Shows spinner while executing the switch operation.
+          */}
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
@@ -116,7 +173,7 @@ export function AccountSwitchConfirmModal({
             )}
           </Pressable>
 
-          {/* Cancel button */}
+          {/* Cancel: Abort the account switch, return to previous modal */}
           <Pressable
             style={({ pressed }) => [
               styles.cancelButton,
@@ -133,8 +190,14 @@ export function AccountSwitchConfirmModal({
   );
 }
 
+/**
+ * createStyles — Theme-aware stylesheet factory.
+ *
+ * Memoized to ensure style object stability across renders.
+ */
 const createStyles = (theme: Theme, isDark: boolean) =>
   StyleSheet.create({
+    // --- Semi-transparent overlay covering screen ---
     overlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.6)",
@@ -142,6 +205,7 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       alignItems: "center",
       padding: 24,
     },
+    // --- Centered modal card ---
     container: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.xl,

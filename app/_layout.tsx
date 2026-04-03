@@ -45,14 +45,21 @@ function RootNavigator() {
   return (
     <Stack screenOptions={screenOptions}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="login" 
-          options={{ 
+        <Stack.Screen
+          name="onboarding"
+          options={{
+            headerShown: false,
+            animation: 'none',
+          }}
+        />
+        <Stack.Screen
+          name="login"
+          options={{
             title: 'Welcome',
             headerShown: false,
             animation: 'none',
             presentation: 'fullScreenModal',
-          }} 
+          }}
         />
         <Stack.Screen 
           name="meditation/[id]" 

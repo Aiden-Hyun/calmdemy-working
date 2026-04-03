@@ -1,19 +1,47 @@
 /**
- * Image file mapping for content thumbnails
- * 
- * Maps image identifiers (used in seed data) to remote URLs
- * These are high-quality, royalty-free images for meditation content.
- * 
- * Categories:
- * - Meditation: Calm nature, abstract gradients, zen imagery
- * - Breathing: Abstract patterns, sky, air themes
- * - Sleep: Night scenes, dreamy landscapes, cozy imagery
- * - Programs: Structured journey imagery
+ * ============================================================
+ * imageFiles.ts — Image Asset Registry & Display Helpers
+ * ============================================================
+ *
+ * Architectural Role:
+ *   This module maps logical image keys (e.g., "meditation_morning_sunrise")
+ *   to Unsplash photo URLs. Provides a single source of truth for all
+ *   content thumbnail imagery, allowing easy swaps of image sources or URLs.
+ *
+ * Design Patterns:
+ *   - Registry: imageFiles map and ImageFileKey type provide type-safe
+ *     image key access throughout the app.
+ *   - CDN: Unsplash URLs are pre-optimized with query parameters
+ *     (w=800 for width, q=80 for quality) to balance quality vs. bandwidth.
+ *   - Fallback: getImageUrl() returns a placeholder if the key doesn't exist,
+ *     preventing crashes from unknown image keys (Graceful Degradation).
+ *
+ * Image Categories:
+ *   - Meditation: Calm landscapes, zen nature, abstract peace
+ *   - Breathing: Skies, air, light themes
+ *   - Sleep: Night scenes, stars, dreamy imagery
+ *   - Programs: Journey-themed, progression imagery
+ *
+ * Source: All images are from Unsplash (royalty-free, high-quality stock).
+ * Format: https://images.unsplash.com/photo-{id}?w=800&q=80
+ *   - w=800: resize to 800px width
+ *   - q=80: JPEG quality at 80 (good balance of quality vs. file size)
+ *
+ * Consumed By:
+ *   All content screens that display meditation, breathing, sleep cards.
+ *   Listening history UI to show content thumbnails.
+ * ============================================================
  */
 
-// Using Unsplash for high-quality, free-to-use images
-// Format: https://images.unsplash.com/photo-{id}?w=800&q=80
-
+/**
+ * Image asset registry: logical keys to Unsplash URLs.
+ *
+ * Each key maps to a high-quality, royalty-free image optimized for
+ * meditation app aesthetic (calm, natural, centered).
+ *
+ * All URLs include optimization params (width=800, quality=80) to
+ * balance image quality with mobile bandwidth.
+ */
 export const imageFiles: Record<string, string> = {
   // ==================== MEDITATION IMAGES ====================
   
@@ -133,12 +161,27 @@ export const imageFiles: Record<string, string> = {
   program_advanced: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
 };
 
-// Type for valid image file keys
+/**
+ * Type: valid image file keys (discriminated union from imageFiles).
+ *
+ * Provides type safety when using image keys:
+ *   const key: ImageFileKey = 'meditation_sunrise'; // OK
+ *   const key: ImageFileKey = 'invalid_key'; // Type error
+ */
 export type ImageFileKey = keyof typeof imageFiles;
 
 /**
- * Get image URL by key
- * Returns a placeholder if key not found
+ * Get image URL by key (Graceful Degradation).
+ *
+ * Looks up the key in imageFiles. If the key doesn't exist,
+ * returns a default/placeholder image instead of throwing an error.
+ * This prevents app crashes from missing image keys.
+ *
+ * Screens should treat the returned URL as ready to display;
+ * error handling happens transparently.
+ *
+ * @param key - Image file key (e.g., "meditation_morning_sunrise")
+ * @returns Unsplash URL for the image, or default placeholder if not found
  */
 export function getImageUrl(key: string): string {
   return imageFiles[key] || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80';

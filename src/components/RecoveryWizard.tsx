@@ -19,14 +19,70 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { Theme } from "../theme";
 
+/**
+ * ============================================================
+ * RecoveryWizard.tsx — Multi-Step Subscription Recovery Flow
+ * ============================================================
+ *
+ * Architectural Role:
+ *   A multi-step modal (State Machine) that guides users through subscription recovery.
+ *   Triggered when the device has an active subscription but the current app account
+ *   doesn't own it. The wizard lets users sign in with the account that has the
+ *   subscription, proving they own it.
+ *
+ * Design Patterns:
+ *   - State Machine: The wizard has four discrete steps (methods, email_login, tips, success),
+ *     each with completely different UI. Navigation is explicit: each render function
+ *     returns JSX for that step only. Transitions are controlled by setStep().
+ *   - Render Props / Step Rendering: Instead of a monolithic JSX tree with deep
+ *     conditional nesting, separate functions (renderMethods, renderEmailLogin, etc.)
+ *     handle each step's UI. This keeps logic organized and step-specific.
+ *   - Controlled Component: Form inputs (email, password, showPassword toggle) are
+ *     local state. The component syncs with auth hooks (signInWithGoogle, signInWithApple, etc.)
+ *     and checks isPremium to determine success.
+ *
+ * Key Dependencies:
+ *   - useAuth() hook: Multiple sign-in methods (Google, Apple, email/password)
+ *   - useSubscription(): Subscription state (isPremium), checkSubscriptionStatus()
+ *   - useSafeAreaInsets: Safe area awareness for notch/status bar insets
+ *
+ * Consumed By:
+ *   PaywallModal (when user taps "Recover My Subscription" or restore fails)
+ *
+ * Note on Success Criteria:
+ *   After any sign-in attempt, the wizard calls checkSubscriptionStatus() to update
+ *   the subscription state. If isPremium becomes true, it shows the success screen.
+ *   If isPremium is still false, it shows an error ("Not the Right Account").
+ *   This is an observable verification: the subscription state is the source of truth.
+ * ============================================================
+ */
+
 interface RecoveryWizardProps {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
+/**
+ * State machine: The wizard navigates through these discrete steps.
+ * Each step has its own UI rendered by a dedicated function.
+ */
 type RecoveryStep = "methods" | "email_login" | "tips" | "success";
 
+/**
+ * RecoveryWizard — Multi-step modal for subscription account recovery.
+ *
+ * This wizard helps users sign in with the account that owns their subscription
+ * (discovered on the device via App Store/Play Store). The four steps are:
+ *   1. "methods" — Choose sign-in method (Apple, Google, or Email)
+ *   2. "email_login" — Email/password form (only if user chooses email)
+ *   3. "tips" — Recovery tips (help if user forgot their account details)
+ *   4. "success" — Confirmation screen (shown after successful sign-in)
+ *
+ * @param visible - Whether the wizard modal is shown
+ * @param onClose - Callback to close the wizard and reset step to "methods"
+ * @param onSuccess - Optional callback when recovery succeeds (user is now premium)
+ */
 export function RecoveryWizard({
   visible,
   onClose,
@@ -44,25 +100,41 @@ export function RecoveryWizard({
   } = useAuth();
   const { isPremium, checkSubscriptionStatus } = useSubscription();
 
+  // State machine: tracks current wizard step
   const [step, setStep] = useState<RecoveryStep>("methods");
+
+  // Loading flag during async sign-in (prevents double-taps)
   const [isLoading, setIsLoading] = useState(false);
+
+  // Form state: email and password for email sign-in method
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Password visibility toggle (eye icon to show/hide password)
   const [showPassword, setShowPassword] = useState(false);
 
+  /**
+   * Handles Google Sign-In flow.
+   * 1. Initiates Google authentication (via useAuth hook)
+   * 2. Checks if subscription is now active (Observer pattern: check isPremium)
+   * 3. If successful (isPremium = true), shows success screen
+   * 4. If unsuccessful, shows error alert (anti-enumeration: generic message)
+   *
+   * The delay before checking isPremium allows state to propagate from Firebase.
+   */
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
       await signInWithGoogle();
-      // Check if premium is now active
+      // Check if premium is now active (sync subscription state from Firebase)
       await checkSubscriptionStatus();
-      // Small delay to let state update
+      // Small delay to let React state update from checkSubscriptionStatus
       setTimeout(() => {
         if (isPremium) {
           setStep("success");
           onSuccess?.();
         } else {
-          // Still not premium, show message
+          // Still not premium, show message (this is the wrong account)
           Alert.alert(
             "Not the Right Account",
             "This account doesn't have an active subscription. Try another sign-in method."
@@ -70,13 +142,17 @@ export function RecoveryWizard({
         }
       }, 500);
     } catch (error: any) {
-      // Use generic message for anti-enumeration
+      // Use generic message for anti-enumeration (prevent user enumeration attacks)
       Alert.alert("Unable to Sign In", "Please try again or use another method.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /**
+   * Handles Apple Sign-In flow (same pattern as Google, optimized for iOS).
+   * Checks isAppleSignInAvailable before offering this option.
+   */
   const handleAppleSignIn = async () => {
     setIsLoading(true);
     try {
@@ -100,6 +176,15 @@ export function RecoveryWizard({
     }
   };
 
+  /**
+   * Handles email/password sign-in flow.
+   * 1. Validates form (both email and password are required)
+   * 2. Calls signIn with trimmed credentials
+   * 3. Checks subscription status and navigates to success if premium
+   * 4. Shows error if wrong account (no active subscription)
+   * 5. Generic error message for anti-enumeration (prevents attacker from
+   *    discovering valid account emails via timing/error patterns)
+   */
   const handleEmailSignIn = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Required", "Please enter your email and password.");
@@ -121,13 +206,19 @@ export function RecoveryWizard({
         }
       }, 500);
     } catch (error: any) {
-      // Generic message for anti-enumeration
+      // Generic message for anti-enumeration (prevent user enumeration attacks)
       Alert.alert("Unable to Sign In", "Please check your credentials and try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /**
+   * Initiates password reset flow.
+   * Validates that email is entered, then sends password reset link.
+   * Uses anti-enumeration message: always says "check your email" even if
+   * account doesn't exist, preventing attackers from enumerating users.
+   */
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       Alert.alert("Email Required", "Please enter your email address first.");
@@ -141,7 +232,7 @@ export function RecoveryWizard({
         "If an account exists with this email, you'll receive a password reset link."
       );
     } catch {
-      // Generic message for anti-enumeration
+      // Generic message for anti-enumeration (same as success case)
       Alert.alert(
         "Check Your Email",
         "If an account exists with this email, you'll receive a password reset link."
@@ -151,6 +242,11 @@ export function RecoveryWizard({
     }
   };
 
+  /**
+   * Opens the device's mail app with a pre-filled support email.
+   * Used when user needs manual intervention (e.g., account recovery issues).
+   * This is a Facade pattern: hides the complexity of URI encoding and deep linking.
+   */
   const handleContactSupport = () => {
     const subject = encodeURIComponent("Subscription Recovery Help");
     const body = encodeURIComponent(
@@ -159,6 +255,11 @@ export function RecoveryWizard({
     Linking.openURL(`mailto:support@calmnest.app?subject=${subject}&body=${body}`);
   };
 
+  /**
+   * Closes the wizard and resets all state.
+   * Called when user taps the close button.
+   * Resets step to "methods" so next time wizard opens, it starts from the beginning.
+   */
   const handleClose = () => {
     setStep("methods");
     setEmail("");
@@ -166,17 +267,30 @@ export function RecoveryWizard({
     onClose();
   };
 
+  /**
+   * Final success handler (called on the success screen).
+   * Closes the wizard and triggers the parent's onSuccess callback.
+   */
   const handleSuccess = () => {
     handleClose();
     onSuccess?.();
   };
 
+  /**
+   * Render Step 1: Sign-in Methods
+   * Displays the available sign-in options: Apple (if available), Google, and Email.
+   * Also shows help buttons for users who forgot their account details.
+   *
+   * This is the entry point to the recovery flow. Users choose which account
+   * they signed up with, then proceed to that method's form.
+   */
   const renderMethods = () => (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
+      {/* --- Render Phase 1: Header (Context) --- */}
+      {/* Explains why the wizard exists: device has subscription, but current account doesn't */}
       <View style={styles.header}>
         <View style={styles.iconContainer}>
           <Ionicons name="key-outline" size={32} color={theme.colors.primary} />
@@ -188,10 +302,10 @@ export function RecoveryWizard({
         </Text>
       </View>
 
-      {/* Sign-in methods */}
+      {/* --- Render Phase 2: Sign-in Methods (Three options + Help) --- */}
       <Text style={styles.sectionTitle}>Try signing in with:</Text>
 
-      {/* Apple Sign In */}
+      {/* Apple Sign In — Only shown if iOS and device supports Sign in with Apple */}
       {isAppleSignInAvailable && (
         <Pressable
           style={({ pressed }) => [
@@ -209,7 +323,7 @@ export function RecoveryWizard({
         </Pressable>
       )}
 
-      {/* Google Sign In */}
+      {/* Google Sign In — Cross-platform option */}
       <Pressable
         style={({ pressed }) => [
           styles.methodButton,
@@ -225,7 +339,7 @@ export function RecoveryWizard({
         {isLoading && <ActivityIndicator size="small" color={theme.colors.primary} />}
       </Pressable>
 
-      {/* Email Sign In */}
+      {/* Email Sign In — Navigates to email_login step for form entry */}
       <Pressable
         style={({ pressed }) => [
           styles.methodButton,
@@ -240,10 +354,11 @@ export function RecoveryWizard({
         <Text style={styles.methodText}>Sign in with Email</Text>
       </Pressable>
 
-      {/* Divider */}
+      {/* Visual separator between sign-in methods and help options */}
       <View style={styles.divider} />
 
-      {/* Help options */}
+      {/* Help options for stuck users */}
+      {/* Recovery Tips — Links to tips step (recovery tips, platform-specific help) */}
       <Pressable
         style={({ pressed }) => [
           styles.helpButton,
@@ -259,6 +374,7 @@ export function RecoveryWizard({
         <Text style={styles.helpButtonText}>Don't remember your login?</Text>
       </Pressable>
 
+      {/* Contact Support — Opens email client with pre-filled message */}
       <Pressable
         style={({ pressed }) => [
           styles.helpButton,
@@ -276,13 +392,21 @@ export function RecoveryWizard({
     </ScrollView>
   );
 
+  /**
+   * Render Step 2: Email Login Form
+   * Allows users to enter email and password. Form inputs are controlled
+   * (value from state, onChange updates state). Includes a password visibility
+   * toggle and a "Forgot Password" link.
+   *
+   * This step is shown when the user taps "Sign in with Email" from the methods screen.
+   */
   const renderEmailLogin = () => (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Back button */}
+      {/* Back button — Returns to methods step (State Machine transition) */}
       <Pressable
         style={styles.backButton}
         onPress={() => setStep("methods")}
@@ -295,7 +419,10 @@ export function RecoveryWizard({
         Enter the email and password you used to create your account.
       </Text>
 
-      {/* Email input */}
+      {/* --- Render Phase 1: Form Inputs (Controlled Component Pattern) --- */}
+      {/* Email and password are controlled inputs: value from state, onChange handlers update state */}
+
+      {/* Email input — Controlled input with icon and keyboard-optimized settings */}
       <View style={styles.inputContainer}>
         <Ionicons
           name="mail-outline"
@@ -316,7 +443,7 @@ export function RecoveryWizard({
         />
       </View>
 
-      {/* Password input */}
+      {/* Password input — Controlled input with show/hide toggle (eye icon) */}
       <View style={styles.inputContainer}>
         <Ionicons
           name="lock-closed-outline"
@@ -334,6 +461,7 @@ export function RecoveryWizard({
           autoCapitalize="none"
           editable={!isLoading}
         />
+        {/* Password visibility toggle — Shows/hides password based on showPassword state */}
         <Pressable onPress={() => setShowPassword(!showPassword)}>
           <Ionicons
             name={showPassword ? "eye-off-outline" : "eye-outline"}
@@ -343,7 +471,8 @@ export function RecoveryWizard({
         </Pressable>
       </View>
 
-      {/* Forgot password */}
+      {/* --- Render Phase 2: Forgot Password Link --- */}
+      {/* Initiates password reset flow. User must enter email first. */}
       <Pressable
         style={styles.forgotPassword}
         onPress={handleForgotPassword}
@@ -352,7 +481,8 @@ export function RecoveryWizard({
         <Text style={styles.forgotPasswordText}>Forgot password?</Text>
       </Pressable>
 
-      {/* Sign in button */}
+      {/* --- Render Phase 3: Sign In Button (Primary Action) --- */}
+      {/* Disabled while loading to prevent double-taps. Shows spinner during async sign-in. */}
       <Pressable
         style={({ pressed }) => [
           styles.primaryButton,
@@ -371,12 +501,20 @@ export function RecoveryWizard({
     </ScrollView>
   );
 
+  /**
+   * Render Step 3: Recovery Tips
+   * Helpful suggestions for users who forgot their account details.
+   * Tips are platform-aware (Apple tip only on iOS, generic Google/Email tips for all).
+   * Last tip includes a "Contact Support" link for manual account recovery.
+   *
+   * This step is shown when the user taps "Don't remember your login?" from the methods screen.
+   */
   const renderTips = () => (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      {/* Back button */}
+      {/* Back button — Returns to methods step (State Machine transition) */}
       <Pressable
         style={styles.backButton}
         onPress={() => setStep("methods")}
@@ -386,7 +524,9 @@ export function RecoveryWizard({
 
       <Text style={styles.title}>Recovery Tips</Text>
 
-      {/* Apple tip */}
+      {/* --- Tip 1: Apple Sign in with Apple (iOS only) --- */}
+      {/* Platform-specific tip: Only shown on iOS. Explains how to check
+          if the user created an account with "Hide My Email" (Apple's privacy feature). */}
       {Platform.OS === "ios" && (
         <View style={styles.tipCard}>
           <View style={[styles.tipIcon, { backgroundColor: "#000" }]}>
@@ -402,7 +542,9 @@ export function RecoveryWizard({
         </View>
       )}
 
-      {/* Google tip */}
+      {/* --- Tip 2: Multiple Google Accounts --- */}
+      {/* Cross-platform tip: Many users have multiple Google accounts. Suggests
+          trying each one until finding the right account. */}
       <View style={styles.tipCard}>
         <View style={[styles.tipIcon, { backgroundColor: "#4285F4" }]}>
           <Ionicons name="logo-google" size={20} color="#fff" />
@@ -416,7 +558,9 @@ export function RecoveryWizard({
         </View>
       </View>
 
-      {/* Email tip */}
+      {/* --- Tip 3: Forgot Email Address --- */}
+      {/* Email-based recovery tip: Suggests checking email inbox for messages from Calmdemy
+          to figure out which email address was used for signup. */}
       <View style={styles.tipCard}>
         <View style={[styles.tipIcon, { backgroundColor: theme.colors.primary }]}>
           <Ionicons name="mail-outline" size={20} color="#fff" />
@@ -430,7 +574,9 @@ export function RecoveryWizard({
         </View>
       </View>
 
-      {/* Contact support */}
+      {/* --- Tip 4: Manual Support --- */}
+      {/* Final fallback: If all tips failed, contact support. Includes an inline button
+          that opens the mail app with a pre-filled recovery request. */}
       <View style={styles.tipCard}>
         <View style={[styles.tipIcon, { backgroundColor: theme.colors.textMuted }]}>
           <Ionicons name="chatbubble-outline" size={20} color="#fff" />
@@ -451,8 +597,19 @@ export function RecoveryWizard({
     </ScrollView>
   );
 
+  /**
+   * Render Step 4: Success Screen
+   * Shown after successful sign-in and subscription verification.
+   * Displays a confirmation message and a "Continue" button to close the wizard.
+   *
+   * This step is reached when:
+   *   1. User signs in with any method (Apple, Google, Email)
+   *   2. checkSubscriptionStatus() is called and isPremium becomes true
+   * This proves the user owns the subscription on this device.
+   */
   const renderSuccess = () => (
     <View style={styles.successContainer}>
+      {/* Success icon — Green checkmark with full-screen centering */}
       <View style={styles.successIcon}>
         <Ionicons name="checkmark-circle" size={64} color={theme.colors.success} />
       </View>
@@ -461,6 +618,7 @@ export function RecoveryWizard({
         This is the account linked to your subscription. You now have full
         access to all premium content.
       </Text>
+      {/* Continue button — Closes the wizard and triggers onSuccess callback */}
       <Pressable
         style={({ pressed }) => [
           styles.primaryButton,
@@ -481,11 +639,15 @@ export function RecoveryWizard({
       onRequestClose={handleClose}
     >
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Close button */}
+        {/* Close button — Available on all steps, resets state and closes modal */}
         <Pressable style={styles.closeButton} onPress={handleClose}>
           <Ionicons name="close" size={24} color={theme.colors.textLight} />
         </Pressable>
 
+        {/* --- State Machine: Render current step based on `step` state --- */}
+        {/* Each render function handles a complete UI for its step.
+            Conditional rendering ensures only one step is visible at a time.
+            This pattern keeps each step's logic encapsulated and easy to maintain. */}
         {step === "methods" && renderMethods()}
         {step === "email_login" && renderEmailLogin()}
         {step === "tips" && renderTips()}

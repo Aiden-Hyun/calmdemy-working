@@ -1,14 +1,69 @@
 /**
- * Seed content for Firestore
+ * ============================================================
+ * seedContent.ts — Fixture Data for Firestore (Seed/Fixture Pattern)
+ * ============================================================
  *
- * This file contains all the sample content that will be uploaded to Firestore.
- * Audio files reference local assets via the audio_file key.
+ * Architectural Role:
+ *   This module contains all fixture/seed data for the app: guided meditations,
+ *   sleep sounds, white noise, music, albums, bedtime stories, and courses.
+ *   It serves two purposes:
+ *     1. Bootstrap data for development and testing (loaded into Firestore on app init)
+ *     2. Reference data for understanding the app's content model
+ *
+ * Design Patterns:
+ *   - Fixture Data / Seeding: Instead of hard-coding test data in tests or manually
+ *     uploading content to Firestore, all content is declared here as TypeScript
+ *     objects. This approach (known as Fixture Data or Seeding) makes it trivial
+ *     to repopulate Firestore during development and ensures consistency across
+ *     environments. The data is deterministic and version-controlled.
+ *   - Data Model Definition: Each interface (SeedMeditation, SeedSleepSound, etc.)
+ *     doubles as both a TypeScript type and documentation of the Firestore schema
+ *     for that content type.
+ *
+ * Content Structure:
+ *   This file organizes content into logical sections:
+ *     - Guided Meditations (40): Organized by category (gratitude, stress, focus, etc.)
+ *     - Sleep Sounds (20): Ambient audio for sleep (rain, ocean, forest, etc.)
+ *     - White Noise (6): Static noise variants
+ *     - Music (15): Instrumental and ambient music tracks
+ *     - Bedtime Stories (8): Narrated stories for sleep
+ *     - ASMR (10): Sensory-triggering audio content
+ *     - Albums (8): Curated collections of related sounds
+ *     - Series (10): Multi-episode episodic content
+ *     - Courses/Programs (10): Structured multi-day learning paths
+ *
+ * Audio File References:
+ *   The audio_file field in each content object is a reference to a local asset
+ *   in the assets/ directory. During seed data upload (via a Cloud Function or
+ *   app init script), these audio files are uploaded to Cloud Storage, and their
+ *   signed URLs replace the audio_file values in Firestore. This approach keeps
+ *   the seed file lightweight and allows audio assets to be versioned separately.
+ *
+ * Usage in Development:
+ *   This data is loaded into Firestore during app initialization or through a
+ *   dedicated seeding script (e.g., `npm run seed-firestore`). Once loaded, the
+ *   app queries Firestore normally — the seed data is indistinguishable from
+ *   user-generated or admin-curated content.
+ *
+ * Maintenance:
+ *   When adding new meditations, sounds, or courses: (1) add the object here
+ *   with the correct audio_file reference, (2) run the seeding script to upload
+ *   to Firestore, (3) add the audio file to assets/audio/ with the matching name.
+ * ============================================================
  */
 
 import { MeditationCategory } from "../types";
 
 // ==================== GUIDED MEDITATIONS (40 entries) ====================
 
+/**
+ * TypeScript interface defining the shape of a meditation object.
+ *
+ * Each meditation has metadata (title, category, duration, difficulty) and
+ * references to audio and image assets. The audio_file field is resolved to
+ * a signed Cloud Storage URL by the app's seeding/initialization process.
+ * The isFree flag determines whether users need a subscription to access it.
+ */
 export interface SeedMeditation {
   title: string;
   description: string;
@@ -560,6 +615,18 @@ export const seedMeditations: SeedMeditation[] = [
 ];
 
 // ==================== BREATHING EXERCISES (20 entries) ====================
+/**
+ * Breathing exercises are structured, guided practices with specific timing patterns.
+ *
+ * Each exercise defines an inhale-hold-exhale-hold pattern (measured in seconds)
+ * that guides the user through a complete breath cycle. The app uses these timings
+ * to provide audio and visual cues, helping users maintain the correct rhythm.
+ *
+ * Examples: Box Breathing (4-4-4-4, used by Navy SEALs), 4-7-8 Relaxation
+ * (Dr. Weil's technique for sleep), and Alternate Nostril (yoga practice).
+ *
+ * Data Model: Seed fixture containing breathing exercise metadata and breath timings.
+ */
 
 export interface SeedBreathingExercise {
   title: string;
@@ -862,6 +929,15 @@ export const seedBreathingExercises: SeedBreathingExercise[] = [
 ];
 
 // ==================== BEDTIME STORIES ====================
+/**
+ * Bedtime stories are longer-form narrated content designed to help users fall asleep.
+ *
+ * Stories are categorized by genre (fairytale, nature, fantasy, thriller, etc.)
+ * and feature different narrators. The narrative pacing and soothing voices are
+ * carefully chosen to facilitate sleep without stimulating the mind.
+ *
+ * Data Model: Seed fixture containing story metadata and narrator/category info.
+ */
 
 export interface SeedBedtimeStory {
   title: string;
@@ -889,6 +965,15 @@ export const seedBedtimeStories: SeedBedtimeStory[] = [
 ];
 
 // ==================== DAILY QUOTES (35 entries) ====================
+/**
+ * Daily quotes are inspirational aphorisms displayed on the home screen.
+ *
+ * The app rotates through these quotes, showing a different one each day.
+ * Quotes are categorized by theme (motivation, mindfulness, self-compassion, etc.)
+ * and sourced from diverse wisdom traditions and contemporary teachers.
+ *
+ * Data Model: Seed fixture containing quote text, author, and category for curation.
+ */
 
 export interface SeedQuote {
   text: string;
@@ -1102,6 +1187,16 @@ export const seedQuotes: SeedQuote[] = [
 ];
 
 // ==================== MEDITATION PROGRAMS (10 entries) ====================
+/**
+ * Meditation programs are structured, multi-day learning paths (courses/challenges).
+ *
+ * Programs like "Stress Less" (14 days) or "Better Sleep" (7 days) guide users
+ * through a curated sequence of meditations, building skills progressively.
+ * Programs are categorized by topic (stress, sleep, anxiety, etc.) and difficulty.
+ * The is_active flag determines whether the program is visible in the app.
+ *
+ * Data Model: Seed fixture containing program metadata, duration, and category.
+ */
 
 export interface SeedProgram {
   title: string;

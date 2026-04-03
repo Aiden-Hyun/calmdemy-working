@@ -1,3 +1,32 @@
+/**
+ * ============================================================
+ * ReportModal.tsx — Content Issue Reporting (Modal Pattern)
+ * ============================================================
+ *
+ * Architectural Role:
+ *   Implements a comprehensive modal for reporting content issues
+ *   (audio problems, wrong content, inappropriate material, etc.).
+ *   This integrates with the support/feedback pipeline to surface
+ *   user-reported issues to the content team.
+ *
+ * Design Patterns:
+ *   - Modal Pattern: Full-screen sheet modal with keyboard handling
+ *   - State Machine: Transitions between form-filling and success states
+ *   - Controlled Component: Category selection and description text are
+ *     controlled via React state (selectedCategory, description)
+ *   - Strategy Pattern: Different report categories with distinct icons
+ *     and descriptions help users accurately classify their issue
+ *
+ * Key Dependencies:
+ *   - useTheme (style injection)
+ *   - KeyboardAvoidingView (accommodates soft keyboard on mobile)
+ *   - ReportCategory type (discriminated union of report types)
+ *
+ * Consumed By:
+ *   Content players and library screens that need feedback mechanisms
+ * ============================================================
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -16,13 +45,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../theme';
 import { ReportCategory } from '../types';
 
-interface ReportModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSubmit: (category: ReportCategory, description?: string) => Promise<boolean>;
-  contentTitle?: string;
-}
-
+/**
+ * Report category definitions with localized UI strings.
+ *
+ * This constant list drives the category selection UI. Each entry specifies
+ * the category ID (used in the data submission), human-readable label, icon,
+ * and description to help users choose the right category.
+ */
 const REPORT_CATEGORIES: { id: ReportCategory; label: string; icon: keyof typeof Ionicons.glyphMap; description: string }[] = [
   {
     id: 'audio_issue',
@@ -50,6 +79,25 @@ const REPORT_CATEGORIES: { id: ReportCategory; label: string; icon: keyof typeof
   },
 ];
 
+/**
+ * ReportModal — Content issue reporting form.
+ *
+ * This modal collects issue reports from users with:
+ *   1. Category selection (required, single-choice)
+ *   2. Optional freeform description (max 500 chars)
+ *   3. Optimistic success feedback (1.5s message before closing)
+ *
+ * State Management:
+ *   - selectedCategory: Currently selected report category (null = none selected)
+ *   - description: Freeform text describing the issue
+ *   - isSubmitting: Loading state while awaiting the onSubmit promise
+ *   - showSuccess: Displays success message and auto-closes after timeout
+ *
+ * This implements a Client-Side Validation + Optimistic Feedback pattern:
+ * the submit button is disabled until a category is selected, and the
+ * success message provides immediate feedback even if the server response
+ * is slow.
+ */
 export function ReportModal({
   visible,
   onClose,
@@ -58,19 +106,30 @@ export function ReportModal({
 }: ReportModalProps) {
   const { theme, isDark } = useTheme();
   const styles = React.useMemo(() => createStyles(theme, isDark), [theme, isDark]);
-  
+
+  // --- Controlled Component: currently selected category (null = unselected) ---
   const [selectedCategory, setSelectedCategory] = useState<ReportCategory | null>(null);
+  // --- Controlled Component: optional description text ---
   const [description, setDescription] = useState('');
+  // --- Loading state during form submission ---
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // --- Success state: triggers celebratory message and auto-close ---
   const [showSuccess, setShowSuccess] = useState(false);
 
+  /**
+   * Submits the report to the parent (typically a ViewModel).
+   * Implements optimistic feedback: shows success message for 1.5 seconds
+   * before auto-closing, giving the user immediate positive feedback
+   * regardless of server latency.
+   */
   const handleSubmit = async () => {
     if (!selectedCategory) return;
-    
+
     setIsSubmitting(true);
     const success = await onSubmit(selectedCategory, description.trim() || undefined);
     setIsSubmitting(false);
-    
+
+    // --- Optimistic Feedback Pattern: show success immediately, auto-close after delay ---
     if (success) {
       setShowSuccess(true);
       setTimeout(() => {
@@ -82,6 +141,12 @@ export function ReportModal({
     }
   };
 
+  /**
+   * Handles modal dismissal: resets all form state to defaults.
+   *
+   * This is a cleanup function ensuring that if the user closes and reopens
+   * the modal, it starts fresh (not pre-filled with their last report's data).
+   */
   const handleClose = () => {
     setSelectedCategory(null);
     setDescription('');
@@ -96,12 +161,18 @@ export function ReportModal({
       transparent
       onRequestClose={handleClose}
     >
+      {/*
+        --- KeyboardAvoidingView: Platform-aware keyboard handling ---
+        On iOS, uses 'padding' to shift content up when keyboard appears.
+        On Android, uses 'height' to resize container. This prevents the
+        soft keyboard from covering form inputs and maintains usability.
+      */}
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.container}>
-          {/* Header */}
+          {/* Header: Title + close button */}
           <View style={styles.header}>
             <Text style={styles.title}>Report Issue</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
@@ -109,12 +180,18 @@ export function ReportModal({
             </TouchableOpacity>
           </View>
 
+          {/* Optional: Show the content being reported on */}
           {contentTitle && (
             <Text style={styles.subtitle} numberOfLines={1}>
               {contentTitle}
             </Text>
           )}
 
+          {/*
+            --- State Machine: Two distinct UI states ---
+            1. showSuccess = true: Display success celebration message
+            2. showSuccess = false: Display category selection form
+          */}
           {showSuccess ? (
             <View style={styles.successContainer}>
               <Ionicons name="checkmark-circle" size={64} color="#4CAF50" />
@@ -123,21 +200,25 @@ export function ReportModal({
             </View>
           ) : (
             <>
-              {/* Category Options */}
+              {/* --- Form Content: Category selection and optional description --- */}
               <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+                {/* Category Options: Single-select radio-button-like UX */}
                 <View style={styles.categoriesContainer}>
                   {REPORT_CATEGORIES.map((category) => (
                     <TouchableOpacity
                       key={category.id}
                       style={[
                         styles.categoryOption,
+                        // --- Highlight selected category with border and background color ---
                         selectedCategory === category.id && styles.categoryOptionSelected,
                       ]}
                       onPress={() => setSelectedCategory(category.id)}
                       activeOpacity={0.7}
                     >
+                      {/* Icon: Changes color based on selection state */}
                       <View style={[
                         styles.categoryIcon,
+                        // --- Icon background inverts color when selected ---
                         selectedCategory === category.id && styles.categoryIconSelected,
                       ]}>
                         <Ionicons
@@ -146,9 +227,12 @@ export function ReportModal({
                           color={selectedCategory === category.id ? 'white' : theme.colors.textSecondary}
                         />
                       </View>
+
+                      {/* Label + Description: Guides user to select correct category */}
                       <View style={styles.categoryContent}>
                         <Text style={[
                           styles.categoryLabel,
+                          // --- Label turns primary color when selected ---
                           selectedCategory === category.id && styles.categoryLabelSelected,
                         ]}>
                           {category.label}
@@ -157,6 +241,8 @@ export function ReportModal({
                           {category.description}
                         </Text>
                       </View>
+
+                      {/* Checkmark: Visual confirmation of selection */}
                       {selectedCategory === category.id && (
                         <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
                       )}
@@ -164,7 +250,7 @@ export function ReportModal({
                   ))}
                 </View>
 
-                {/* Optional Description */}
+                {/* Optional Description Field: Free-form user input */}
                 <View style={styles.descriptionContainer}>
                   <Text style={styles.descriptionLabel}>Additional Details (Optional)</Text>
                   <TextInput
@@ -178,12 +264,14 @@ export function ReportModal({
                     maxLength={500}
                     textAlignVertical="top"
                   />
+                  {/* Character counter: Helps user understand limit */}
                   <Text style={styles.charCount}>{description.length}/500</Text>
                 </View>
               </ScrollView>
 
-              {/* Actions */}
+              {/* --- Action Buttons --- */}
               <View style={styles.actions}>
+                {/* Cancel: Dismisses without submitting */}
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={handleClose}
@@ -191,9 +279,17 @@ export function ReportModal({
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
+
+                {/*
+                  --- Submit: Disabled until category is selected ---
+                  This enforces client-side validation: form is invalid until
+                  the required category field has a value. Visual feedback
+                  (opacity) shows the disabled state.
+                */}
                 <TouchableOpacity
                   style={[
                     styles.submitButton,
+                    // --- Disabled state: visually muted ---
                     !selectedCategory && styles.submitButtonDisabled,
                   ]}
                   onPress={handleSubmit}
@@ -215,13 +311,21 @@ export function ReportModal({
   );
 }
 
+/**
+ * createStyles — Stylesheet factory for theme-aware styling.
+ *
+ * Memoized to ensure stable object reference across renders,
+ * preventing unnecessary style updates in child components.
+ */
 const createStyles = (theme: Theme, isDark: boolean) =>
   StyleSheet.create({
+    // --- Semi-transparent overlay + flex container for bottom-sheet layout ---
     overlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
       justifyContent: 'flex-end',
     },
+    // --- Bottom-sheet container: rounded top corners, max height 80% ---
     container: {
       backgroundColor: theme.colors.surface,
       borderTopLeftRadius: 24,

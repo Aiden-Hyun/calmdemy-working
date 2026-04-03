@@ -23,12 +23,58 @@ import { AccountPromptModal } from "./AccountPromptModal";
 import { RecoveryWizard } from "./RecoveryWizard";
 import { Theme } from "../theme";
 
+/**
+ * ============================================================
+ * PaywallModal.tsx — Subscription Purchase & Recovery UI
+ * ============================================================
+ *
+ * Architectural Role:
+ *   A modal that presents subscription options and handles purchase/recovery flows.
+ *   This is a Compound Component: it orchestrates multiple sub-modals (AccountPromptModal,
+ *   RecoveryWizard) based on user actions. It implements a State Machine with
+ *   conditional UI rendering for different scenarios:
+ *   1. Standard purchase flow (choose plan → purchase)
+ *   2. Recovery flow (Apple ID has subscription → restore/recover)
+ *   3. Loading state (fetching offerings)
+ *   4. Error state (no plans available)
+ *
+ * Design Patterns:
+ *   - State Machine: shouldShowRecoveryFirst determines which UI path to show.
+ *     This is a Gatekeeper pattern — if Apple ID has a subscription, guide the
+ *     user to recovery before showing purchase options.
+ *   - Controlled Component: Package selection state (selectedPackage) is local
+ *     but synchronous with purchase/restore actions.
+ *   - Compound Component: AccountPromptModal and RecoveryWizard are child modals
+ *     triggered by parent actions. This implements the Inversion of Control pattern:
+ *     the parent modal controls when child modals appear based on flow state.
+ *
+ * Key Dependencies:
+ *   - useSubscription() hook: RevenueCat integration (offerings, purchase, restore)
+ *   - useAuth() hook: Check if user is anonymous
+ *   - SubscriptionContext: Subscription state and actions
+ *
+ * Consumed By:
+ *   Premium gate screens, paywall entry points (when user taps "Unlock Premium")
+ *
+ * Note on Recovery-First UI:
+ *   If hasActiveSubscriptionOnAppleId() is true AND user is not premium,
+ *   the modal shows a special recovery prompt first. This guides the user to
+ *   recover their lost subscription before offering new purchase options.
+ *   This is a Gatekeeper checkpoint: recovery takes priority over new purchases.
+ * ============================================================
+ */
+
 interface PaywallModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
+/**
+ * Feature list for the premium tier — displayed as benefits in the modal.
+ * This is a data-driven presentation: if the feature list changes, just update
+ * this array; the component renders it generically.
+ */
 const FEATURES = [
   { icon: "infinite-outline", text: "Unlimited meditations & courses" },
   { icon: "moon-outline", text: "All sleep content & stories" },
@@ -37,6 +83,19 @@ const FEATURES = [
   { icon: "sparkles-outline", text: "New content weekly" },
 ];
 
+/**
+ * PaywallModal — Modal UI for subscription purchase and recovery.
+ *
+ * This modal handles multiple flows:
+ *   1. Standard purchase: User browses plans and subscribes
+ *   2. Recovery-first: User's Apple ID has a subscription → guide them to recover it first
+ *   3. Account prompt: After purchase, anonymous users are prompted to create an account
+ *   4. Loading/error states: Offerings not yet loaded, or no plans available
+ *
+ * @param visible - Whether the modal is shown
+ * @param onClose - Callback to close the modal (does not trigger success flow)
+ * @param onSuccess - Optional callback when purchase/recovery succeeds
+ */
 export function PaywallModal({
   visible,
   onClose,
@@ -54,36 +113,57 @@ export function PaywallModal({
     hasActiveSubscriptionOnAppleId,
     isPremium,
   } = useSubscription();
-  const [selectedPackage, setSelectedPackage] =
-    useState<PurchasesPackage | null>(null);
+
+  // Local UI state: which package is currently selected
+  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
+
+  // Loading flag during purchase/restore action (prevents double-taps)
   const [isPurchasing, setIsPurchasing] = useState(false);
+
+  // Child modal visibility flags (Compound Component pattern)
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [showRecoveryWizard, setShowRecoveryWizard] = useState(false);
 
-  // Check if we should show recovery-first UI
-  // Apple ID has active subscription but current account doesn't own it
-  const shouldShowRecoveryFirst =
-    hasActiveSubscriptionOnAppleId() && !isPremium;
+  /**
+   * --- State Machine: Recovery-First UI Gate (Gatekeeper Pattern) ---
+   * If the user's Apple ID (device) has an active subscription, but the current
+   * app account doesn't own it, we show a recovery prompt first.
+   * This prevents the user from purchasing a new plan when they already have one.
+   * Only show standard purchase UI if NOT in recovery-first mode.
+   */
+  const shouldShowRecoveryFirst = hasActiveSubscriptionOnAppleId() && !isPremium;
 
-  // Get monthly and annual packages from offering
-  // Try standard package identifiers first, then fall back to searching availablePackages
-  const monthlyPackage = currentOffering?.monthly || 
-    currentOffering?.availablePackages?.find(p => 
-      p.identifier === '$rc_monthly' || 
+  /**
+   * Extract monthly and annual packages from RevenueCat offering.
+   * RevenueCat may provide them in standard properties (monthly, annual) or
+   * we may need to search availablePackages by identifier. Try both patterns
+   * for compatibility with different RevenueCat configurations.
+   */
+  const monthlyPackage = currentOffering?.monthly ||
+    currentOffering?.availablePackages?.find(p =>
+      p.identifier === '$rc_monthly' ||
       p.identifier.toLowerCase().includes('monthly')
     );
-  const annualPackage = currentOffering?.annual || 
-    currentOffering?.availablePackages?.find(p => 
-      p.identifier === '$rc_annual' || 
+  const annualPackage = currentOffering?.annual ||
+    currentOffering?.availablePackages?.find(p =>
+      p.identifier === '$rc_annual' ||
       p.identifier.toLowerCase().includes('annual') ||
       p.identifier.toLowerCase().includes('yearly')
     );
-  
-  // Check if offerings are available
+
+  // Check if offerings are available (at least one plan to display)
   const hasPackages = monthlyPackage || annualPackage;
+
+  // Loading state: offerings still being fetched from RevenueCat
   const isLoadingOfferings = isLoading && !currentOffering;
 
-  // Calculate savings for annual
+  /**
+   * Calculate annual savings percentage as a marketing incentive.
+   * Shows savings badge on annual plan if monthly * 12 > annual price.
+   * Memoized because it depends on mutable package objects from RevenueCat.
+   *
+   * @returns Savings percentage (e.g., 17) or null if no savings or packages unavailable
+   */
   const annualSavings = useMemo(() => {
     if (!monthlyPackage || !annualPackage) return null;
     const monthlyPrice = monthlyPackage.product.price;
@@ -93,6 +173,12 @@ export function PaywallModal({
     return savings > 0 ? savings : null;
   }, [monthlyPackage, annualPackage]);
 
+  /**
+   * Initiates a purchase of the selected package via RevenueCat.
+   * On success, triggers the onSuccess callback and potentially shows
+   * an account creation prompt for anonymous users (Compound Component).
+   * Loading state prevents double-taps during the async purchase.
+   */
   const handlePurchase = async () => {
     if (!selectedPackage) return;
 
@@ -103,33 +189,53 @@ export function PaywallModal({
     if (success) {
       onSuccess?.();
       onClose();
-      // Show account prompt for anonymous users after successful purchase
+      // Compound Component: Show account prompt modal for anonymous users after successful purchase
+      // This guides them to create a permanent account to protect their subscription
       if (isAnonymous) {
         setShowAccountPrompt(true);
       }
     }
   };
 
+  /**
+   * Attempts to restore purchases from the App Store/Play Store.
+   * If successful, the user's existing subscription is claimed by the current account.
+   * If a subscription exists on the device but belongs to a different account,
+   * restorePurchasesWithRecovery returns showRecoveryWizard=true, triggering the
+   * recovery flow (Compound Component).
+   */
   const handleRestore = async () => {
     setIsPurchasing(true);
     const result = await restorePurchasesWithRecovery();
     setIsPurchasing(false);
 
     if (result.success) {
+      // Subscription successfully restored to current account
       onSuccess?.();
       onClose();
     } else if (result.showRecoveryWizard) {
-      // Subscription exists on Apple ID but belongs to different account
+      // Subscription exists on Apple ID but belongs to different account.
+      // Show recovery wizard to help user sign in with the correct account.
+      // This is a State Machine transition: restore failed → recovery flow.
       setShowRecoveryWizard(true);
     }
   };
 
+  /**
+   * Callback when the recovery wizard succeeds.
+   * Triggers the success callback and closes both modals.
+   */
   const handleRecoverySuccess = () => {
     setShowRecoveryWizard(false);
     onSuccess?.();
     onClose();
   };
 
+  /**
+   * Opens the device's mail app with a pre-filled support email.
+   * Used for users who need manual intervention (e.g., account recovery issues).
+   * This is a Facade pattern: hides the complexity of URI encoding and deep linking.
+   */
   const handleContactSupport = () => {
     const subject = encodeURIComponent("Subscription Help");
     const body = encodeURIComponent(
@@ -140,6 +246,10 @@ export function PaywallModal({
     );
   };
 
+  /**
+   * Formats a package's price into a display string (e.g., "$9.99/month").
+   * Handles undefined packages gracefully by returning "...".
+   */
   const formatPrice = (pkg: PurchasesPackage | undefined, period: string) => {
     if (!pkg) return "...";
     return `${pkg.product.priceString}/${period}`;
@@ -153,7 +263,7 @@ export function PaywallModal({
       onRequestClose={onClose}
     >
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Close button */}
+        {/* Close button — Available in all states */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <Ionicons name="close" size={24} color={theme.colors.textLight} />
         </TouchableOpacity>
@@ -162,7 +272,8 @@ export function PaywallModal({
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Hero */}
+          {/* --- Render Phase 1: Hero Section (Always shown) --- */}
+          {/* Icon, title, and benefit description to set context for the offer */}
           <View style={styles.hero}>
             <LinearGradient
               colors={[theme.colors.primaryLight, theme.colors.primary]}
@@ -176,7 +287,8 @@ export function PaywallModal({
             </Text>
           </View>
 
-          {/* Features */}
+          {/* --- Render Phase 2: Feature List (Always shown) --- */}
+          {/* Data-driven list of premium benefits. Rendered generically from FEATURES array. */}
           <View style={styles.featuresContainer}>
             {FEATURES.map((feature, index) => (
               <View key={index} style={styles.featureRow}>
@@ -192,7 +304,10 @@ export function PaywallModal({
             ))}
           </View>
 
-          {/* Recovery-first UI when Apple ID has subscription but current account doesn't */}
+          {/* --- Render Phase 3: State Machine — Recovery-First Path (Gatekeeper) --- */}
+          {/* If Apple ID has an active subscription but current account doesn't,
+              show recovery prompt instead of purchase options. This is the Gatekeeper
+              pattern: recovery takes priority to prevent duplicate purchases. */}
           {shouldShowRecoveryFirst && (
             <View style={styles.recoveryContainer}>
               <View style={styles.recoveryIconContainer}>
@@ -228,10 +343,14 @@ export function PaywallModal({
             </View>
           )}
 
-          {/* Subscription options - only show if not in recovery-first mode */}
+          {/* --- Render Phase 4: State Machine — Purchase Path (Non-Recovery) --- */}
+          {/* Only show purchase options if NOT in recovery-first mode.
+              This section has three sub-states: loading, error, or display packages.
+              Each sub-state is mutually exclusive (only one renders at a time). */}
           {!shouldShowRecoveryFirst && (
           <View style={styles.optionsContainer}>
-            {/* Loading State */}
+            {/* --- Sub-State 1: Loading State --- */}
+            {/* Offerings are being fetched from RevenueCat (async operation) */}
             {isLoadingOfferings && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -241,7 +360,9 @@ export function PaywallModal({
               </View>
             )}
 
-            {/* No Products Available */}
+            {/* --- Sub-State 2: Error State (No Plans Available) --- */}
+            {/* RevenueCat returned no plans, or they failed to load.
+                Show error message and allow user to close or retry (contact support). */}
             {!isLoadingOfferings && !hasPackages && (
               <View style={styles.errorContainer}>
                 <Ionicons name="alert-circle-outline" size={48} color={theme.colors.textMuted} />
@@ -249,7 +370,7 @@ export function PaywallModal({
                 <Text style={styles.errorText}>
                   Subscription plans are temporarily unavailable. Please try again later or contact support.
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.retryButton}
                   onPress={onClose}
                 >
@@ -258,7 +379,8 @@ export function PaywallModal({
               </View>
             )}
 
-            {/* Annual */}
+            {/* --- Sub-State 3: Success State (Plans Available) --- */}
+            {/* Annual Plan Option */}
             {annualPackage && (
               <Pressable
                 style={[
@@ -268,6 +390,7 @@ export function PaywallModal({
                 ]}
                 onPress={() => setSelectedPackage(annualPackage)}
               >
+                {/* Savings badge — only shown if annual is cheaper than monthly*12 (marketing incentive) */}
                 {annualSavings && (
                   <View style={styles.savingsBadge}>
                     <Text style={styles.savingsText}>Save {annualSavings}%</Text>
@@ -279,11 +402,13 @@ export function PaywallModal({
                     <Text style={styles.optionPrice}>
                       {formatPrice(annualPackage, "year")}
                     </Text>
+                    {/* Trial period badge — visual affordance for the trial offer */}
                     <View style={styles.trialBadge}>
                       <Ionicons name="gift-outline" size={12} color={theme.colors.primary} />
                       <Text style={styles.trialText}>14-day free trial</Text>
                     </View>
                   </View>
+                  {/* Radio button — visual selection indicator */}
                   <View
                     style={[
                       styles.radioOuter,
@@ -291,6 +416,7 @@ export function PaywallModal({
                         styles.radioOuterSelected,
                     ]}
                   >
+                    {/* Inner dot only rendered when this plan is selected */}
                     {selectedPackage?.identifier === annualPackage.identifier && (
                       <View style={styles.radioInner} />
                     )}
@@ -299,7 +425,7 @@ export function PaywallModal({
               </Pressable>
             )}
 
-            {/* Monthly */}
+            {/* Monthly Plan Option */}
             {monthlyPackage && (
               <Pressable
                 style={[
@@ -338,12 +464,14 @@ export function PaywallModal({
           )}
         </ScrollView>
 
-        {/* Bottom actions - different for recovery-first mode */}
+        {/* --- Render Phase 5: Bottom Action Buttons --- */}
+        {/* Different button layout for recovery-first vs. purchase flow */}
         <View
           style={[styles.bottomContainer, { paddingBottom: insets.bottom + 16 }]}
         >
           {!shouldShowRecoveryFirst && (
             <>
+              {/* Purchase Button — Only enabled if a plan is selected and not already purchasing */}
               <TouchableOpacity
                 style={[
                   styles.purchaseButton,
@@ -362,6 +490,7 @@ export function PaywallModal({
                 )}
               </TouchableOpacity>
 
+              {/* Restore Button — Allows users who already purchased to restore on a new device */}
               <TouchableOpacity
                 style={styles.restoreButton}
                 onPress={handleRestore}
@@ -370,6 +499,7 @@ export function PaywallModal({
                 <Text style={styles.restoreButtonText}>Restore Purchases</Text>
               </TouchableOpacity>
 
+              {/* Legal Text — Subscription terms */}
               <Text style={styles.legalText}>
                 Cancel anytime. Subscription auto-renews until cancelled.
               </Text>
@@ -378,13 +508,22 @@ export function PaywallModal({
         </View>
       </View>
 
-      {/* Account prompt for anonymous users after purchase */}
+      {/* --- Compound Component: Account Prompt Modal --- */}
+      {/* Shown to anonymous users after successful purchase.
+          This prompts them to create an account to protect their subscription.
+          Child modal is controlled by this parent's state. */}
       <AccountPromptModal
         visible={showAccountPrompt}
         onClose={() => setShowAccountPrompt(false)}
       />
 
-      {/* Recovery wizard for subscription recovery */}
+      {/* --- Compound Component: Recovery Wizard Modal --- */}
+      {/* Shown when:
+          1. User taps "Recover My Subscription" in recovery-first UI
+          2. Or when "Restore Purchases" finds a subscription on device
+             but belonging to a different account.
+          This is a multi-step modal that guides the user to sign in
+          with the correct account. Child modal is controlled by parent. */}
       <RecoveryWizard
         visible={showRecoveryWizard}
         onClose={() => setShowRecoveryWizard(false)}

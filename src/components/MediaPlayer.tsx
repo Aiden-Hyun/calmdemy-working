@@ -29,10 +29,69 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNetwork } from '../contexts/NetworkContext';
 import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading } from '../services/downloadService';
 
+/**
+ * ============================================================
+ * MediaPlayer.tsx — Full-Featured Audio Player Screen
+ * ============================================================
+ *
+ * Architectural Role:
+ *   A comprehensive media player screen that orchestrates audio playback,
+ *   background sound selection, sleep timer scheduling, and progress tracking.
+ *   This is a complex Compound Component and State Machine:
+ *   - Compound Component: Composes AudioPlayer, BackgroundAudioPicker, SleepTimerPicker,
+ *     and ReportModal as child modals controlled by parent state.
+ *   - State Machine: Manages multiple independent concerns (playback, background audio,
+ *     sleep timer, downloads, progress tracking), each with their own state and lifecycle.
+ *   - Facade Pattern: Abstracts the complexity of audio player setup (managing useAudioPlayer,
+ *     useBackgroundAudio hooks, Firestore progress saves, download management).
+ *
+ * Design Patterns:
+ *   - Repository Pattern: All Firestore operations (progress tracking, saving/loading)
+ *     are abstracted behind firestoreService functions. The component never directly
+ *     queries Firestore; it calls service functions.
+ *   - Observer Pattern: Multiple listeners in useEffect hooks:
+ *     1. Audio player state (isPlaying, progress, duration)
+ *     2. Background audio state (isEnabled, selectedSoundId)
+ *     3. Sleep timer state (isActive, isFadingOut)
+ *     4. Window dimensions (for responsive sizing)
+ *   - Auto-Play State Machine: Tracks whether auto-play was already triggered
+ *     (hasTriggeredAutoPlay ref) to prevent double-firing when progress updates.
+ *   - Playback Progress Tracking: Uses debouncing (saves every 10 seconds or on pause)
+ *     and cleanup (clears progress on completion) for efficient Firestore operations.
+ *   - Responsive Design: Adjusts artwork size, font sizes, and padding based on
+ *     screen width breakpoints (small, medium, large).
+ *
+ * Key Dependencies:
+ *   - useAudioPlayer() hook: Audio playback state and controls (from underlying audio engine)
+ *   - useBackgroundAudio() hook: Background sleep sound management
+ *   - useSleepTimer() hook: Sleep timer state and fade-out scheduling
+ *   - useAuth() hook: Current user ID for progress tracking
+ *   - useNetwork() hook: Offline detection (disables download feature)
+ *   - FirestoreService: Progress saving/loading, narrator/sound metadata fetching
+ *   - DownloadService: Download status checks and audio downloads
+ *
+ * Consumed By:
+ *   Any screen that wants to play audio (meditations, courses, sleep stories, etc.)
+ *
+ * Note on Lifecycle Management:
+ *   The component manages multiple async operations (fetching narrator photo, loading
+ *   saved sounds, restoring playback position) using refs to track completion (hasRestoredPosition,
+ *   lastSaveTime). This prevents duplicate operations and race conditions when content
+ *   ID changes during playback (e.g., skipping to next track).
+ * ============================================================
+ */
+
+// AsyncStorage key for persisting auto-play user preference
 const AUTOPLAY_KEY = 'calmdemy_autoplay_enabled';
 
+/**
+ * Props interface for the MediaPlayer component.
+ * This is a large prop interface because the component is a Facade that abstracts
+ * many concerns (audio playback, background audio, downloads, progress tracking, etc.).
+ * Props are organized into logical groups below.
+ */
 export interface MediaPlayerProps {
-  // Content info
+  // --- Content Metadata ---
   category: string;
   title: string;
   instructor?: string;
@@ -42,59 +101,71 @@ export interface MediaPlayerProps {
   durationMinutes: number;
   difficultyLevel?: string;
 
-  // Styling
+  // --- Visual Styling ---
   gradientColors: [string, string];
   artworkIcon: keyof typeof Ionicons.glyphMap;
   artworkThumbnailUrl?: string;
 
-  // State
+  // --- UI State (from parent) ---
   isFavorited: boolean;
   isLoading: boolean;
 
-  // Audio player state (from useAudioPlayer)
+  // --- Audio Player State (delegated to useAudioPlayer hook) ---
   audioPlayer: ReturnType<typeof useAudioPlayer>;
 
-  // Callbacks
+  // --- Essential Callbacks ---
   onBack: () => void;
   onToggleFavorite: () => void;
   onPlayPause: () => void;
 
-  // Optional loading text
+  // --- Optional UI Customization ---
   loadingText?: string;
-
-  // Optional footer content (e.g., sleep timer button)
   footerContent?: React.ReactNode;
 
-  // Enable background audio feature (default: true for meditations)
-  enableBackgroundAudio?: boolean;
+  // --- Feature Toggles ---
+  enableBackgroundAudio?: boolean; // default: true (meditations have sleep sounds)
 
-  // Previous/Next navigation (for collections like courses, series, albums)
+  // --- Navigation: Previous/Next Tracks (for playlists/courses/series) ---
   onPrevious?: () => void;
   onNext?: () => void;
   hasPrevious?: boolean;
   hasNext?: boolean;
 
-  // Content identification for progress tracking
+  // --- Content Identification (for progress tracking and downloads) ---
   contentId?: string;
   contentType?: string;
 
-  // Audio URL for download
-  audioUrl?: string;
-  
-  // Additional metadata for downloads
-  parentId?: string;
+  // --- Download Support ---
+  audioUrl?: string; // URL to download audio from
+  parentId?: string; // For organizing downloads (e.g., course ID)
   parentTitle?: string;
   audioPath?: string;
 
-  // Skip restoring saved position (e.g., when autoplay triggers next track)
-  skipRestore?: boolean;
+  // --- Auto-Play Control ---
+  skipRestore?: boolean; // Skip restoring saved position (when autoplay triggers next track)
 
-  // Rating and report
+  // --- User Engagement (Rating and Reporting) ---
   userRating?: RatingType | null;
   onRate?: (rating: RatingType) => Promise<RatingType | null>;
   onReport?: (category: ReportCategory, description?: string) => Promise<boolean>;
 }
 
+/**
+ * MediaPlayer — Full-featured audio player screen.
+ *
+ * This component is the main entry point for playing audio content (meditations, courses, sleep stories).
+ * It orchestrates multiple sub-systems:
+ *   1. Audio playback (via useAudioPlayer hook, delegated to parent)
+ *   2. Background sleep sounds (via useBackgroundAudio hook)
+ *   3. Sleep timer (via useSleepTimer hook, with fade-out support)
+ *   4. Playback progress tracking (Firestore, auto-save on pause and periodically)
+ *   5. Downloads (offline availability, via downloadService)
+ *   6. Child modals (background audio picker, sleep timer, report form)
+ *   7. Responsive sizing (adapts artwork and fonts to screen width)
+ *
+ * The component manages a large state tree covering independent concerns.
+ * See MediaPlayerProps documentation above for prop organization.
+ */
 export function MediaPlayer({
   category,
   title,
@@ -131,48 +202,67 @@ export function MediaPlayer({
   onRate,
   onReport,
 }: MediaPlayerProps) {
+  // --- Theme and Layout Setup ---
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const { isOffline } = useNetwork();
   const { width: screenWidth } = useWindowDimensions();
-  
-  // Responsive breakpoints
+
+  // --- Responsive Design: Breakpoints and Derived Values ---
+  // Adjust UI dimensions based on screen width for better experience on small devices
   const isSmallScreen = screenWidth < 375;
   const isMediumScreen = screenWidth >= 375 && screenWidth < 414;
-  
-  // Responsive values
+
+  // Responsive values: smaller on small screens, larger on iPad-sized screens
   const artworkSize = isSmallScreen ? 100 : isMediumScreen ? 120 : 140;
   const titleFontSize = isSmallScreen ? 22 : isMediumScreen ? 25 : 28;
   const artworkIconSize = isSmallScreen ? 48 : isMediumScreen ? 56 : 64;
   const contentPadding = isSmallScreen ? 12 : isMediumScreen ? 16 : 24;
   const sectionMargin = isSmallScreen ? 12 : isMediumScreen ? 16 : 24;
-  
+
+  // Theme-aware styles (memoized to prevent recreating on every render)
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  // --- Modal State (Child Modal Visibility Flags) ---
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [showSleepTimerPicker, setShowSleepTimerPicker] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+
+  // --- Background Sound State ---
+  // Caches the current background sound's Firestore data (title, icon, color, etc.)
   const [currentBackgroundSound, setCurrentBackgroundSound] = useState<FirestoreSleepSound | null>(null);
+
+  // --- Narrator Photo State ---
+  // Caches the instructor's photo URL (fetched from Firestore if not provided)
   const [narratorPhotoUrl, setNarratorPhotoUrl] = useState<string | null>(instructorPhotoUrl || null);
-  
-  // Auto-play state
+
+  // --- Auto-Play Feature ---
+  // User preference: whether to automatically play next track when current one completes
   const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
+  // Ref to track if auto-play was already triggered (prevents double-firing on multiple progress updates)
   const hasTriggeredAutoPlay = useRef(false);
 
-  // Download state
+  // --- Download Feature State ---
+  // Tracks whether this content is downloaded, downloading, and download progress percentage
   const [isDownloadedState, setIsDownloadedState] = useState(false);
   const [isDownloadingState, setIsDownloadingState] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
-  // Sleep timer state
-  const [showSleepTimerPicker, setShowSleepTimerPicker] = useState(false);
+  // --- Sleep Timer Integration ---
+  // Delegates sleep timer control to SleepTimerContext (manages its own state there)
   const sleepTimer = useSleepTimer();
 
-  // Report modal state
-  const [showReportModal, setShowReportModal] = useState(false);
+  // --- Playback Progress Tracking State ---
+  // Refs (not state) because these are implementation details that don't trigger re-renders
+  const lastSaveTime = useRef(0); // Timestamp of last Firestore save (for debouncing)
+  const hasRestoredPosition = useRef(false); // Flag to prevent restoring position multiple times
 
-  // Playback progress tracking
-  const lastSaveTime = useRef(0);
-  const hasRestoredPosition = useRef(false);
-
-  // Load auto-play preference from AsyncStorage
+  /**
+   * --- LIFECYCLE EFFECT 1: Load Auto-Play Preference ---
+   * On component mount, restore the user's auto-play setting from AsyncStorage.
+   * If no setting is stored, default to true (auto-play enabled).
+   * This gives users persistent control over auto-play behavior across app sessions.
+   */
   useEffect(() => {
     async function loadAutoPlayPreference() {
       try {
@@ -187,7 +277,12 @@ export function MediaPlayer({
     loadAutoPlayPreference();
   }, []);
 
-  // Check download status on mount and when contentId changes
+  /**
+   * --- LIFECYCLE EFFECT 2: Check Download Status ---
+   * When contentId changes (new content loaded), check if it's already downloaded.
+   * This determines whether to show the "Saved" button or the "Download" button.
+   * Runs on mount and whenever contentId changes.
+   */
   useEffect(() => {
     async function checkDownloadStatus() {
       if (!contentId) return;
@@ -198,13 +293,21 @@ export function MediaPlayer({
     checkDownloadStatus();
   }, [contentId]);
 
-  // Handle download
+  /**
+   * Initiates an audio download for offline playback.
+   * Guards against invalid states (already downloading, already downloaded).
+   * Shows download progress as a percentage, then updates state when complete.
+   *
+   * Download metadata includes content title, duration, and parent ID
+   * (for organizing downloads by course/series).
+   */
   const handleDownload = async () => {
+    // Guard clauses: fail silently if any required data is missing or already in progress
     if (!contentId || !contentType || !audioUrl || isDownloadingState || isDownloadedState) return;
-    
+
     setIsDownloadingState(true);
     setDownloadProgress(0);
-    
+
     const success = await downloadAudio(
       contentId,
       contentType,
@@ -219,7 +322,7 @@ export function MediaPlayer({
       },
       (progress) => setDownloadProgress(progress)
     );
-    
+
     setIsDownloadingState(false);
     setDownloadProgress(0);
     if (success) {
@@ -227,7 +330,11 @@ export function MediaPlayer({
     }
   };
 
-  // Save auto-play preference when it changes
+  /**
+   * Toggles auto-play on/off and persists the preference to AsyncStorage.
+   * This is a Facade for the AsyncStorage operation: the component just calls
+   * this function; the function handles persistence details.
+   */
   const toggleAutoPlay = async () => {
     const newValue = !autoPlayEnabled;
     setAutoPlayEnabled(newValue);
@@ -238,10 +345,17 @@ export function MediaPlayer({
     }
   };
 
-  // Background audio hook
+  // --- Background Audio Hook ---
+  // Manages independent background sleep sound playback (runs alongside main audio)
   const backgroundAudio = useBackgroundAudio();
 
-  // Fetch narrator photo if not provided
+  /**
+   * --- LIFECYCLE EFFECT 3: Fetch Narrator Photo ---
+   * If the instructor name is provided but photo URL isn't, fetch the photo
+   * from Firestore. This allows instructors to be displayed with their photos
+   * even if the screen doesn't pre-load the photo URL.
+   * Runs when instructor or instructorPhotoUrl changes.
+   */
   useEffect(() => {
     async function fetchNarratorPhoto() {
       if (instructor && !instructorPhotoUrl) {
@@ -254,7 +368,12 @@ export function MediaPlayer({
     fetchNarratorPhoto();
   }, [instructor, instructorPhotoUrl]);
 
-  // Fetch current background sound when selectedSoundId changes
+  /**
+   * --- LIFECYCLE EFFECT 4: Fetch Background Sound Metadata ---
+   * When user selects a background sound (selectedSoundId changes),
+   * fetch its metadata (title, icon, color, etc.) from Firestore
+   * so we can display it in the UI (e.g., "Rainy" indicator above player).
+   */
   useEffect(() => {
     async function fetchCurrentSound() {
       if (backgroundAudio.selectedSoundId) {
@@ -267,7 +386,12 @@ export function MediaPlayer({
     fetchCurrentSound();
   }, [backgroundAudio.selectedSoundId]);
 
-  // Load saved background sound audio URL when initialized
+  /**
+   * --- LIFECYCLE EFFECT 5: Load Background Sound Audio ---
+   * When the background audio hook initializes and a sound is selected,
+   * fetch its audio URL from the local/remote file system and load it
+   * into the audio engine. This prepares it for playback.
+   */
   useEffect(() => {
     async function loadSavedSoundAudio() {
       if (enableBackgroundAudio && backgroundAudio.isInitialized && backgroundAudio.selectedSoundId) {
@@ -283,35 +407,53 @@ export function MediaPlayer({
     loadSavedSoundAudio();
   }, [backgroundAudio.isInitialized, backgroundAudio.selectedSoundId, enableBackgroundAudio]);
 
-  // Auto-play background audio when it's loaded and enabled (independent of main audio)
+  /**
+   * --- LIFECYCLE EFFECT 6: Auto-Play Background Audio ---
+   * When background audio is loaded and user has enabled it,
+   * automatically start playback. This runs independently of main audio
+   * playback (background audio can play while main audio is paused, or vice versa).
+   */
   useEffect(() => {
     if (!enableBackgroundAudio) return;
 
     // Play background audio automatically when it's loaded and enabled
-    // This runs independently of the main content audio
+    // This runs independently of the main content audio (Observer pattern)
     if (backgroundAudio.isEnabled && backgroundAudio.selectedSoundId && backgroundAudio.hasAudioLoaded) {
       backgroundAudio.play();
     }
   }, [backgroundAudio.isEnabled, backgroundAudio.hasAudioLoaded, backgroundAudio.selectedSoundId, enableBackgroundAudio]);
 
-  // Cleanup background audio on unmount
+  /**
+   * --- LIFECYCLE EFFECT 7: Cleanup Background Audio on Unmount ---
+   * Release the background audio resource when the component unmounts.
+   * Prevents memory leaks and ensures clean shutdown of audio playback.
+   */
   useEffect(() => {
     return () => {
       backgroundAudio.cleanup();
     };
   }, []);
 
-  // Register audio player with sleep timer for fade-out effect
+  /**
+   * --- LIFECYCLE EFFECT 8: Register Audio Player with Sleep Timer ---
+   * Establishes the bridge between the sleep timer and the audio player.
+   * When sleep timer is active, it fades out volume and pauses playback.
+   * This is the Observer pattern: the sleep timer is the observer,
+   * and the audio player is the observed subject. The timer calls these
+   * callbacks to synchronize volume and pause state.
+   */
   useEffect(() => {
     sleepTimer.registerAudioPlayer({
+      // Callback: Sleep timer fades volume on the audio player
       setVolume: (volume: number) => {
         if (audioPlayer.player) {
           audioPlayer.player.volume = volume;
         }
       },
+      // Callback: Sleep timer pauses both main and background audio
       pause: () => {
         audioPlayer.pause();
-        // Also pause background audio
+        // Also pause background audio (they fade out together)
         backgroundAudio.pause();
       },
     });
@@ -321,12 +463,28 @@ export function MediaPlayer({
     };
   }, [audioPlayer.player, sleepTimer]);
 
-  // Reset auto-play trigger flag when track changes
+  /**
+   * --- LIFECYCLE EFFECT 9: Reset Auto-Play Trigger Flag ---
+   * When the track changes (title changes), reset the auto-play trigger flag.
+   * This allows auto-play to fire again on the next track's completion.
+   * Without this, auto-play would only fire once across all tracks.
+   */
   useEffect(() => {
     hasTriggeredAutoPlay.current = false;
   }, [title]);
 
-  // Auto-play next track when current one completes
+  /**
+   * --- LIFECYCLE EFFECT 10: Auto-Play Next Track on Completion ---
+   * Implements automatic progression to the next track when current audio finishes.
+   * This is a State Machine: checks multiple conditions to detect completion:
+   *   - autoPlayEnabled: User has not disabled auto-play
+   *   - progress >= 0.99: Audio is 99% complete (avoids floating-point precision issues)
+   *   - !isPlaying: Audio has stopped naturally (not paused by user)
+   *   - duration > 0: Audio has loaded
+   *   - !hasTriggeredAutoPlay.current: Guard against double-firing on multiple progress updates
+   *
+   * The 500ms delay gives the UI time to update before skipping to next track.
+   */
   useEffect(() => {
     // Check if audio has completed naturally (progress >= 0.99 and not playing)
     if (
@@ -338,35 +496,46 @@ export function MediaPlayer({
       audioPlayer.duration > 0 &&
       !hasTriggeredAutoPlay.current
     ) {
-      // Mark as triggered to prevent double-firing
+      // Mark as triggered to prevent double-firing (State Machine guard)
       hasTriggeredAutoPlay.current = true;
-      // Small delay to ensure smooth transition
+      // Small delay to ensure smooth transition (improves perceived UX)
       setTimeout(() => {
         onNext();
       }, 500);
     }
   }, [autoPlayEnabled, hasNext, onNext, audioPlayer.progress, audioPlayer.isPlaying, audioPlayer.duration]);
 
-  // Restore playback position on mount (skip if coming from autoplay)
+  /**
+   * --- LIFECYCLE EFFECT 11: Restore Playback Position on Mount ---
+   * When content loads, fetch the saved playback position from Firestore
+   * and seek to it. This allows users to resume where they left off.
+   *
+   * Guards against duplicate restoration (hasRestoredPosition ref)
+   * and autoplay-triggered navigation (skipRestore prop).
+   * Also waits for audio to load (audioPlayer.duration > 0) before seeking.
+   *
+   * Only restores if position > 5 seconds (don't restore for nearly-finished content).
+   */
   useEffect(() => {
     async function restorePosition() {
       if (!user?.uid || !contentId || hasRestoredPosition.current) return;
-      
-      // Skip restoring if this is an autoplay navigation
+
+      // Skip restoring if this is an autoplay navigation (user is skipping to next track)
       if (skipRestore) {
         hasRestoredPosition.current = true;
         return;
       }
-      
+
       const progress = await getPlaybackProgress(user.uid, contentId);
       if (progress && progress.position_seconds > 5) {
-        // Wait for audio to be ready before seeking
+        // Wait for audio to be ready before seeking (Polling pattern)
         const checkAndSeek = () => {
           if (audioPlayer.duration > 0) {
+            // Audio is ready, seek to saved position
             audioPlayer.seekTo(progress.position_seconds);
             hasRestoredPosition.current = true;
           } else {
-            // Retry after a short delay if audio not ready
+            // Retry after a short delay if audio not ready (retry pattern)
             setTimeout(checkAndSeek, 100);
           }
         };
@@ -378,19 +547,33 @@ export function MediaPlayer({
     restorePosition();
   }, [user?.uid, contentId, audioPlayer.duration, skipRestore]);
 
-  // Reset restore flag when content changes
+  /**
+   * --- LIFECYCLE EFFECT 12: Reset Progress Tracking Refs ---
+   * When content changes (contentId changes), reset the progress tracking flags.
+   * This ensures the next content starts fresh (no position restoration bug, no stale saves).
+   */
   useEffect(() => {
     hasRestoredPosition.current = false;
     lastSaveTime.current = 0;
   }, [contentId]);
 
-  // Save playback position periodically (every 10 seconds) and on pause
+  /**
+   * --- LIFECYCLE EFFECT 13: Save Playback Progress (Debounced) ---
+   * Periodically saves the current playback position to Firestore so the user
+   * can resume later. This implements a debouncing strategy to avoid excessive
+   * Firestore writes:
+   *   - Save on pause: Immediately capture the user's pause point
+   *   - Save every 10 seconds: During playback, save at most every 10 seconds
+   *
+   * Only saves if position > 5 seconds (skip brief positions).
+   * Uses lastSaveTime ref to track when the last save occurred.
+   */
   useEffect(() => {
     if (!user?.uid || !contentId || !contentType) return;
     if (audioPlayer.position < 5 || audioPlayer.duration === 0) return;
 
     const now = Date.now();
-    const shouldSave = 
+    const shouldSave =
       (!audioPlayer.isPlaying && audioPlayer.position > 5) || // Save on pause
       (now - lastSaveTime.current >= 10000); // Save every 10 seconds
 
@@ -406,7 +589,12 @@ export function MediaPlayer({
     }
   }, [user?.uid, contentId, contentType, audioPlayer.position, audioPlayer.isPlaying, audioPlayer.duration]);
 
-  // Clear progress when content is completed
+  /**
+   * --- LIFECYCLE EFFECT 14: Clear Progress on Completion ---
+   * When the user completes audio (progress >= 95%), delete the saved
+   * progress from Firestore. This prevents the app from trying to resume
+   * at the end of completed content on next playback.
+   */
   useEffect(() => {
     if (!user?.uid || !contentId) return;
     if (audioPlayer.progress >= 0.95 && audioPlayer.duration > 0) {
@@ -414,7 +602,12 @@ export function MediaPlayer({
     }
   }, [user?.uid, contentId, audioPlayer.progress, audioPlayer.duration]);
 
-  // Save position on unmount
+  /**
+   * --- LIFECYCLE EFFECT 15: Save Position on Unmount (Cleanup) ---
+   * When the component unmounts (user navigates away), save the current position.
+   * This ensures that even if the user doesn't pause, we capture their progress.
+   * Only saves if position > 5 seconds (skip brief positions).
+   */
   useEffect(() => {
     return () => {
       if (user?.uid && contentId && contentType && audioPlayer.position > 5 && audioPlayer.duration > 0) {
@@ -429,14 +622,22 @@ export function MediaPlayer({
     };
   }, [user?.uid, contentId, contentType, audioPlayer.position, audioPlayer.duration]);
 
-  // Handle background sound selection
+  /**
+   * Handles background sound selection from the BackgroundAudioPicker modal.
+   * Updates the background audio state and loads the audio URL.
+   * If main audio is currently playing, automatically start background audio too.
+   *
+   * This implements the Facade pattern: abstracts the multi-step process of
+   * selecting, loading, and playing a background sound.
+   */
   const handleSelectSound = async (soundId: string | null, audioPath: string | null) => {
     if (soundId && audioPath) {
+      // Select the sound and load its audio
       backgroundAudio.selectSound(soundId);
       const url = await getAudioUrlFromPath(audioPath);
       if (url) {
         backgroundAudio.loadAudio(url, soundId);
-        // If main audio is playing, start background audio too
+        // Convenience UX: if main audio is already playing, start background audio too
         if (audioPlayer.isPlaying) {
           setTimeout(() => {
             backgroundAudio.play();
@@ -444,11 +645,18 @@ export function MediaPlayer({
         }
       }
     } else {
+      // Deselect sound (user tapped "Off" button)
       backgroundAudio.selectSound(null);
     }
   };
 
-  // Use dark gradient in dark mode
+  /**
+   * --- Render Phase: Loading State ---
+   * If the content is still loading (parent is fetching metadata from Firestore),
+   * show a full-screen loading spinner instead of the player.
+   */
+
+  // Use dark gradient in dark mode (dark theme override)
   const darkGradient: [string, string] = ['#1A1D29', '#2A2D3E'];
   const effectiveGradient = isDark ? darkGradient : gradientColors;
 
@@ -465,6 +673,11 @@ export function MediaPlayer({
     );
   }
 
+  /**
+   * --- Render Phase: Main Player Screen ---
+   * Displays the full media player with artwork, audio controls, and navigation.
+   * Organized into distinct render phases for clarity.
+   */
   return (
     <LinearGradient
       colors={effectiveGradient}
@@ -473,7 +686,7 @@ export function MediaPlayer({
       end={{ x: 0, y: 1 }}
     >
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
+        {/* --- Render Phase 1: Header (Back, Timer, Music, Favorite, Report buttons) --- */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="white" />
@@ -537,7 +750,8 @@ export function MediaPlayer({
           </View>
         </View>
 
-        {/* Background Audio Indicator */}
+        {/* --- Render Phase 2: Status Indicators (Background Audio & Sleep Timer) --- */}
+        {/* Background Audio Indicator — Shows current background sound if playing */}
         {enableBackgroundAudio && backgroundAudio.isEnabled && currentBackgroundSound && audioPlayer.isPlaying && (
           <TouchableOpacity
             style={styles.backgroundIndicator}
@@ -550,7 +764,7 @@ export function MediaPlayer({
           </TouchableOpacity>
         )}
 
-        {/* Sleep Timer Indicator */}
+        {/* Sleep Timer Indicator — Shows remaining time (or "Fading out...") if sleep timer is active */}
         {sleepTimer.isActive && (
           <TouchableOpacity
             style={styles.sleepTimerIndicator}
@@ -563,27 +777,32 @@ export function MediaPlayer({
           </TouchableOpacity>
         )}
 
-        {/* Content - ScrollView for smaller screens */}
+        {/* --- Render Phase 3: Scrollable Content Area (Artwork, Info, Player) --- */}
+        {/* ScrollView for smaller screens to prevent layout overflow */}
         <ScrollView 
           style={[styles.content, { paddingHorizontal: contentPadding }]}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Artwork: Thumbnail or Icon */}
+          {/* --- Sub-Phase 3a: Artwork (Thumbnail or Icon) --- */}
+          {/* Responsive: uses artworkSize, artworkIconSize from breakpoint calculations */}
           <View style={[styles.iconContainer, { marginTop: sectionMargin, marginBottom: sectionMargin }]}>
             {artworkThumbnailUrl ? (
-              <Image 
-                source={{ uri: artworkThumbnailUrl }} 
-                style={[styles.thumbnailImage, { width: artworkSize, height: artworkSize, borderRadius: artworkSize / 2 }]} 
+              // Use thumbnail image if provided (from content metadata)
+              <Image
+                source={{ uri: artworkThumbnailUrl }}
+                style={[styles.thumbnailImage, { width: artworkSize, height: artworkSize, borderRadius: artworkSize / 2 }]}
               />
             ) : (
+              // Fallback to icon circle with Ionicon (for content without image)
               <View style={[styles.iconCircle, { width: artworkSize, height: artworkSize, borderRadius: artworkSize / 2 }]}>
                 <Ionicons name={artworkIcon} size={artworkIconSize} color="white" />
               </View>
             )}
           </View>
 
-          {/* Info */}
+          {/* --- Sub-Phase 3b: Content Information --- */}
+          {/* Displays category, title, meta info, description, duration, difficulty, and narrator */}
           <View style={[styles.infoContainer, { marginBottom: sectionMargin }]}>
             <Text style={styles.category}>{category.replace('-', ' ')}</Text>
             <Text style={[styles.title, { fontSize: titleFontSize }]}>{title}</Text>
@@ -627,14 +846,17 @@ export function MediaPlayer({
             )}
           </View>
 
-          {/* Audio Player */}
+          {/* --- Sub-Phase 3c: Audio Player & Controls --- */}
+          {/* Shows the AudioPlayer component once audio duration is known, or loading spinner while buffering */}
           <View style={[styles.playerContainer, { marginBottom: sectionMargin }]}>
             {audioPlayer.isLoading && !audioPlayer.duration ? (
+              // Audio is still loading (buffering), show spinner
               <View style={styles.loadingPlayer}>
                 <ActivityIndicator size="large" color="white" />
                 <Text style={styles.loadingPlayerText}>Loading audio...</Text>
               </View>
             ) : (
+              // Audio is ready, show the player with playback controls
               <AudioPlayer
                 isPlaying={audioPlayer.isPlaying}
                 isLoading={audioPlayer.isLoading}
@@ -656,7 +878,8 @@ export function MediaPlayer({
               />
             )}
 
-            {/* Previous/Next Navigation */}
+            {/* --- Navigation and Action Controls --- */}
+            {/* Shown if this is part of a collection (playlist, course, series) with prev/next support */}
             {(onPrevious || onNext) && (
               <View style={styles.trackNavigationContainer}>
                 {/* Row 1: Prev / Next */}

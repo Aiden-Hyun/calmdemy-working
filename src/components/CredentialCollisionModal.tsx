@@ -1,3 +1,31 @@
+/**
+ * ============================================================
+ * CredentialCollisionModal.tsx — Credential Collision Handler (Modal Pattern)
+ * ============================================================
+ *
+ * Architectural Role:
+ *   Handles the "email already registered" scenario in the authentication flow.
+ *   When a user tries to link an email to their guest account but that email
+ *   is already registered on another Calmdemy account, this modal presents
+ *   the decision: switch to the other account or try a different auth method.
+ *
+ * Design Patterns:
+ *   - Modal Pattern: Full-screen overlay presenting a critical user choice
+ *   - Adapter Pattern: getProviderDisplayName and getProviderIcon adapt the
+ *     Firebase provider identifier (google.com, apple.com, password) to
+ *     human-readable UI strings and icons
+ *   - Gatekeeper: Holds the pendingCredential and only allows the switch
+ *     operation if the user confirms and provides valid pending credential
+ *
+ * Key Dependencies:
+ *   - Firebase AuthCredential (holds the OAuth token for the alternate account)
+ *   - useTheme (style injection)
+ *
+ * Consumed By:
+ *   AccountPromptModal when a credential collision error is caught
+ * ============================================================
+ */
+
 import React, { useMemo, useState } from "react";
 import {
   View,
@@ -23,6 +51,13 @@ interface CredentialCollisionModalProps {
   onUseDifferentMethod: () => void;
 }
 
+/**
+ * Adapter: Maps Firebase provider ID to human-readable display name.
+ *
+ * This is an Adapter pattern — it translates between the internal Firebase
+ * provider identifier convention and the user-facing strings shown in the UI.
+ * Centralizing this mapping prevents duplication and makes updates easy.
+ */
 const getProviderDisplayName = (
   providerType: "google.com" | "apple.com" | "password"
 ): string => {
@@ -38,6 +73,12 @@ const getProviderDisplayName = (
   }
 };
 
+/**
+ * Adapter: Maps Firebase provider ID to icon name.
+ *
+ * Pairs with getProviderDisplayName to provide consistent provider
+ * identification across the collision modal UI.
+ */
 const getProviderIcon = (
   providerType: "google.com" | "apple.com" | "password"
 ): string => {
@@ -53,6 +94,20 @@ const getProviderIcon = (
   }
 };
 
+/**
+ * CredentialCollisionModal — Handles email-already-registered scenario.
+ *
+ * When a user attempts to link a credential (OAuth or email/password) to their
+ * guest account, but that credential is already registered on another Calmdemy
+ * account, this modal is shown. It presents two options:
+ *
+ *   1. Sign into the other account (using the pendingCredential)
+ *   2. Use a different authentication method (dismiss and retry)
+ *
+ * This is a critical UX checkpoint: if we allowed the link silently, we'd be
+ * creating account confusion and data loss. By surfacing the collision explicitly,
+ * we let the user make an informed choice.
+ */
 export function CredentialCollisionModal({
   visible,
   onClose,
@@ -64,12 +119,20 @@ export function CredentialCollisionModal({
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+  // --- Loading state while confirming the account switch ---
   const [isLoading, setIsLoading] = useState(false);
 
+  // --- Derive display strings from provider type ---
   const providerName = getProviderDisplayName(providerType);
   const providerIcon = getProviderIcon(providerType);
   const displayAccount = email || `this ${providerName} account`;
 
+  /**
+   * Handles "Sign in to that account" button press.
+   * Wraps the parent callback with loading state management.
+   * The actual credential swap happens via signInWithPendingCredential
+   * in the parent (AccountPromptModal).
+   */
   const handleSignInToOtherAccount = async () => {
     setIsLoading(true);
     try {
@@ -88,7 +151,7 @@ export function CredentialCollisionModal({
     >
       <View style={styles.overlay}>
         <View style={[styles.container, { paddingBottom: insets.bottom + 24 }]}>
-          {/* Icon */}
+          {/* Icon: Warning symbol with warning color to signal critical choice */}
           <View style={styles.iconContainer}>
             <Ionicons
               name={providerIcon as any}
@@ -100,7 +163,12 @@ export function CredentialCollisionModal({
           {/* Title */}
           <Text style={styles.title}>Account Already Exists</Text>
 
-          {/* Description */}
+          {/*
+            --- Description: Conditional rendering based on email availability ---
+            If we have the email, highlight it. Otherwise, use generic provider name.
+            This is a Controlled Component pattern — the text depends on props,
+            and the parent (AccountPromptModal) determines what content is shown.
+          */}
           <Text style={styles.description}>
             {email ? (
               <>
@@ -112,7 +180,11 @@ export function CredentialCollisionModal({
             )}
           </Text>
 
-          {/* Sign in to other account button */}
+          {/*
+            --- Primary Action: Sign in to the other account ---
+            This button triggers the account switch flow, which will show the
+            AccountSwitchWarning modal before actually committing the switch.
+          */}
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
@@ -139,7 +211,11 @@ export function CredentialCollisionModal({
             )}
           </Pressable>
 
-          {/* Use different method button */}
+          {/*
+            --- Secondary Action: Try a different authentication method ---
+            Dismisses this modal and returns to the account linking modal
+            so the user can attempt linking via a different provider.
+          */}
           <Pressable
             style={({ pressed }) => [
               styles.secondaryButton,
@@ -157,7 +233,10 @@ export function CredentialCollisionModal({
             <Text style={styles.secondaryButtonText}>Use a different method</Text>
           </Pressable>
 
-          {/* Cancel button */}
+          {/*
+            --- Tertiary Action: Cancel and dismiss ---
+            Returns to the parent modal without taking any action.
+          */}
           <Pressable
             style={({ pressed }) => [
               styles.cancelButton,
@@ -169,7 +248,13 @@ export function CredentialCollisionModal({
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </Pressable>
 
-          {/* Helper text */}
+          {/*
+            --- Helper Text: Explains the workaround ---
+            If the user wants to link this {providerName} to their current guest
+            account instead of switching, they must delete the other account first.
+            This is a Graceful Degradation pattern — we explain the path forward
+            if they don't want to switch.
+          */}
           <View style={styles.helperNote}>
             <Ionicons
               name="information-circle-outline"
@@ -177,8 +262,8 @@ export function CredentialCollisionModal({
               color={theme.colors.textMuted}
             />
             <Text style={styles.helperNoteText}>
-              To link this {providerName} account to your current guest subscription, 
-              you'll need to delete the existing account first. Sign in and delete the 
+              To link this {providerName} account to your current guest subscription,
+              you'll need to delete the existing account first. Sign in and delete the
               account in Settings. Contact support if you need help.
             </Text>
           </View>
@@ -188,8 +273,16 @@ export function CredentialCollisionModal({
   );
 }
 
+/**
+ * createStyles — Theme-aware stylesheet factory.
+ *
+ * Memoized via useMemo to ensure the returned StyleSheet object has a stable
+ * reference between renders, preventing unnecessary style recalculations.
+ * The factory pattern decouples styling logic from component rendering.
+ */
 const createStyles = (theme: Theme, isDark: boolean) =>
   StyleSheet.create({
+    // --- Semi-transparent overlay covering entire screen ---
     overlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.6)",
@@ -197,6 +290,7 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       alignItems: "center",
       padding: 24,
     },
+    // --- Centered modal card with elevation shadow ---
     container: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.xl,
