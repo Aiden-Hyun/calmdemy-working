@@ -10,7 +10,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { PurchasesPackage } from 'react-native-purchases';
 import { useTheme } from '../src/contexts/ThemeContext';
+import { useSubscription } from '../src/contexts/SubscriptionContext';
 import { AnimatedView, FadeView } from '../src/components/AnimatedView';
 import { AnimatedPressable } from '../src/components/AnimatedPressable';
 import { Theme } from '../src/theme';
@@ -196,19 +198,81 @@ function FeatureListStep({
   );
 }
 
+/**
+ * Format an introductory offer (free trial) period into human text.
+ * RevenueCat's product.introPrice carries { price, priceString, period,
+ * periodUnit ("DAY"|"WEEK"|"MONTH"|"YEAR"), periodNumberOfUnits }.
+ * Only treat it as a trial when the intro price is 0.
+ */
+function formatTrial(pkg: PurchasesPackage | null): string | null {
+  const intro: any = pkg?.product?.introPrice;
+  if (!intro || intro.price !== 0) return null;
+  const units: number = intro.periodNumberOfUnits ?? 0;
+  const unitRaw: string = (intro.periodUnit ?? '').toString().toLowerCase();
+  if (!units || !unitRaw) return null;
+  const unit = unitRaw.replace(/s$/, ''); // "days" → "day"
+  return `${units}-${unit} free trial`;
+}
+
+/**
+ * Derive a per-month equivalent price string from an annual package, using
+ * the package's own locale-aware currency formatting when possible.
+ */
+function formatPerMonth(annualPkg: PurchasesPackage | null): string | null {
+  if (!annualPkg) return null;
+  const price = annualPkg.product.price;
+  const priceString = annualPkg.product.priceString;
+  if (!price || !priceString) return null;
+  const perMonth = price / 12;
+  // Pull the currency symbol/prefix from the locale-formatted priceString
+  // (e.g. "$49.99" → "$", "€49,99" → "€"). Fallback to the raw number.
+  const match = priceString.match(/^([^\d.,\s]+)/);
+  const symbol = match ? match[1] : '';
+  return `${symbol}${perMonth.toFixed(2)}/mo`;
+}
+
 function PlansStep({
-  onStartTrial,
+  annualPackage,
+  monthlyPackage,
+  offeringLoading,
+  onPurchase,
   onSkip,
   theme,
   isDark,
 }: {
-  onStartTrial: () => void;
+  annualPackage: PurchasesPackage | null;
+  monthlyPackage: PurchasesPackage | null;
+  offeringLoading: boolean;
+  onPurchase: (pkg: PurchasesPackage) => Promise<void>;
   onSkip: () => void;
   theme: Theme;
   isDark: boolean;
 }) {
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
+  const [purchasing, setPurchasing] = useState(false);
+
+  const annualTrial = useMemo(() => formatTrial(annualPackage), [annualPackage]);
+  const monthlyTrial = useMemo(() => formatTrial(monthlyPackage), [monthlyPackage]);
+  const perMonthFromAnnual = useMemo(() => formatPerMonth(annualPackage), [annualPackage]);
+
+  const selectedPackage = selectedPlan === 'annual' ? annualPackage : monthlyPackage;
+  const selectedHasTrial = selectedPlan === 'annual' ? !!annualTrial : !!monthlyTrial;
+  const ctaLabel = purchasing
+    ? 'Processing…'
+    : selectedHasTrial
+    ? 'Start free trial'
+    : 'Subscribe';
+
+  const handlePurchase = async () => {
+    if (!selectedPackage || purchasing) return;
+    setPurchasing(true);
+    try {
+      await onPurchase(selectedPackage);
+    } finally {
+      setPurchasing(false);
+    }
+  };
 
   return (
     <View style={styles.stepContainer}>
@@ -228,56 +292,79 @@ function PlansStep({
         {/* Plan cards */}
         <View style={styles.planCards}>
           {/* Annual */}
-          <AnimatedView delay={100} duration={400}>
-            <AnimatedPressable
-              onPress={() => setSelectedPlan('annual')}
-              style={[
-                styles.planCard,
-                selectedPlan === 'annual' && styles.planCardSelected,
-              ]}
-            >
-              <View style={styles.bestValueBadge}>
-                <Text style={styles.bestValueText}>BEST VALUE</Text>
-              </View>
-              <View
+          {annualPackage && (
+            <AnimatedView delay={100} duration={400}>
+              <AnimatedPressable
+                onPress={() => setSelectedPlan('annual')}
                 style={[
-                  styles.radioOuter,
-                  selectedPlan === 'annual' && styles.radioOuterSelected,
+                  styles.planCard,
+                  selectedPlan === 'annual' && styles.planCardSelected,
                 ]}
               >
-                {selectedPlan === 'annual' && <View style={styles.radioInner} />}
-              </View>
-              <View style={styles.planCardContent}>
-                <Text style={styles.planName}>Annual</Text>
-                <Text style={styles.planPrice}>$49.99/year · 14-day free trial</Text>
-              </View>
-              <Text style={styles.planMonthly}>$4.17/mo</Text>
-            </AnimatedPressable>
-          </AnimatedView>
+                <View style={styles.bestValueBadge}>
+                  <Text style={styles.bestValueText}>BEST VALUE</Text>
+                </View>
+                <View
+                  style={[
+                    styles.radioOuter,
+                    selectedPlan === 'annual' && styles.radioOuterSelected,
+                  ]}
+                >
+                  {selectedPlan === 'annual' && <View style={styles.radioInner} />}
+                </View>
+                <View style={styles.planCardContent}>
+                  <Text style={styles.planName}>Annual</Text>
+                  <Text style={styles.planPrice}>
+                    {annualPackage.product.priceString}/year
+                    {annualTrial ? ` · ${annualTrial}` : ''}
+                  </Text>
+                </View>
+                {perMonthFromAnnual && (
+                  <Text style={styles.planMonthly}>{perMonthFromAnnual}</Text>
+                )}
+              </AnimatedPressable>
+            </AnimatedView>
+          )}
 
           {/* Monthly */}
-          <AnimatedView delay={200} duration={400}>
-            <AnimatedPressable
-              onPress={() => setSelectedPlan('monthly')}
-              style={[
-                styles.planCard,
-                selectedPlan === 'monthly' && styles.planCardSelected,
-              ]}
-            >
-              <View
+          {monthlyPackage && (
+            <AnimatedView delay={200} duration={400}>
+              <AnimatedPressable
+                onPress={() => setSelectedPlan('monthly')}
                 style={[
-                  styles.radioOuter,
-                  selectedPlan === 'monthly' && styles.radioOuterSelected,
+                  styles.planCard,
+                  selectedPlan === 'monthly' && styles.planCardSelected,
                 ]}
               >
-                {selectedPlan === 'monthly' && <View style={styles.radioInner} />}
-              </View>
-              <View style={styles.planCardContent}>
-                <Text style={styles.planName}>Monthly</Text>
-                <Text style={styles.planPrice}>$7.99/month · 7-day free trial</Text>
-              </View>
-            </AnimatedPressable>
-          </AnimatedView>
+                <View
+                  style={[
+                    styles.radioOuter,
+                    selectedPlan === 'monthly' && styles.radioOuterSelected,
+                  ]}
+                >
+                  {selectedPlan === 'monthly' && <View style={styles.radioInner} />}
+                </View>
+                <View style={styles.planCardContent}>
+                  <Text style={styles.planName}>Monthly</Text>
+                  <Text style={styles.planPrice}>
+                    {monthlyPackage.product.priceString}/month
+                    {monthlyTrial ? ` · ${monthlyTrial}` : ''}
+                  </Text>
+                </View>
+              </AnimatedPressable>
+            </AnimatedView>
+          )}
+
+          {/* Empty / loading state when offerings aren't available yet */}
+          {!annualPackage && !monthlyPackage && (
+            <View style={styles.planPlaceholder}>
+              <Text style={styles.planPlaceholderText}>
+                {offeringLoading
+                  ? 'Loading plans…'
+                  : "Plans aren't available right now. You can continue with free content."}
+              </Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.disclaimer}>
@@ -286,14 +373,21 @@ function PlansStep({
       </ScrollView>
 
       <View style={styles.stepFooter}>
-        <AnimatedPressable onPress={onStartTrial} style={styles.primaryButton}>
+        <AnimatedPressable
+          onPress={handlePurchase}
+          disabled={!selectedPackage || purchasing}
+          style={styles.primaryButton}
+        >
           <LinearGradient
             colors={[theme.colors.primary, theme.colors.primaryDark]}
-            style={styles.primaryButtonGradient}
+            style={[
+              styles.primaryButtonGradient,
+              (!selectedPackage || purchasing) && styles.buttonDisabled,
+            ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.primaryButtonText}>Start free trial</Text>
+            <Text style={styles.primaryButtonText}>{ctaLabel}</Text>
           </LinearGradient>
         </AnimatedPressable>
         <AnimatedPressable onPress={onSkip} style={styles.ghostButton}>
@@ -309,6 +403,34 @@ function PlansStep({
 export default function OnboardingScreen() {
   const { theme, isDark } = useTheme();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
+
+  // Live RevenueCat offering — same extraction pattern used by PaywallModal.
+  const { currentOffering, isLoading: subLoading, purchasePackage } = useSubscription();
+  const monthlyPackage = useMemo<PurchasesPackage | null>(() => {
+    if (!currentOffering) return null;
+    return (
+      currentOffering.monthly ||
+      currentOffering.availablePackages?.find(
+        (p) =>
+          p.identifier === '$rc_monthly' ||
+          p.identifier.toLowerCase().includes('monthly')
+      ) ||
+      null
+    );
+  }, [currentOffering]);
+  const annualPackage = useMemo<PurchasesPackage | null>(() => {
+    if (!currentOffering) return null;
+    return (
+      currentOffering.annual ||
+      currentOffering.availablePackages?.find(
+        (p) =>
+          p.identifier === '$rc_annual' ||
+          p.identifier.toLowerCase().includes('annual') ||
+          p.identifier.toLowerCase().includes('yearly')
+      ) ||
+      null
+    );
+  }, [currentOffering]);
 
   // 0 = Welcome, 1 = What's free, 2 = What's premium, 3 = Plans
   const [step, setStep] = useState(0);
@@ -346,6 +468,16 @@ export default function OnboardingScreen() {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     router.replace('/login');
   }, []);
+
+  const handlePurchase = useCallback(
+    async (pkg: PurchasesPackage) => {
+      const success = await purchasePackage(pkg);
+      if (success) {
+        await completeOnboarding();
+      }
+    },
+    [purchasePackage, completeOnboarding]
+  );
 
   // Progress bar only visible for tour steps (1-3)
   const showProgress = step >= 1 && step <= TOTAL_TOUR_STEPS;
@@ -416,7 +548,10 @@ export default function OnboardingScreen() {
         )}
         {step === 3 && (
           <PlansStep
-            onStartTrial={completeOnboarding}
+            annualPackage={annualPackage}
+            monthlyPackage={monthlyPackage}
+            offeringLoading={subLoading}
+            onPurchase={handlePurchase}
             onSkip={completeOnboarding}
             theme={theme}
             isDark={isDark}
@@ -684,6 +819,23 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       fontSize: 11,
       color: theme.colors.textMuted,
       textAlign: 'center',
+    },
+    planPlaceholder: {
+      padding: theme.spacing.lg,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.gray[200],
+      alignItems: 'center',
+    },
+    planPlaceholderText: {
+      fontFamily: theme.fonts.ui.regular,
+      fontSize: 13,
+      color: theme.colors.textLight,
+      textAlign: 'center',
+    },
+    buttonDisabled: {
+      opacity: 0.5,
     },
 
     // Buttons
