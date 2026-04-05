@@ -327,19 +327,6 @@ function ProfileScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
               </AnimatedPressable>
-
-              <View style={styles.actionDivider} />
-
-              <AnimatedPressable
-                onPress={() => router.push('/onboarding' as any)}
-                style={styles.actionItem}
-              >
-                <View style={styles.actionLeft}>
-                  <Ionicons name="sparkles-outline" size={20} color={theme.colors.primary} />
-                  <Text style={[styles.actionLabel, { color: theme.colors.primary }]}>Preview Onboarding</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
-              </AnimatedPressable>
             </View>
           </AnimatedView>
         </View>
