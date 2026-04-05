@@ -317,13 +317,26 @@ function ProfileScreen() {
               
               <View style={styles.actionDivider} />
               
-              <AnimatedPressable 
+              <AnimatedPressable
                 onPress={() => router.push('/settings')}
                 style={styles.actionItem}
               >
                 <View style={styles.actionLeft}>
                   <Ionicons name="settings-outline" size={20} color={theme.colors.text} />
                   <Text style={styles.actionLabel}>Settings</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
+              </AnimatedPressable>
+
+              <View style={styles.actionDivider} />
+
+              <AnimatedPressable
+                onPress={() => router.push('/onboarding' as any)}
+                style={styles.actionItem}
+              >
+                <View style={styles.actionLeft}>
+                  <Ionicons name="sparkles-outline" size={20} color={theme.colors.primary} />
+                  <Text style={[styles.actionLabel, { color: theme.colors.primary }]}>Preview Onboarding</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
               </AnimatedPressable>

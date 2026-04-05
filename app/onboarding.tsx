@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
   Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,92 +16,70 @@ import { AnimatedPressable } from '../src/components/AnimatedPressable';
 import { Theme } from '../src/theme';
 
 const ONBOARDING_KEY = '@calmdemy_onboarding';
-const PREFERENCES_KEY = '@calmdemy_user_preferences';
 
 // --- DATA ---
 
-const goals = [
-  { id: 'anxiety', icon: '🌊', label: 'Ease anxiety', desc: 'Find calm when your mind races' },
-  { id: 'sleep', icon: '🌙', label: 'Sleep better', desc: 'Fall asleep faster, wake rested' },
-  { id: 'focus', icon: '🎯', label: 'Sharpen focus', desc: 'Train your attention and clarity' },
-  { id: 'growth', icon: '🌱', label: 'Self-improvement', desc: 'Build mental resilience and tools' },
-  { id: 'stress', icon: '💆', label: 'Manage stress', desc: 'Decompress from daily pressure' },
-  { id: 'healing', icon: '💛', label: 'Process emotions', desc: 'Navigate grief, anger, or sadness' },
-];
-
-const experiences = [
-  { id: 'new', icon: '🌱', label: 'Brand new', desc: "I've never meditated" },
-  { id: 'curious', icon: '🌿', label: 'A little curious', desc: "I've tried it a few times" },
-  { id: 'regular', icon: '🌳', label: 'Regular practice', desc: 'I meditate occasionally' },
-  { id: 'deep', icon: '🏔️', label: 'Experienced', desc: 'Meditation is part of my life' },
-];
-
-const durations = [
-  { id: '3', label: '3 min', desc: 'Quick reset', icon: '⚡' },
-  { id: '5', label: '5 min', desc: 'Daily starter', icon: '☀️' },
-  { id: '10', label: '10 min', desc: 'Sweet spot', icon: '🧘', recommended: true },
-  { id: '20', label: '20+', desc: 'Deep dive', icon: '🌊' },
-];
-
-type GoalId = 'anxiety' | 'sleep' | 'focus' | 'growth' | 'stress' | 'healing';
-
-const recommendations: Record<GoalId, {
-  therapy: string;
-  technique: string;
-  firstSession: string;
-  course: string;
-  why: string;
-  paywallHeadline: string;
-}> = {
-  anxiety: {
-    therapy: 'CBT (Cognitive Behavioral Therapy)',
-    technique: 'Breathing + Grounding',
-    firstSession: 'Emergency Calm: 3-Minute Anxiety Reset',
-    course: 'CBT Foundations: Rewiring Anxious Thoughts',
-    why: 'CBT is the gold-standard therapy for anxiety. Our course adapts its core techniques into guided meditations you can use anywhere.',
-    paywallHeadline: 'Your anxiety toolkit awaits',
-  },
-  sleep: {
-    therapy: 'MBCT (Mindfulness-Based CBT)',
-    technique: 'Body Scan + Visualization',
-    firstSession: 'Moonlit Forest: A Sleep Journey',
-    course: 'Sleep Science: 7 Nights to Better Rest',
-    why: 'Poor sleep often starts with a restless mind. Our sleep program combines mindfulness techniques with evidence-based sleep hygiene.',
-    paywallHeadline: 'Unlock better sleep tonight',
-  },
-  focus: {
-    therapy: 'ACT (Acceptance & Commitment)',
-    technique: 'Mindfulness + Breathing',
-    firstSession: 'Sharp Mind: 5-Minute Focus Reset',
-    course: 'ACT for Focus: Training Your Attention',
-    why: "ACT teaches you to notice distractions without fighting them \u2014 a skill that transforms how you work and think.",
-    paywallHeadline: 'Train your focus daily',
-  },
-  growth: {
-    therapy: 'ACT + IFS (Internal Family Systems)',
-    technique: 'Loving Kindness + Visualization',
-    firstSession: 'Morning Intention: Start Your Day with Clarity',
-    course: 'The Inner Leader: Psychology-Based Growth',
-    why: "Real self-improvement isn't about willpower \u2014 it's about understanding your mind. This course draws from ACT and IFS to build lasting change.",
-    paywallHeadline: 'Start your growth journey',
-  },
-  stress: {
-    therapy: 'DBT (Dialectical Behavior Therapy)',
-    technique: 'Breathing + Body Scan',
-    firstSession: 'Pressure Release: A 5-Minute Decompression',
-    course: 'DBT Skills: Managing Stress Like a Therapist',
-    why: 'DBT was designed for emotional overwhelm. Our course distills its most practical tools into daily meditations.',
-    paywallHeadline: 'Master your stress response',
-  },
-  healing: {
-    therapy: 'IFS + Somatic Therapy',
-    technique: 'Loving Kindness + Grounding',
-    firstSession: 'A Gentle Space: Holding What Hurts',
-    course: 'Somatic Healing: Listening to Your Body',
-    why: "Emotions live in the body, not just the mind. This course blends somatic awareness with IFS to help you process what you're carrying.",
-    paywallHeadline: 'Begin your healing path',
-  },
+type FeatureItem = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  desc: string;
 };
+
+const freeFeatures: FeatureItem[] = [
+  {
+    icon: 'leaf-outline',
+    label: 'Guided meditations',
+    desc: 'A full library of daily meditations for focus, calm, and rest.',
+  },
+  {
+    icon: 'moon-outline',
+    label: 'Sleep sounds & stories',
+    desc: 'Wind down with ambient sounds, rain, and bedtime stories.',
+  },
+  {
+    icon: 'musical-notes-outline',
+    label: 'Ambient music',
+    desc: 'Calming playlists to help you focus, study, or unwind.',
+  },
+  {
+    icon: 'fitness-outline',
+    label: 'Breathing exercises',
+    desc: 'Simple techniques to reset your nervous system in minutes.',
+  },
+  {
+    icon: 'heart-outline',
+    label: 'Emergency calm',
+    desc: "A 3-minute tool you can reach for when it's needed most.",
+  },
+];
+
+const premiumFeatures: FeatureItem[] = [
+  {
+    icon: 'school-outline',
+    label: 'Psychology-based courses',
+    desc: 'Structured programs built on CBT, ACT, DBT, IFS, and MBCT.',
+  },
+  {
+    icon: 'sparkles-outline',
+    label: 'Premium meditations',
+    desc: 'Deeper practices and extended sessions from expert teachers.',
+  },
+  {
+    icon: 'library-outline',
+    label: 'Full story & sound library',
+    desc: 'Unlock every sleep story, soundscape, and album.',
+  },
+  {
+    icon: 'cloud-download-outline',
+    label: 'Offline downloads',
+    desc: 'Save anything to listen without a connection.',
+  },
+  {
+    icon: 'trending-up-outline',
+    label: 'New content weekly',
+    desc: 'Fresh courses and meditations added every week.',
+  },
+];
 
 // --- STEP COMPONENTS ---
 
@@ -120,7 +97,7 @@ function WelcomeStep({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepContent}>
-        <FadeView delay={100} duration={600}>
+        <FadeView delay={100} duration={600} style={{ flex: 1 }}>
           <View style={styles.welcomeCenter}>
             <View style={styles.welcomeIconCircle}>
               <Ionicons name="leaf" size={48} color={theme.colors.primary} />
@@ -128,7 +105,7 @@ function WelcomeStep({
             <Text style={styles.welcomeTitle}>Welcome to Calmdemy</Text>
             <Text style={styles.welcomeTagline}>Where mindfulness meets psychology</Text>
             <Text style={styles.welcomeSubtext}>
-              We'll ask a few quick questions to personalize your experience. Takes about 30 seconds.
+              A quick tour of what's inside — so you know what you can use today and what's part of Premium.
             </Text>
           </View>
         </FadeView>
@@ -142,7 +119,7 @@ function WelcomeStep({
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.primaryButtonText}>Let's begin</Text>
+            <Text style={styles.primaryButtonText}>Take the tour</Text>
             <Ionicons name="arrow-forward" size={20} color={theme.colors.textOnPrimary} />
           </LinearGradient>
         </AnimatedPressable>
@@ -151,16 +128,24 @@ function WelcomeStep({
   );
 }
 
-function GoalStep({
+function FeatureListStep({
+  eyebrow,
+  title,
+  subtitle,
+  items,
+  accentColor,
   onNext,
-  selected,
-  setSelected,
+  ctaLabel,
   theme,
   isDark,
 }: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  items: FeatureItem[];
+  accentColor: string;
   onNext: () => void;
-  selected: string | null;
-  setSelected: (id: string) => void;
+  ctaLabel: string;
   theme: Theme;
   isDark: boolean;
 }) {
@@ -169,246 +154,29 @@ function GoalStep({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
-        <Text style={styles.eyebrow}>STEP 1 OF 4</Text>
-        <Text style={styles.stepTitle}>What brings you here?</Text>
-        <Text style={styles.stepSubtitle}>Pick the one that resonates most. You can explore everything later.</Text>
+        <Text style={[styles.eyebrow, { color: accentColor }]}>{eyebrow}</Text>
+        <Text style={styles.stepTitle}>{title}</Text>
+        <Text style={styles.stepSubtitle}>{subtitle}</Text>
       </View>
 
-      <ScrollView style={styles.stepContent} contentContainerStyle={styles.optionsGrid} showsVerticalScrollIndicator={false}>
-        {goals.map((g, i) => (
-          <AnimatedView key={g.id} delay={i * 60} duration={400}>
-            <AnimatedPressable
-              onPress={() => setSelected(g.id)}
-              style={[
-                styles.goalCard,
-                selected === g.id && styles.goalCardSelected,
-              ]}
-            >
-              <Text style={styles.goalIcon}>{g.icon}</Text>
-              <Text style={[styles.goalLabel, selected === g.id && styles.goalLabelSelected]}>
-                {g.label}
-              </Text>
-              <Text style={styles.goalDesc}>{g.desc}</Text>
-            </AnimatedPressable>
+      <ScrollView
+        style={styles.stepContent}
+        contentContainerStyle={styles.featureScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {items.map((item, i) => (
+          <AnimatedView key={item.label} delay={i * 70} duration={400}>
+            <View style={styles.featureCard}>
+              <View style={[styles.featureIconBubble, { backgroundColor: `${accentColor}20` }]}>
+                <Ionicons name={item.icon} size={22} color={accentColor} />
+              </View>
+              <View style={styles.featureCardContent}>
+                <Text style={styles.featureCardLabel}>{item.label}</Text>
+                <Text style={styles.featureCardDesc}>{item.desc}</Text>
+              </View>
+            </View>
           </AnimatedView>
         ))}
-      </ScrollView>
-
-      <View style={styles.stepFooter}>
-        <AnimatedPressable onPress={onNext} disabled={!selected} style={styles.primaryButton}>
-          <LinearGradient
-            colors={[theme.colors.primary, theme.colors.primaryDark]}
-            style={[styles.primaryButtonGradient, !selected && styles.buttonDisabled]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={styles.primaryButtonText}>Continue</Text>
-          </LinearGradient>
-        </AnimatedPressable>
-      </View>
-    </View>
-  );
-}
-
-function ExperienceStep({
-  onNext,
-  selected,
-  setSelected,
-  theme,
-  isDark,
-}: {
-  onNext: () => void;
-  selected: string | null;
-  setSelected: (id: string) => void;
-  theme: Theme;
-  isDark: boolean;
-}) {
-  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
-
-  return (
-    <View style={styles.stepContainer}>
-      <View style={styles.stepHeader}>
-        <Text style={styles.eyebrow}>STEP 2 OF 4</Text>
-        <Text style={styles.stepTitle}>How's your meditation experience?</Text>
-        <Text style={styles.stepSubtitle}>No wrong answer — we'll meet you where you are.</Text>
-      </View>
-
-      <View style={[styles.stepContent, { paddingHorizontal: theme.spacing.xl }]}>
-        {experiences.map((e, i) => (
-          <AnimatedView key={e.id} delay={i * 80} duration={400}>
-            <AnimatedPressable
-              onPress={() => setSelected(e.id)}
-              style={[
-                styles.listCard,
-                selected === e.id && styles.listCardSelected,
-              ]}
-            >
-              <Text style={styles.listCardIcon}>{e.icon}</Text>
-              <View style={styles.listCardContent}>
-                <Text style={[styles.listCardLabel, selected === e.id && styles.listCardLabelSelected]}>
-                  {e.label}
-                </Text>
-                <Text style={styles.listCardDesc}>{e.desc}</Text>
-              </View>
-              <View style={[
-                styles.radioOuter,
-                selected === e.id && styles.radioOuterSelected,
-              ]}>
-                {selected === e.id && <View style={styles.radioInner} />}
-              </View>
-            </AnimatedPressable>
-          </AnimatedView>
-        ))}
-      </View>
-
-      <View style={styles.stepFooter}>
-        <AnimatedPressable onPress={onNext} disabled={!selected} style={styles.primaryButton}>
-          <LinearGradient
-            colors={[theme.colors.primary, theme.colors.primaryDark]}
-            style={[styles.primaryButtonGradient, !selected && styles.buttonDisabled]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={styles.primaryButtonText}>Continue</Text>
-          </LinearGradient>
-        </AnimatedPressable>
-      </View>
-    </View>
-  );
-}
-
-function DurationStep({
-  onNext,
-  selected,
-  setSelected,
-  theme,
-  isDark,
-}: {
-  onNext: () => void;
-  selected: string | null;
-  setSelected: (id: string) => void;
-  theme: Theme;
-  isDark: boolean;
-}) {
-  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
-
-  return (
-    <View style={styles.stepContainer}>
-      <View style={styles.stepHeader}>
-        <Text style={styles.eyebrow}>STEP 3 OF 4</Text>
-        <Text style={styles.stepTitle}>How long feels right?</Text>
-        <Text style={styles.stepSubtitle}>Your ideal daily session length. You can always adjust.</Text>
-      </View>
-
-      <View style={[styles.stepContent, { paddingHorizontal: theme.spacing.xl }]}>
-        <View style={styles.durationRow}>
-          {durations.map((d, i) => (
-            <AnimatedView key={d.id} delay={i * 80} duration={400}>
-              <AnimatedPressable
-                onPress={() => setSelected(d.id)}
-                style={[
-                  styles.durationCard,
-                  selected === d.id && styles.durationCardSelected,
-                ]}
-              >
-                {d.recommended && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularBadgeText}>POPULAR</Text>
-                  </View>
-                )}
-                <Text style={styles.durationIcon}>{d.icon}</Text>
-                <Text style={[styles.durationLabel, selected === d.id && styles.durationLabelSelected]}>
-                  {d.label}
-                </Text>
-                <Text style={styles.durationDesc}>{d.desc}</Text>
-              </AnimatedPressable>
-            </AnimatedView>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.stepFooter}>
-        <AnimatedPressable onPress={onNext} disabled={!selected} style={styles.primaryButton}>
-          <LinearGradient
-            colors={[theme.colors.primary, theme.colors.primaryDark]}
-            style={[styles.primaryButtonGradient, !selected && styles.buttonDisabled]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={styles.primaryButtonText}>Continue</Text>
-          </LinearGradient>
-        </AnimatedPressable>
-      </View>
-    </View>
-  );
-}
-
-function RecommendationStep({
-  goal,
-  duration,
-  onNext,
-  theme,
-  isDark,
-}: {
-  goal: GoalId;
-  duration: string;
-  onNext: () => void;
-  theme: Theme;
-  isDark: boolean;
-}) {
-  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
-  const rec = recommendations[goal] || recommendations.anxiety;
-
-  return (
-    <View style={styles.stepContainer}>
-      <View style={styles.stepHeader}>
-        <Text style={styles.eyebrow}>YOUR PERSONALIZED PATH</Text>
-        <Text style={[styles.stepTitle, { fontSize: 22 }]}>Here's what we recommend</Text>
-      </View>
-
-      <ScrollView style={styles.stepContent} contentContainerStyle={{ paddingHorizontal: theme.spacing.xl, gap: theme.spacing.md }} showsVerticalScrollIndicator={false}>
-        {/* First session card */}
-        <AnimatedView delay={100} duration={500}>
-          <View style={styles.recSessionCard}>
-            <View style={styles.recSessionBadge}>
-              <View style={styles.recPlayIcon}>
-                <Ionicons name="play" size={14} color={theme.colors.textOnPrimary} />
-              </View>
-              <Text style={styles.recSessionBadgeText}>START HERE</Text>
-            </View>
-            <Text style={styles.recSessionTitle}>{rec.firstSession}</Text>
-            <Text style={styles.recSessionMeta}>
-              {duration} min · {rec.technique} · Free
-            </Text>
-          </View>
-        </AnimatedView>
-
-        {/* Course recommendation */}
-        <AnimatedView delay={250} duration={500}>
-          <View style={styles.recCourseCard}>
-            <View style={styles.recCourseBadgeRow}>
-              <Text style={styles.recCourseBadgeText}>RECOMMENDED COURSE</Text>
-              <View style={styles.premiumBadge}>
-                <Text style={styles.premiumBadgeText}>PREMIUM</Text>
-              </View>
-            </View>
-            <Text style={styles.recCourseTitle}>{rec.course}</Text>
-            <Text style={styles.recCourseMeta}>Based on {rec.therapy}</Text>
-            <View style={styles.recCourseQuote}>
-              <Text style={styles.recCourseQuoteText}>{rec.why}</Text>
-            </View>
-          </View>
-        </AnimatedView>
-
-        {/* Free content note */}
-        <AnimatedView delay={400} duration={500}>
-          <View style={styles.freeNote}>
-            <Text style={styles.freeNoteIcon}>✨</Text>
-            <Text style={styles.freeNoteText}>
-              Most content is free forever — meditations, sleep stories, sounds, and more. Courses are the only premium feature.
-            </Text>
-          </View>
-        </AnimatedView>
       </ScrollView>
 
       <View style={styles.stepFooter}>
@@ -419,65 +187,48 @@ function RecommendationStep({
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.primaryButtonText}>Start my first session — free</Text>
+            <Text style={styles.primaryButtonText}>{ctaLabel}</Text>
+            <Ionicons name="arrow-forward" size={20} color={theme.colors.textOnPrimary} />
           </LinearGradient>
-        </AnimatedPressable>
-        <AnimatedPressable onPress={onNext} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>View subscription plans</Text>
         </AnimatedPressable>
       </View>
     </View>
   );
 }
 
-function PaywallStep({
-  goal,
+function PlansStep({
   onStartTrial,
   onSkip,
   theme,
   isDark,
 }: {
-  goal: GoalId;
   onStartTrial: () => void;
   onSkip: () => void;
   theme: Theme;
   isDark: boolean;
 }) {
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
-  const rec = recommendations[goal] || recommendations.anxiety;
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
-
-  const features = [
-    { icon: '🧠', text: `Full access to "${rec.course}"` },
-    { icon: '📚', text: 'All psychology-based courses (CBT, ACT, DBT, and more)' },
-    { icon: '🎧', text: 'Premium meditations, stories, and sounds' },
-    { icon: '📈', text: 'New content added weekly' },
-  ];
 
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
-        <Text style={styles.eyebrow}>UNLOCK YOUR FULL PATH</Text>
-        <Text style={[styles.stepTitle, { fontSize: 22 }]}>{rec.paywallHeadline}</Text>
+        <Text style={styles.eyebrow}>READY WHEN YOU ARE</Text>
+        <Text style={[styles.stepTitle, { fontSize: 24 }]}>Try Premium, or jump right in</Text>
+        <Text style={styles.stepSubtitle}>
+          Every free feature is always free. Premium unlocks the courses and the full library.
+        </Text>
       </View>
 
-      <ScrollView style={styles.stepContent} contentContainerStyle={{ paddingHorizontal: theme.spacing.xl }} showsVerticalScrollIndicator={false}>
-        {/* Feature list */}
-        <View style={styles.featureList}>
-          {features.map((f, i) => (
-            <AnimatedView key={i} delay={i * 60} duration={400}>
-              <View style={styles.featureRow}>
-                <Text style={styles.featureIcon}>{f.icon}</Text>
-                <Text style={styles.featureText}>{f.text}</Text>
-              </View>
-            </AnimatedView>
-          ))}
-        </View>
-
+      <ScrollView
+        style={styles.stepContent}
+        contentContainerStyle={{ paddingHorizontal: theme.spacing.xl }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Plan cards */}
         <View style={styles.planCards}>
           {/* Annual */}
-          <AnimatedView delay={300} duration={400}>
+          <AnimatedView delay={100} duration={400}>
             <AnimatedPressable
               onPress={() => setSelectedPlan('annual')}
               style={[
@@ -488,10 +239,12 @@ function PaywallStep({
               <View style={styles.bestValueBadge}>
                 <Text style={styles.bestValueText}>BEST VALUE</Text>
               </View>
-              <View style={[
-                styles.radioOuter,
-                selectedPlan === 'annual' && styles.radioOuterSelected,
-              ]}>
+              <View
+                style={[
+                  styles.radioOuter,
+                  selectedPlan === 'annual' && styles.radioOuterSelected,
+                ]}
+              >
                 {selectedPlan === 'annual' && <View style={styles.radioInner} />}
               </View>
               <View style={styles.planCardContent}>
@@ -503,7 +256,7 @@ function PaywallStep({
           </AnimatedView>
 
           {/* Monthly */}
-          <AnimatedView delay={400} duration={400}>
+          <AnimatedView delay={200} duration={400}>
             <AnimatedPressable
               onPress={() => setSelectedPlan('monthly')}
               style={[
@@ -511,10 +264,12 @@ function PaywallStep({
                 selectedPlan === 'monthly' && styles.planCardSelected,
               ]}
             >
-              <View style={[
-                styles.radioOuter,
-                selectedPlan === 'monthly' && styles.radioOuterSelected,
-              ]}>
+              <View
+                style={[
+                  styles.radioOuter,
+                  selectedPlan === 'monthly' && styles.radioOuterSelected,
+                ]}
+              >
                 {selectedPlan === 'monthly' && <View style={styles.radioInner} />}
               </View>
               <View style={styles.planCardContent}>
@@ -555,27 +310,29 @@ export default function OnboardingScreen() {
   const { theme, isDark } = useTheme();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
 
+  // 0 = Welcome, 1 = What's free, 2 = What's premium, 3 = Plans
   const [step, setStep] = useState(0);
-  const [goal, setGoal] = useState<string | null>(null);
-  const [experience, setExperience] = useState<string | null>(null);
-  const [duration, setDuration] = useState<string | null>(null);
+  const TOTAL_TOUR_STEPS = 3; // Welcome not counted in progress bar
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const animateTransition = useCallback((nextStep: number) => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => {
-      setStep(nextStep);
+  const animateTransition = useCallback(
+    (nextStep: number) => {
       Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 250,
+        toValue: 0,
+        duration: 150,
         useNativeDriver: true,
-      }).start();
-    });
-  }, [fadeAnim]);
+      }).start(() => {
+        setStep(nextStep);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      });
+    },
+    [fadeAnim]
+  );
 
   const goNext = useCallback(() => {
     animateTransition(step + 1);
@@ -586,17 +343,15 @@ export default function OnboardingScreen() {
   }, [step, animateTransition]);
 
   const completeOnboarding = useCallback(async () => {
-    const prefs = { goal, experience, duration, completedAt: new Date().toISOString() };
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-    await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
     router.replace('/login');
-  }, [goal, experience, duration]);
+  }, []);
 
-  // Progress bar width (steps 1-4 only, not welcome or paywall)
-  const progressWidth = step >= 1 && step <= 4 ? `${(step / 4) * 100}%` : '0%';
-  const showProgress = step >= 1 && step <= 4;
+  // Progress bar only visible for tour steps (1-3)
+  const showProgress = step >= 1 && step <= TOTAL_TOUR_STEPS;
+  const progressWidth = showProgress ? `${(step / TOTAL_TOUR_STEPS) * 100}%` : '0%';
   const showBack = step > 0;
-  const showSkip = step >= 1 && step <= 4;
+  const showSkip = step >= 1 && step < TOTAL_TOUR_STEPS;
 
   return (
     <View style={styles.container}>
@@ -619,7 +374,10 @@ export default function OnboardingScreen() {
         )}
 
         {showSkip ? (
-          <AnimatedPressable onPress={() => animateTransition(4)} style={styles.skipButton}>
+          <AnimatedPressable
+            onPress={() => animateTransition(TOTAL_TOUR_STEPS)}
+            style={styles.skipButton}
+          >
             <Text style={styles.skipButtonText}>Skip</Text>
           </AnimatedPressable>
         ) : (
@@ -629,48 +387,35 @@ export default function OnboardingScreen() {
 
       {/* Step content */}
       <Animated.View style={[styles.stepWrapper, { opacity: fadeAnim }]}>
-        {step === 0 && (
-          <WelcomeStep onNext={goNext} theme={theme} isDark={isDark} />
-        )}
+        {step === 0 && <WelcomeStep onNext={goNext} theme={theme} isDark={isDark} />}
         {step === 1 && (
-          <GoalStep
+          <FeatureListStep
+            eyebrow="FREE FOREVER"
+            title="What's free on Calmdemy"
+            subtitle="These features are always free — no account required, no trial expiring."
+            items={freeFeatures}
+            accentColor={theme.colors.primary}
             onNext={goNext}
-            selected={goal}
-            setSelected={setGoal}
+            ctaLabel="Next"
             theme={theme}
             isDark={isDark}
           />
         )}
         {step === 2 && (
-          <ExperienceStep
+          <FeatureListStep
+            eyebrow="CALMDEMY PREMIUM"
+            title="What Premium unlocks"
+            subtitle="A deeper library built around evidence-based psychology."
+            items={premiumFeatures}
+            accentColor={theme.colors.secondary}
             onNext={goNext}
-            selected={experience}
-            setSelected={setExperience}
+            ctaLabel="See plans"
             theme={theme}
             isDark={isDark}
           />
         )}
         {step === 3 && (
-          <DurationStep
-            onNext={goNext}
-            selected={duration}
-            setSelected={setDuration}
-            theme={theme}
-            isDark={isDark}
-          />
-        )}
-        {step === 4 && (
-          <RecommendationStep
-            goal={(goal as GoalId) || 'anxiety'}
-            duration={duration || '10'}
-            onNext={goNext}
-            theme={theme}
-            isDark={isDark}
-          />
-        )}
-        {step === 5 && (
-          <PaywallStep
-            goal={(goal as GoalId) || 'anxiety'}
+          <PlansStep
             onStartTrial={completeOnboarding}
             onSkip={completeOnboarding}
             theme={theme}
@@ -816,85 +561,47 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       color: theme.colors.textMuted,
       lineHeight: 22,
       textAlign: 'center',
-      maxWidth: 300,
+      maxWidth: 320,
     },
 
-    // Goal grid
-    optionsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
+    // Feature list step
+    featureScrollContent: {
       paddingHorizontal: theme.spacing.xl,
-      gap: theme.spacing.sm,
       paddingBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
-    goalCard: {
-      width: (Dimensions.get('window').width - theme.spacing.xl * 2 - theme.spacing.sm) / 2,
+    featureCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
       padding: theme.spacing.md,
       borderRadius: theme.borderRadius.md,
-      borderWidth: 2,
-      borderColor: theme.colors.gray[200],
       backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.gray[200],
+      gap: theme.spacing.md,
       ...theme.shadows.sm,
     },
-    goalCardSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: isDark ? theme.colors.gray[100] : `${theme.colors.primary}12`,
+    featureIconBubble: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    goalIcon: {
-      fontSize: 24,
-      marginBottom: theme.spacing.sm,
+    featureCardContent: {
+      flex: 1,
     },
-    goalLabel: {
+    featureCardLabel: {
       fontFamily: theme.fonts.ui.semiBold,
       fontSize: 15,
       color: theme.colors.text,
       marginBottom: 2,
     },
-    goalLabelSelected: {
-      color: theme.colors.primary,
-    },
-    goalDesc: {
-      fontFamily: theme.fonts.ui.regular,
-      fontSize: 12,
-      color: theme.colors.textLight,
-    },
-
-    // List cards (experience)
-    listCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: theme.spacing.md,
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 2,
-      borderColor: theme.colors.gray[200],
-      backgroundColor: theme.colors.surface,
-      marginBottom: theme.spacing.sm,
-      ...theme.shadows.sm,
-    },
-    listCardSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: isDark ? theme.colors.gray[100] : `${theme.colors.primary}12`,
-    },
-    listCardIcon: {
-      fontSize: 24,
-      marginRight: theme.spacing.md,
-    },
-    listCardContent: {
-      flex: 1,
-    },
-    listCardLabel: {
-      fontFamily: theme.fonts.ui.semiBold,
-      fontSize: 15,
-      color: theme.colors.text,
-    },
-    listCardLabelSelected: {
-      color: theme.colors.primary,
-    },
-    listCardDesc: {
+    featureCardDesc: {
       fontFamily: theme.fonts.ui.regular,
       fontSize: 13,
       color: theme.colors.textLight,
-      marginTop: 2,
+      lineHeight: 18,
     },
 
     // Radio
@@ -918,198 +625,10 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       backgroundColor: theme.colors.textOnPrimary,
     },
 
-    // Duration cards
-    durationRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: theme.spacing.sm,
-      paddingTop: theme.spacing.sm,
-    },
-    durationCard: {
-      alignItems: 'center',
-      padding: theme.spacing.md,
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 2,
-      borderColor: theme.colors.gray[200],
-      backgroundColor: theme.colors.surface,
-      width: 80,
-      ...theme.shadows.sm,
-    },
-    durationCardSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: isDark ? theme.colors.gray[100] : `${theme.colors.primary}12`,
-    },
-    durationIcon: {
-      fontSize: 24,
-      marginBottom: theme.spacing.sm,
-    },
-    durationLabel: {
-      fontFamily: theme.fonts.ui.bold,
-      fontSize: 18,
-      color: theme.colors.text,
-      marginBottom: 2,
-    },
-    durationLabelSelected: {
-      color: theme.colors.primary,
-    },
-    durationDesc: {
-      fontFamily: theme.fonts.ui.regular,
-      fontSize: 11,
-      color: theme.colors.textLight,
-      textAlign: 'center',
-    },
-    popularBadge: {
-      position: 'absolute',
-      top: -10,
-      backgroundColor: theme.colors.secondary,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 10,
-    },
-    popularBadgeText: {
-      fontFamily: theme.fonts.ui.bold,
-      fontSize: 9,
-      color: theme.colors.textOnPrimary,
-      letterSpacing: 0.5,
-    },
-
-    // Recommendation step
-    recSessionCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.lg,
-      ...theme.shadows.md,
-    },
-    recSessionBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.sm,
-    },
-    recPlayIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: 8,
-      backgroundColor: theme.colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    recSessionBadgeText: {
-      fontFamily: theme.fonts.ui.bold,
-      fontSize: 11,
-      color: theme.colors.primary,
-      letterSpacing: 1,
-    },
-    recSessionTitle: {
-      fontFamily: theme.fonts.ui.semiBold,
-      fontSize: 17,
-      color: theme.colors.text,
-      marginBottom: 4,
-    },
-    recSessionMeta: {
-      fontFamily: theme.fonts.ui.regular,
-      fontSize: 13,
-      color: theme.colors.textLight,
-    },
-
-    recCourseCard: {
-      backgroundColor: isDark ? theme.colors.gray[100] : `${theme.colors.primary}08`,
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.gray[200],
-    },
-    recCourseBadgeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.sm,
-    },
-    recCourseBadgeText: {
-      fontFamily: theme.fonts.ui.bold,
-      fontSize: 11,
-      color: theme.colors.secondary,
-      letterSpacing: 1,
-    },
-    premiumBadge: {
-      backgroundColor: theme.colors.secondary,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 10,
-    },
-    premiumBadgeText: {
-      fontFamily: theme.fonts.ui.bold,
-      fontSize: 9,
-      color: theme.colors.textOnPrimary,
-    },
-    recCourseTitle: {
-      fontFamily: theme.fonts.ui.semiBold,
-      fontSize: 17,
-      color: theme.colors.text,
-      marginBottom: 6,
-    },
-    recCourseMeta: {
-      fontFamily: theme.fonts.ui.regular,
-      fontSize: 13,
-      color: theme.colors.textLight,
-    },
-    recCourseQuote: {
-      borderLeftWidth: 3,
-      borderLeftColor: theme.colors.secondary,
-      paddingLeft: theme.spacing.md,
-      marginTop: theme.spacing.sm,
-    },
-    recCourseQuoteText: {
-      fontFamily: theme.fonts.body.italic,
-      fontSize: 13,
-      color: theme.colors.text,
-      lineHeight: 20,
-    },
-
-    freeNote: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: theme.spacing.md,
-      backgroundColor: isDark ? theme.colors.gray[100] : `${theme.colors.primary}08`,
-      borderRadius: theme.borderRadius.md,
-      gap: theme.spacing.sm,
-    },
-    freeNoteIcon: {
-      fontSize: 18,
-    },
-    freeNoteText: {
-      flex: 1,
-      fontFamily: theme.fonts.ui.regular,
-      fontSize: 13,
-      color: theme.colors.textLight,
-      lineHeight: 18,
-    },
-
-    // Paywall
-    featureList: {
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.lg,
-    },
-    featureRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    featureIcon: {
-      fontSize: 18,
-      width: 28,
-      textAlign: 'center',
-    },
-    featureText: {
-      flex: 1,
-      fontFamily: theme.fonts.ui.regular,
-      fontSize: 14,
-      color: theme.colors.text,
-      lineHeight: 20,
-    },
-
+    // Plans step
     planCards: {
       gap: theme.spacing.sm,
+      marginTop: theme.spacing.md,
       marginBottom: theme.spacing.md,
     },
     planCard: {
@@ -1185,21 +704,6 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       fontFamily: theme.fonts.ui.semiBold,
       fontSize: 16,
       color: theme.colors.textOnPrimary,
-    },
-    buttonDisabled: {
-      opacity: 0.5,
-    },
-    secondaryButton: {
-      alignItems: 'center',
-      paddingVertical: theme.spacing.sm,
-      borderWidth: 2,
-      borderColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.md,
-    },
-    secondaryButtonText: {
-      fontFamily: theme.fonts.ui.semiBold,
-      fontSize: 14,
-      color: theme.colors.primary,
     },
     ghostButton: {
       alignItems: 'center',
