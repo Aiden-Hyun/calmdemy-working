@@ -46,6 +46,7 @@ export interface DownloadedContent {
   title: string;
   duration_minutes: number;
   thumbnailUrl?: string;
+  localThumbnailPath?: string; // Local filesystem path for the cached thumbnail image
   localPath: string;
   downloadedAt: number;
   fileSize: number;
@@ -184,6 +185,27 @@ export async function getLocalAudioPath(contentId: string): Promise<string | nul
 }
 
 /**
+ * Retrieve the local filesystem path for a downloaded thumbnail.
+ *
+ * Returns the cached thumbnail image path if the content has been downloaded
+ * and its thumbnail was successfully saved. Falls back to null so the caller
+ * can use the remote thumbnailUrl or a placeholder instead.
+ *
+ * @param contentId - The unique identifier of the content.
+ * @returns The filesystem path (file://) to the cached thumbnail, or null.
+ */
+export async function getLocalThumbnailPath(contentId: string): Promise<string | null> {
+  const downloads = await getDownloadedContent();
+  const download = downloads.find(d => d.contentId === contentId);
+  if (!download?.localThumbnailPath) return null;
+
+  const fileInfo = await FileSystem.getInfoAsync(download.localThumbnailPath);
+  if (!fileInfo.exists) return null;
+
+  return download.localThumbnailPath;
+}
+
+/**
  * Download audio content for offline use.
  *
  * This is the core orchestration function. It manages the full lifecycle of a
@@ -293,6 +315,29 @@ export async function downloadAudio(
     const fileInfo = await FileSystem.getInfoAsync(result.uri);
     const fileSize = (fileInfo as any).size || 0;
 
+    // --- Phase 8.5: Download thumbnail image (best-effort) ---
+    // If a thumbnailUrl is provided, download the image file alongside the
+    // audio so it can be displayed when offline. Thumbnail download failure
+    // is non-fatal — the app can fall back to the remote URL or a placeholder.
+    let localThumbnailPath: string | undefined;
+    if (metadata.thumbnailUrl) {
+      try {
+        const thumbExtension = metadata.thumbnailUrl.split('.').pop()?.split('?')[0] || 'jpg';
+        const thumbLocalPath = `${DOWNLOADS_DIR}${contentId}_thumb.${thumbExtension}`;
+        const thumbResult = await FileSystem.downloadAsync(
+          metadata.thumbnailUrl,
+          thumbLocalPath
+        );
+        if (thumbResult && thumbResult.uri) {
+          localThumbnailPath = thumbResult.uri;
+        }
+      } catch (thumbError) {
+        // Non-fatal: audio is still available offline, thumbnail will use
+        // the remote URL or a fallback placeholder.
+        console.warn('Thumbnail download failed (non-fatal):', thumbError);
+      }
+    }
+
     // --- Phase 9: Persist metadata (write-through) ---
     // Build a DownloadedContent record and append it to the AsyncStorage index.
     // If an entry with the same contentId already exists (unlikely given our
@@ -305,6 +350,7 @@ export async function downloadAudio(
       title: metadata.title,
       duration_minutes: metadata.duration_minutes,
       thumbnailUrl: metadata.thumbnailUrl,
+      localThumbnailPath,
       localPath: result.uri,
       downloadedAt: Date.now(),
       fileSize,
@@ -392,10 +438,22 @@ export async function deleteDownload(contentId: string): Promise<boolean> {
     const download = downloads.find(d => d.contentId === contentId);
 
     if (download) {
-      // --- Phase 1: Delete the file from the filesystem ---
+      // --- Phase 1: Delete the audio file from the filesystem ---
       const fileInfo = await FileSystem.getInfoAsync(download.localPath);
       if (fileInfo.exists) {
         await FileSystem.deleteAsync(download.localPath);
+      }
+
+      // --- Phase 1.5: Delete the thumbnail file if it was cached locally ---
+      if (download.localThumbnailPath) {
+        try {
+          const thumbInfo = await FileSystem.getInfoAsync(download.localThumbnailPath);
+          if (thumbInfo.exists) {
+            await FileSystem.deleteAsync(download.localThumbnailPath);
+          }
+        } catch {
+          // Non-fatal: orphaned thumbnail is acceptable.
+        }
       }
 
       // --- Phase 2: Remove the metadata entry ---
@@ -437,6 +495,17 @@ export async function deleteAllDownloads(): Promise<boolean> {
         }
       } catch (error) {
         // Continue deleting other files — don't abort the entire operation.
+      }
+      // Also remove cached thumbnail
+      if (download.localThumbnailPath) {
+        try {
+          const thumbInfo = await FileSystem.getInfoAsync(download.localThumbnailPath);
+          if (thumbInfo.exists) {
+            await FileSystem.deleteAsync(download.localThumbnailPath);
+          }
+        } catch {
+          // Non-fatal
+        }
       }
     }
 

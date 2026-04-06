@@ -27,7 +27,7 @@ import { getAudioUrlFromPath } from '../constants/audioFiles';
 import { getSleepSoundById, getNarratorByName, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
 import { useNetwork } from '../contexts/NetworkContext';
-import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading } from '../services/downloadService';
+import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../services/downloadService';
 
 /**
  * ============================================================
@@ -248,6 +248,11 @@ export function MediaPlayer({
   const [isDownloadingState, setIsDownloadingState] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
+  // --- Local Thumbnail (Offline) ---
+  // Resolved local file path for the cached thumbnail image. Preferred over
+  // the remote artworkThumbnailUrl when available so artwork displays offline.
+  const [localThumbnail, setLocalThumbnail] = useState<string | null>(null);
+
   // --- Sleep Timer Integration ---
   // Delegates sleep timer control to SleepTimerContext (manages its own state there)
   const sleepTimer = useSleepTimer();
@@ -289,6 +294,13 @@ export function MediaPlayer({
       const downloaded = await isDownloaded(contentId);
       setIsDownloadedState(downloaded);
       setIsDownloadingState(checkIsDownloading(contentId));
+      // Resolve cached thumbnail for offline artwork display
+      if (downloaded) {
+        const thumbPath = await getLocalThumbnailPath(contentId);
+        setLocalThumbnail(thumbPath);
+      } else {
+        setLocalThumbnail(null);
+      }
     }
     checkDownloadStatus();
   }, [contentId]);
@@ -327,6 +339,11 @@ export function MediaPlayer({
     setDownloadProgress(0);
     if (success) {
       setIsDownloadedState(true);
+      // Resolve the freshly-cached thumbnail so artwork updates immediately
+      if (contentId) {
+        const thumbPath = await getLocalThumbnailPath(contentId);
+        setLocalThumbnail(thumbPath);
+      }
     }
   };
 
@@ -787,10 +804,10 @@ export function MediaPlayer({
           {/* --- Sub-Phase 3a: Artwork (Thumbnail or Icon) --- */}
           {/* Responsive: uses artworkSize, artworkIconSize from breakpoint calculations */}
           <View style={[styles.iconContainer, { marginTop: sectionMargin, marginBottom: sectionMargin }]}>
-            {artworkThumbnailUrl ? (
-              // Use thumbnail image if provided (from content metadata)
+            {(localThumbnail || artworkThumbnailUrl) ? (
+              // Prefer local cached thumbnail (works offline), fall back to remote URL
               <Image
-                source={{ uri: artworkThumbnailUrl }}
+                source={{ uri: localThumbnail || artworkThumbnailUrl }}
                 style={[styles.thumbnailImage, { width: artworkSize, height: artworkSize, borderRadius: artworkSize / 2 }]}
               />
             ) : (
