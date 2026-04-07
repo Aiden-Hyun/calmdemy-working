@@ -158,7 +158,8 @@ function HomeScreen() {
           params: {
             id: em.id, title: em.title, description: em.description,
             duration: String(em.duration_minutes), audioPath: em.audioPath,
-            color: em.color, icon: em.icon, narrator: em.narrator || ''
+            color: em.color, icon: em.icon, narrator: em.narrator || '',
+            thumbnailUrl: em.thumbnailUrl || ''
           }
         });
       } else {
@@ -206,7 +207,8 @@ function HomeScreen() {
             params: {
               id: emergency.id, title: emergency.title, description: emergency.description,
               duration: String(emergency.duration_minutes), audioPath: emergency.audioPath,
-              color: emergency.color, icon: emergency.icon, narrator: emergency.narrator || ''
+              color: emergency.color, icon: emergency.icon, narrator: emergency.narrator || '',
+              thumbnailUrl: emergency.thumbnailUrl || ''
             }
           });
         } else {

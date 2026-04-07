@@ -346,6 +346,7 @@ function SoundPlayerScreen() {
                     title: sound.title,
                     duration_minutes: timerMinutes || 30,
                     audioPath: sound.audioPath,
+                    thumbnailUrl: sound.thumbnail_url,
                   }}
                   size={24}
                   darkMode={true}
