@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProtectedRoute } from '../../src/components/ProtectedRoute';
@@ -358,7 +359,7 @@ function ProfileScreen() {
         {/* Footer */}
         <AnimatedView delay={750} duration={400}>
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Calmdemy v1.0.2</Text>
+          <Text style={styles.footerText}>Calmdemy v{Constants.expoConfig?.version ?? '0.0.0'}</Text>
             <Text style={styles.footerSubtext}>Made with love for your peace</Text>
         </View>
         </AnimatedView>
