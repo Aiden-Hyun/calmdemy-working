@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../src/contexts/AuthContext';
+import { lightColors } from '../src/theme';
 
 const ONBOARDING_KEY = '@calmdemy_onboarding';
 
@@ -35,5 +37,33 @@ export default function Index() {
     }
   }, [authLoading, onboardingDone, user]);
 
-  return null;
+  return (
+    <View style={styles.container}>
+      <Text style={styles.icon}>🌿</Text>
+      <Text style={styles.title}>Calmdemy</Text>
+      <ActivityIndicator size="small" color={lightColors.primary} style={styles.spinner} />
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: lightColors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: lightColors.primary,
+    letterSpacing: -0.5,
+  },
+  spinner: {
+    marginTop: 24,
+  },
+});

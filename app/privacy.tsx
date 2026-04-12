@@ -265,7 +265,7 @@ export default function PrivacyScreen() {
           If you have any questions about this Privacy Policy, wish to exercise your privacy rights, or have concerns about our data practices, please contact us:
         </Text>
         <Text style={styles.paragraph}>
-          <Text style={styles.bold}>Email:</Text> calm.nest.cs@gmail.com
+          <Text style={styles.bold}>Email:</Text> aiden.hyun.business@gmail.com
         </Text>
         <Text style={styles.paragraph}>
           For privacy-related inquiries, please include "Privacy Request" in the subject line of your email. We will respond to your request within 30 days.
