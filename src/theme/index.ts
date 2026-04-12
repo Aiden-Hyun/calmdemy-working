@@ -35,6 +35,8 @@
  * ============================================================
  */
 
+import { scale, moderateScale } from '../utils/scale';
+
 // --- Type Definitions ---
 
 /**
@@ -265,13 +267,13 @@ const sharedTheme = {
    * Follows a base-8 scale for consistent, predictable layouts.
    */
   spacing: {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 48,
-    xxxl: 64,
+    xs: scale(4),
+    sm: scale(8),
+    md: scale(16),
+    lg: scale(24),
+    xl: scale(32),
+    xxl: scale(48),
+    xxxl: scale(64),
   },
   
   /**
@@ -340,56 +342,56 @@ const sharedTheme = {
      */
     display: {
       fontFamily: 'Fraunces-Bold',
-      fontSize: 36,
-      lineHeight: 44,
+      fontSize: moderateScale(36),
+      lineHeight: moderateScale(44),
       letterSpacing: -0.5,
     },
     h1: {
       fontFamily: 'Fraunces-SemiBold',
-      fontSize: 28,
-      lineHeight: 36,
+      fontSize: moderateScale(28),
+      lineHeight: moderateScale(36),
       letterSpacing: -0.3,
     },
     h2: {
       fontFamily: 'Fraunces-SemiBold',
-      fontSize: 24,
-      lineHeight: 32,
+      fontSize: moderateScale(24),
+      lineHeight: moderateScale(32),
       letterSpacing: -0.2,
     },
     h3: {
       fontFamily: 'DMSans-SemiBold',
-      fontSize: 20,
-      lineHeight: 28,
+      fontSize: moderateScale(20),
+      lineHeight: moderateScale(28),
     },
     h4: {
       fontFamily: 'DMSans-SemiBold',
-      fontSize: 17,
-      lineHeight: 24,
+      fontSize: moderateScale(17),
+      lineHeight: moderateScale(24),
     },
     body: {
       fontFamily: 'Lora-Regular',
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: moderateScale(16),
+      lineHeight: moderateScale(24),
     },
     bodyMedium: {
       fontFamily: 'Lora-Medium',
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: moderateScale(16),
+      lineHeight: moderateScale(24),
     },
     bodySmall: {
       fontFamily: 'DMSans-Regular',
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: moderateScale(14),
+      lineHeight: moderateScale(20),
     },
     caption: {
       fontFamily: 'DMSans-Regular',
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: moderateScale(12),
+      lineHeight: moderateScale(16),
     },
     label: {
       fontFamily: 'DMSans-Medium',
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: moderateScale(13),
+      lineHeight: moderateScale(18),
       letterSpacing: 0.3,
     },
     /**
@@ -398,8 +400,8 @@ const sharedTheme = {
      */
     quote: {
       fontFamily: 'Lora-Italic',
-      fontSize: 18,
-      lineHeight: 28,
+      fontSize: moderateScale(18),
+      lineHeight: moderateScale(28),
     },
     /**
      * Button: Semibold sans-serif for interactive text.
@@ -407,8 +409,8 @@ const sharedTheme = {
      */
     button: {
       fontFamily: 'DMSans-SemiBold',
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: moderateScale(16),
+      lineHeight: moderateScale(24),
     },
   },
 };
