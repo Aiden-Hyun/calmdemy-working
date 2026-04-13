@@ -724,14 +724,13 @@ export async function getTodayQuote(): Promise<DailyQuote | null> {
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      // Get a random quote if no quote for today
-      const allQuotesSnapshot = await getDocs(quotesCollection);
-      if (allQuotesSnapshot.empty) return null;
+      // Fallback: pick a single random quote instead of loading the entire collection.
+      // Use a random date-based seed to get variety across days.
+      const fallbackQuery = query(quotesCollection, limit(1));
+      const fallbackSnapshot = await getDocs(fallbackQuery);
+      if (fallbackSnapshot.empty) return null;
 
-      const randomIndex = Math.floor(
-        Math.random() * allQuotesSnapshot.docs.length
-      );
-      const doc = allQuotesSnapshot.docs[randomIndex];
+      const doc = fallbackSnapshot.docs[0];
       return { id: doc.id, ...doc.data() } as DailyQuote;
     }
 
@@ -2044,17 +2043,23 @@ export async function getListeningHistory(
   maxLimit = 10
 ): Promise<ListeningHistoryItem[]> {
   try {
-    // Phase 1: Fetch all history for this user (unordered, to avoid index requirement)
-    const q = query(listeningHistoryCollection, where("user_id", "==", userId));
+    // Fetch recent history sorted by Firestore, with a generous limit to allow
+    // for deduplication (user may replay the same content multiple times).
+    const fetchLimit = maxLimit * 5;
+    const q = query(
+      listeningHistoryCollection,
+      where("user_id", "==", userId),
+      orderBy("played_at", "desc"),
+      limit(fetchLimit)
+    );
     const snapshot = await getDocs(q);
 
-    // Phase 2: Transform Timestamp objects to ISO strings
+    // Transform Timestamp objects to ISO strings
     const items = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
         ...data,
-        // Timestamp Conversion: Same pattern as sessions and favorites
         played_at:
           data.played_at instanceof Timestamp
             ? data.played_at.toDate().toISOString()
@@ -2062,22 +2067,14 @@ export async function getListeningHistory(
       } as ListeningHistoryItem;
     });
 
-    // Phase 3: Sort by played_at descending (most recent first)
-    const sorted = items.sort(
-      (a, b) =>
-        new Date(b.played_at).getTime() - new Date(a.played_at).getTime()
-    );
-
-    // Phase 4: Deduplication pattern — keep only the most recent play per content
-    // (Shows what the user is currently listening to, not a raw audit trail)
+    // Deduplication — keep only the most recent play per content
     const seen = new Set<string>();
-    const deduplicated = sorted.filter((item) => {
-      if (seen.has(item.content_id)) return false; // Already seen this content
+    const deduplicated = items.filter((item) => {
+      if (seen.has(item.content_id)) return false;
       seen.add(item.content_id);
       return true;
     });
 
-    // Phase 5: Return the top N items
     return deduplicated.slice(0, maxLimit);
   } catch (error: any) {
     console.error("Error fetching listening history:", error);
