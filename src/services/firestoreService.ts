@@ -1169,31 +1169,29 @@ export async function getFavoritesWithDetails(
     const favorites = await getUserFavorites(userId);
     const resolvedContent: ResolvedContent[] = [];
 
-    for (const fav of favorites) {
-      const favData = fav as any; // Raw Firestore doc may have denormalized fields
+    const resolved = await Promise.all(
+      favorites.map(async (fav) => {
+        const favData = fav as any;
 
-      // Fast path: denormalized metadata present (new favorites)
-      if (favData.title) {
-        resolvedContent.push({
-          id: fav.content_id,
-          title: favData.title,
-          thumbnail_url: favData.thumbnail_url,
-          duration_minutes: favData.duration_minutes || 0,
-          content_type: fav.content_type,
-          course_code: favData.course_code,
-          session_code: favData.session_code,
-        });
-      } else {
-        // Slow path: legacy favorite without metadata, resolve via getContentById()
-        // This handles old favorites created before we added denormalization
-        const content = await getContentById(fav.content_id, fav.content_type);
-        if (content) {
-          resolvedContent.push(content);
+        // Fast path: denormalized metadata present (new favorites)
+        if (favData.title) {
+          return {
+            id: fav.content_id,
+            title: favData.title,
+            thumbnail_url: favData.thumbnail_url,
+            duration_minutes: favData.duration_minutes || 0,
+            content_type: fav.content_type,
+            course_code: favData.course_code,
+            session_code: favData.session_code,
+          } as ResolvedContent;
         }
-      }
-    }
 
-    return resolvedContent;
+        // Slow path: legacy favorite without metadata, resolve via getContentById()
+        return getContentById(fav.content_id, fav.content_type);
+      })
+    );
+
+    return resolved.filter((item): item is ResolvedContent => item !== null);
   } catch (error) {
     console.error("Error fetching favorites with details:", error);
     return [];

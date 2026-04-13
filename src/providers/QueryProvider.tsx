@@ -55,7 +55,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,  // 5 minutes: data is fresh for 5 mins
+      staleTime: 1000 * 60 * 30, // 30 minutes: user data rarely changes mid-session
       gcTime: 1000 * 60 * 60 * 24, // 24 hours: must be >= maxAge for persistence
       retry: 2, // Retry failed requests twice
     },
