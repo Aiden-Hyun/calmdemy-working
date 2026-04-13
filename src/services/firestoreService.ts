@@ -264,10 +264,11 @@ export async function createSession(
     completed_at: serverTimestamp(), // Server-side timestamp to avoid clock skew
   });
 
-  // Update user stats: recalculate streak, total minutes, longest streak.
-  // This is a side effect — in larger systems, we might queue this as a Cloud Function
-  // to decouple session recording from stats computation.
-  await updateUserStats(session.user_id);
+  // Update user stats in the background — don't block the session creation response.
+  // Stats are derived data and can tolerate brief staleness.
+  updateUserStats(session.user_id).catch((err) =>
+    console.error("Background stats update failed:", err)
+  );
 
   return docRef.id;
 }

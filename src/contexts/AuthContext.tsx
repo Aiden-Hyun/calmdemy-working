@@ -269,21 +269,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Returns null if the user cancels the sign-in flow.
    * Throws if device doesn't support Google Play Services or other auth errors.
    *
-   * Note: The debug telemetry blocks (#region agent log) are temporary and should
-   * be removed before production deployment.
-   *
    * @returns Firebase AuthCredential or null if user cancelled
    */
   const getGoogleCredential = async (): Promise<AuthCredential | null> => {
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:getGoogleCredential:beforeSignIn',message:'About to call GoogleSignin.signIn',data:{currentUserId:auth.currentUser?.uid,isAnonymous:auth.currentUser?.isAnonymous},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const signInResult = await GoogleSignin.signIn();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:getGoogleCredential:afterSignIn',message:'GoogleSignin.signIn returned',data:{currentUserId:auth.currentUser?.uid,isAnonymous:auth.currentUser?.isAnonymous,hasIdToken:!!signInResult.data?.idToken},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
       const idToken = signInResult.data?.idToken;
       if (!idToken) return null;
       return GoogleAuthProvider.credential(idToken);
