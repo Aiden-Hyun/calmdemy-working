@@ -282,12 +282,12 @@ const sharedTheme = {
    * Follows a base-of-4 progression for visual harmony.
    */
   borderRadius: {
-    xs: 6,
-    sm: 10,
-    md: 14,
-    lg: 20,
-    xl: 28,
-    xxl: 36,
+    xs: 2,
+    sm: 6,
+    md: 10,
+    lg: 14,
+    xl: 18,
+    xxl: 24,
     full: 9999,
   },
   
