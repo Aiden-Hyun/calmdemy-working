@@ -227,7 +227,11 @@ const createStyles = (
       padding: theme.spacing.md,
       alignItems: "center",
       flexShrink: 0,
-      ...theme.shadows.sm,
+      // Shadow only applies when card has an opaque background.
+      // In light mode the card uses a 7% transparent tint — Android's
+      // elevation renders as a visible gray rectangle behind transparent
+      // backgrounds, so we skip the shadow in that case.
+      ...(isSleepPage || isRegularDark ? theme.shadows.sm : {}),
     },
     // --- Thumbnail Container ---
     // Fixed height with position: relative to allow absolute positioning

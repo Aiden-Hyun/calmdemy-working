@@ -5,7 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 import {
   syncRevenueCatIdentity,
@@ -56,8 +56,11 @@ import {
  * ============================================================
  */
 
-// RevenueCat API Key (Apple/iOS)
-const REVENUECAT_API_KEY = "appl_JhsFtEMqcEsdxXadtbKkjhXGoZT";
+// RevenueCat API Key — platform-specific (iOS vs Android)
+const REVENUECAT_API_KEY = Platform.select({
+  ios: "appl_JhsFtEMqcEsdxXadtbKkjhXGoZT",
+  android: "goog_ArHQjIsqrfyDDgznWuhfaqbHsUu",
+}) as string;
 
 // Entitlement ID configured in RevenueCat dashboard
 // IMPORTANT: Verify this matches the actual Entitlement Identifier in RevenueCat,
