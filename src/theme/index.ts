@@ -267,13 +267,13 @@ const sharedTheme = {
    * Follows a base-8 scale for consistent, predictable layouts.
    */
   spacing: {
-    xs: scale(4),
-    sm: scale(8),
-    md: scale(16),
-    lg: scale(24),
-    xl: scale(32),
-    xxl: scale(48),
-    xxxl: scale(64),
+    xs: moderateScale(4),
+    sm: moderateScale(8),
+    md: moderateScale(16),
+    lg: moderateScale(24),
+    xl: moderateScale(32),
+    xxl: moderateScale(48),
+    xxxl: moderateScale(64),
   },
   
   /**
