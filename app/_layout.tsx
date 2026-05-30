@@ -106,14 +106,8 @@ function RootNavigator() {
             headerShown: false,
           }} 
         />
-        <Stack.Screen 
-          name="sleep-sounds" 
-          options={{ 
-            headerShown: false,
-          }} 
-        />
-        <Stack.Screen 
-          name="meditations" 
+        <Stack.Screen
+          name="meditations"
           options={{ 
             headerShown: false,
           }} 

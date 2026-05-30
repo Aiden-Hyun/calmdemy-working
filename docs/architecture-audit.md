@@ -1,0 +1,496 @@
+# Calmdemy Architecture Audit — Phase 0
+
+Status: decisions locked, Phase 0a in progress
+Scope: every `.ts`/`.tsx` file in `/app` and `/src` (110 files)
+Goal: prepare for a Toss-style modular refactor so we can safely add many features (Journal/CBT, Mood, etc.) without the codebase rotting
+
+---
+
+## Locked decisions
+
+**Tab structure (finalized)**
+| Position | Tab | Houses |
+|---|---|---|
+| 1 | **Home** | personalized today |
+| 2 | **Library** | passive audio: meditations, music, sleep stories, sleep meditations, ASMR, white noise, nature sounds, albums/series/courses |
+| 3 | **Tools** | active engagement: breathing, journal/CBT (when built), mood check-in (when built), gratitude, active meditation sessions |
+| 4 | **Profile** | identity, stats summary, settings, account |
+| 5 | **Discover** | full feature shelf — every feature listed by category, with search |
+
+**Naming resolution: Library tab vs `features/library/` module**
+The Library tab IS the library feature. `features/library/` owns both the tab home screen and the album/series/course collection screens. Individual content data still lives in feature modules (`features/meditation/data`, `features/music/data`, `features/sleep/data`); the Library tab composes them via React Query hooks.
+
+**Other decisions**
+- Delete on confirmation: `MeditationCard`, `MeditationTimer`, `PremiumGate`. Keep `ProgressRing` as a primitive.
+- `AccountSwitchConfirmModal`: defer to Phase 6 (auth migration). Audit agent missed that login.tsx imports it. Will consolidate with `AccountSwitchWarning` then.
+- `SleepTimerContext`: shared, not sleep-only. Used by every player that goes through `MediaPlayer` (meditation, sleep, library content, emergency, downloads). Moves to `shared/media-player/`, rename to `PlaybackTimerContext`.
+- Music single-item player: add `getSoundById`, adopt `usePlayerBehavior`.
+- Renames: `AudioPlayer → AudioControls`, `MediaPlayer → TrackPlayerScreen`, `SoundPlayer → LoopingSoundScreen`.
+- `ReportModal`: goes to `shared/modals/` (reusable across features).
+- List-screen template: one shared `shared/lists/AudioListScreen.tsx` used by every feature.
+- ESLint boundary violations: **hard errors** (refuses to compile).
+
+---
+
+## Phase 0a progress
+
+**Chunk 1 — DONE (this turn)**
+- ✅ Deleted: `src/components/MeditationCard.tsx`, `src/components/MeditationTimer.tsx`, `src/components/PremiumGate.tsx`, `app/meditations/technique/_layout.tsx`, `app/sleep-sounds.tsx`
+- ✅ Removed `sleep-sounds` Stack.Screen from `app/_layout.tsx`
+- ✅ Stripped 16 debug telemetry fetches from `app/login.tsx` (8), `src/contexts/AuthContext.tsx` (5), `src/components/AccountPromptModal.tsx` (3)
+- ✅ Removed stale `MeditationCard` mention from `ContentCard.tsx` JSDoc
+- ✅ Moved `src/data/seedContent.ts` → `scripts/seed/seedContent.ts`; removed empty `src/data/` directory
+- ✅ Added `"exclude": ["scripts/**", "node_modules"]` to `tsconfig.json`
+- ✅ TypeScript: no new errors introduced (24 pre-existing errors flagged separately for triage)
+
+**Chunk 2 — secrets to env (next)**
+- RevenueCat API keys (`SubscriptionContext.tsx`)
+- Google OAuth client IDs (`AuthContext.tsx`)
+- Firebase config (`firebase.ts`)
+- Admin UID allowlist (`SubscriptionContext.tsx`)
+
+**Chunk 3 — dedupe constants and helpers**
+- `PREMIUM_ENTITLEMENT_ID` (2 locations)
+- `fonts` (2 locations)
+- `generateGuestNickname` (2 locations)
+- `getCategoryIcon` (5 locations)
+- `themeCategories`, `therapyCategories`, `techniqueCategories` (2–3 locations each)
+- `@calmdemy_onboarding` AsyncStorage key (2 locations)
+
+**Chunk 4 — small fixes**
+- Theme storage key inconsistency (`@calmdemy_theme_mode` vs `@theme_mode` in delete-account preserve list)
+- Stale comment in `QueryProvider.tsx` (staleTime says 5min, actual is Infinity)
+
+---
+
+## 1. Headline findings (the things that change the plan)
+
+1. **`src/services/firestoreService.ts` is 2,604 lines and is imported by every feature.** It is *the* universal coupling point. Splitting it by feature is the single highest-leverage move in the refactor and must come early.
+2. **`album` + `series` + `course` are one feature, not three.** Detail screens are ~510 LOC each and structurally identical; player screens are ~250 LOC each and identical. Unifying them as a `library` feature with three content-type configs drops ~3,000 LOC and removes the worst duplication in the app.
+3. **There is ~5,000 LOC of dead or duplicated code that should be deleted, not migrated.** Five orphaned components (~1,400 LOC), `seedContent.ts` shipping in the bundle with no consumers (~1,300 LOC), a duplicate sleep-sounds screen, a dead nested `_layout.tsx`, and overlapping helpers. Deleting first means less to refactor.
+4. **`ContentPreloadContext` duplicates React Query.** It reimplements stale-while-revalidate caching that `QueryProvider` already provides via TanStack + AsyncStorage persistence. Should be deleted in favor of `useQuery` consumers, not migrated.
+5. **`MediaPlayer.tsx` is 1,461 LOC and the central cross-feature surface.** Used by 8 routes across meditation, music, sleep, library content, emergency, and downloads. Needs a dedicated `shared/media-player/` module with an orchestration hook extracted from the view.
+6. **Live debug telemetry posting to `http://127.0.0.1:7242/...` is still in production code** — in `AuthContext.tsx` lines 363-388 and `AccountPromptModal.tsx` lines 107/114/123. Strip before any refactor work begins.
+7. **Hardcoded secrets in client code**: RevenueCat API keys, Google OAuth client IDs, Firebase config, admin UID allowlist. Should move to env config during cleanup.
+8. **`usePlayerBehavior` and `ContentPreloadContext` are "screen-shaped" abstractions** — they bundle favorites + ratings + history + paywall + content-fetch into one hook each. Both should be decomposed so each piece can live with its rightful feature.
+
+---
+
+## 2. Refined target architecture
+
+```
+/app                                  ← routing layer only; route files become 5–20 line wrappers
+  (tabs)/                             ← Home / Music / Meditate / Sleep / Profile  (or Home/Discover/Practice/Library/Profile — see decisions)
+  meditation/, meditations/           ← thin wrappers, screen impls live in src/features/meditation
+  music/, sleep/, breathing.tsx       ← idem
+  album/, series/, course/            ← thin wrappers around features/library
+  downloads/, emergency/              ← idem
+  account-security, login, settings, onboarding, privacy, terms, stats, index, _layout
+
+/src
+  core/                               ← shared infrastructure — features depend on these
+    ui/                               ← AnimatedPressable, AnimatedView, Skeleton, ProgressRing, TabBarButton, scale
+    theme/                            ← ThemeContext, theme tokens, useFonts (single source of truth)
+    auth/                             ← AuthContext, ProtectedRoute, useProviderManagement, cleanup-registry
+    network/                          ← NetworkContext
+    firebase/                         ← firebase.ts + generic Firestore helpers
+    query/                            ← QueryProvider (TanStack + AsyncStorage persistence)
+    subscription/                     ← SubscriptionContext, AuthSubscriptionManager
+    audio/                            ← useAudioPlayer, useBackgroundAudio, useAudioUrlQueries, audio URL helpers
+    notifications/                    ← notificationService
+    nav/                              ← OfflineNavigator, PreloadGate, route constants
+    storage/                          ← AsyncStorage facade
+    analytics/                        ← (placeholder; replaces the localhost-fetch debug telemetry)
+
+  shared/                             ← cross-feature reusable code that's not a primitive
+    types/                            ← cross-feature discriminators: SessionType, RatingType, ReportCategory
+    cards/                            ← ContentCard (used by 4 tabs)
+    loading/                          ← LoadingScreen (branded)
+    modals/                           ← ReportModal (if kept generic)
+    media-player/                     ← MediaPlayer (view), AudioControls (was AudioPlayer), BackgroundAudioPicker, SleepTimerPicker, useMediaPlayerOrchestration
+    player-behavior/                  ← decomposed usePlayerBehavior pieces (or absorbed into media-player)
+
+  features/                           ← self-contained modules; one folder per feature
+    auth/                             ← LoginScreen, AccountSecurityScreen, AccountPromptModal, AccountSwitchWarning, CredentialCollisionModal
+    subscription/                     ← PaywallModal, RecoveryWizard, PremiumGate(?), onboarding paywall
+    onboarding/                       ← OnboardingScreen, feature catalogues, onboarding state
+    home/                             ← HomeScreen (assembles cards from other features' hooks)
+    meditation/                       ← MeditateHomeScreen, MeditationPlayerScreen, AllMeditationsScreen, TechniquesScreen, TherapiesScreen, useMeditation, useMeditateQueries, meditation Firestore data
+    music/                            ← MusicHomeScreen, SoundListScreen (parameterized), SoundPlayerScreen, useMusicQueries, useMusicSleepTimer, music Firestore data
+    sleep/                            ← SleepHomeScreen, BedtimeStoriesScreen, SleepMeditationsScreen, single-item players, useSleepQueries, sleep Firestore data, SleepTimerContext (if confirmed sleep-only)
+    library/                          ← CollectionDetailScreen, CollectionItemPlayerScreen (handle album/series/course via contentType config), navigateToContent, contentIcons, collection lookups, getContentById, favorites/ratings/reports/quotes, narrators
+    breathing/                        ← BreathingScreen, BreathingGuide, useBreathing, breathing techniques data
+    emergency/                        ← EmergencyPlayerScreen, emergency meditation data
+    downloads/                        ← DownloadsScreen, OfflinePlayerScreen, DownloadButton, downloadService
+    progress/                         ← StatsScreen, useStats, StatsCard, milestones, sessions/history/playback-progress/completed-content data
+    profile/                          ← ProfileScreen
+    settings/                         ← SettingsScreen (theme/notifications)
+    legal/                            ← PrivacyScreen, TermsScreen
+
+  registry.ts                         ← imports every features/*/manifest.ts → powers Discover, search, deep links
+  test-setup.ts                       ← unchanged
+```
+
+### Three invariants this design enforces
+
+1. **Dependency direction is one-way:** `features → shared → core`. Never `feature → feature`. Enforced by ESLint `no-restricted-imports` in Phase 5.
+2. **Every feature has a `manifest.ts`** declaring id, display name, icon, route, category, requires-auth, requires-subscription, search keywords. Source of truth for Discover, search, and personalization.
+3. **`core/ui/` is the only place atomic styles live.** Features compose primitives.
+
+---
+
+## 3. Inventory by target bucket
+
+### `core/ui/` — atomic primitives
+| Current location | Notes |
+|---|---|
+| `src/components/AnimatedPressable.tsx` | clean |
+| `src/components/AnimatedView.tsx` | clean |
+| `src/components/Skeleton.tsx` | clean |
+| `src/components/ProgressRing.tsx` | currently unused — keep as primitive for stats/timer to compose |
+| `src/components/TabBarButton.tsx` | clean |
+| `src/utils/scale.ts` | used by theme |
+
+### `core/theme/`
+| Current location | Notes |
+|---|---|
+| `src/contexts/ThemeContext.tsx` | fix storage-key inconsistency (`@calmdemy_theme_mode` vs `@theme_mode` used in AuthContext preserve list) |
+| `src/theme/index.ts` | dedupe `fonts` (currently also in `useFonts.ts`) |
+| `src/hooks/useFonts.ts` | merge `fonts` source of truth |
+
+### `core/auth/`
+| Current location | Notes |
+|---|---|
+| `src/contexts/AuthContext.tsx` | strip localhost debug fetches; move OAuth client IDs to env; introduce cleanup-registry instead of direct calls to `downloadService.deleteAllDownloads` and `firestoreService.deleteUserAccount` |
+| `src/components/ProtectedRoute.tsx` | clean |
+| `src/hooks/useProviderManagement.ts` | clean |
+
+### `core/network/`
+| Current location | Notes |
+|---|---|
+| `src/contexts/NetworkContext.tsx` | clean |
+
+### `core/firebase/`
+| Current location | Notes |
+|---|---|
+| `src/firebase.ts` | move config to env |
+| Generic helpers extracted from `firestoreService.ts` | timestamp conversion, base CRUD helpers |
+
+### `core/query/`
+| Current location | Notes |
+|---|---|
+| `src/providers/QueryProvider.tsx` | fix stale comment about staleTime |
+
+### `core/subscription/`
+| Current location | Notes |
+|---|---|
+| `src/contexts/SubscriptionContext.tsx` | move RevenueCat keys + admin UIDs to env; fix missing `user?.uid` dep in observer effect; dedupe `PREMIUM_ENTITLEMENT_ID` |
+| `src/managers/AuthSubscriptionManager.ts` | document the deliberate `core/subscription → core/auth` dependency |
+
+### `core/audio/`
+| Current location | Notes |
+|---|---|
+| `src/hooks/useAudioPlayer.ts` | clean primitive used by every player |
+| `src/hooks/useBackgroundAudio.ts` | clean |
+| `src/hooks/queries/useAudioUrlQueries.ts` | clean |
+| `src/constants/audioFiles.ts` — helpers half | `getAudioUrl`, `getAudioUrlFromPath`, `preloadAudioUrls`, URL cache → here. `storagePaths` asset registry can stay centralized as an asset manifest (or split per feature later) |
+| `src/services/audioService.ts` | delete the `audioService` shim (dead, self-deprecated); keep only `configureAudioMode` in bootstrap |
+
+### `core/notifications/`
+| Current location | Notes |
+|---|---|
+| `src/services/notificationService.ts` | clean |
+
+### `core/nav/`
+| Current location | Notes |
+|---|---|
+| `src/components/OfflineNavigator.tsx` | extract `/downloads` + `/(tabs)/home` literals to a route constants module |
+| `src/components/PreloadGate.tsx` | clean (or move alongside the React Query refactor — see Decisions) |
+
+### `shared/types/`
+| Current location | Notes |
+|---|---|
+| `src/types/index.ts` — cross-feature parts | keep `SessionType`, `RatingType`, `ReportCategory`, `User`/`UserPreferences` here |
+| `src/types/index.ts` — feature-specific parts | move `BreathingPattern` → `features/breathing/types`, `BedtimeStory` → `features/sleep/types`, `GuidedMeditation` → `features/meditation/types`, `MeditationProgram` → `features/meditation/types` (if revived) |
+| Firestore-specific types (currently re-exported from `firestoreService.ts`) | move into respective feature/types — consistent location |
+
+### `shared/cards/`, `shared/loading/`, `shared/modals/`
+| Current location | Notes |
+|---|---|
+| `src/components/ContentCard.tsx` | used by 4 tab screens; allowed to read `core/subscription` for the lock badge |
+| `src/components/LoadingScreen.tsx` | hardcodes Calmdemy branding — shared, not atomic |
+| `src/components/ReportModal.tsx` | currently only used by `MediaPlayer`; could live next to it instead of in shared |
+
+### `shared/media-player/`
+| Current location | Notes |
+|---|---|
+| `src/components/MediaPlayer.tsx` | 1,461 LOC — extract `useMediaPlayerOrchestration` hook + thinner view |
+| `src/components/AudioPlayer.tsx` | rename → `AudioControls` (it's the inner control surface) |
+| `src/components/BackgroundAudioPicker.tsx` | currently imports `useSleepSounds` from music feature — break by accepting sounds via prop or via a shared sounds source |
+| `src/components/SleepTimerPicker.tsx` | reads `SleepTimerContext` — see Decisions on ownership |
+
+### `shared/player-behavior/`
+| Current location | Notes |
+|---|---|
+| `src/hooks/usePlayerBehavior.ts` | screen-shaped god-hook; decompose into `useFavoriteToggle` (library), `usePlaybackTracking` (progress), `useContentRating` (library), `useContentReport` (library) — composed by the media-player screen |
+
+### `features/auth/`
+| Current location | Notes |
+|---|---|
+| `app/login.tsx` | move screen body to `LoginScreen.tsx`; inline Google SVG → `assets/google.svg.ts` |
+| `app/account-security.tsx` | move to `AccountSecurityScreen.tsx` |
+| `src/components/AccountPromptModal.tsx` | strip localhost debug fetches |
+| `src/components/AccountSwitchWarning.tsx` | keep (the one actually wired in) |
+| `src/components/CredentialCollisionModal.tsx` | clean |
+| `app/index.tsx` (bootstrap routing) | extract decision into `features/auth/bootstrap/useStartupRoute.ts` |
+
+### `features/subscription/`
+| Current location | Notes |
+|---|---|
+| `src/components/PaywallModal.tsx` | currently imports `AccountPromptModal` (auth) — invert via callback so auth modal is passed in or invoked via core/flows orchestrator |
+| `src/components/RecoveryWizard.tsx` | currently calls auth `signInWith*` — same pattern: invert |
+| `src/components/PremiumGate.tsx` | DECIDE: adopt or delete (currently has no callers) |
+
+### `features/onboarding/`
+| Current location | Notes |
+|---|---|
+| `app/onboarding.tsx` | move to `OnboardingScreen.tsx`; feature catalogues → `data/`; share `@calmdemy_onboarding` AsyncStorage key with `app/index.tsx` via a constant |
+
+### `features/home/`
+| Current location | Notes |
+|---|---|
+| `app/(tabs)/home.tsx` | 848 LOC. Move body to `HomeScreen.tsx`. Cross-feature `navigateToContent` and lookup helpers move to `features/library/navigation.ts`. `generateGuestNickname` duplicate → `src/utils/guestNickname.ts` |
+
+### `features/meditation/`
+| Current location | Notes |
+|---|---|
+| `app/(tabs)/meditate.tsx` | → `MeditateHomeScreen.tsx`; dedupe `themeCategories`/`therapyCategories`/`techniqueCategories` constants |
+| `app/meditation/[id].tsx` | → `MeditationPlayerScreen.tsx` (singleton-fetch player template) |
+| `app/meditations/index.tsx` | → `AllMeditationsScreen.tsx` |
+| `app/meditations/techniques.tsx` | → `TechniquesScreen.tsx` |
+| `app/meditations/therapies.tsx` | → `CoursesByTherapyScreen.tsx` (it's actually filtering courses, not therapies) |
+| `src/hooks/useMeditation.ts` | clean |
+| `src/hooks/queries/useMeditateQueries.ts` | clean (but `getEmergencyMeditations` reference moves to `features/emergency`) |
+| `src/components/MeditationTimer.tsx`, `src/components/MeditationCard.tsx` | DECIDE: dead today; revive or delete |
+| Meditation data from `firestoreService.ts` | `getMeditations`, `getMeditationsByTheme`, `getMeditationsByTechnique`, `getMeditationById`, `getCourses`, `getCourseById`, `getCourseSessionsByCourseId`, `findCourseIdBySessionId`, course/Firestore types |
+
+### `features/music/`
+| Current location | Notes |
+|---|---|
+| `app/(tabs)/music.tsx` | → `MusicHomeScreen.tsx` |
+| `app/music/[id].tsx` | needs `getSoundById` (currently fetches all 4 sources and searches in JS); adopt `usePlayerBehavior`; sleep timer logic to `useMusicSleepTimer.ts` |
+| `app/music/asmr.tsx`, `music/white-noise.tsx`, `music/music.tsx`, `music/nature-sounds.tsx` | collapse into one `SoundListScreen.tsx` parameterized by category |
+| `src/components/SoundPlayer.tsx` | rename → `LoopingSoundScreen` for clarity |
+| `src/hooks/queries/useMusicQueries.ts` | clean |
+| Music data from `firestoreService.ts` | `getSleepSounds`, `getBackgroundSounds`, `getWhiteNoise`, `getMusic`, `getAsmr`, `getAlbums` (the album→library boundary is fine; this just lists them) |
+
+### `features/sleep/`
+| Current location | Notes |
+|---|---|
+| `app/(tabs)/sleep.tsx` | → `SleepHomeScreen.tsx` |
+| `app/sleep/[id].tsx`, `app/sleep/meditation/[id].tsx` | adopt singleton-fetch player template |
+| `app/sleep/bedtime-stories.tsx`, `app/sleep/sleep-meditations.tsx` | adopt shared list-screen template |
+| `src/contexts/SleepTimerContext.tsx` | DECIDE: ownership (sleep-only or shared?) |
+| `src/hooks/queries/useSleepQueries.ts` | clean |
+| Sleep data from `firestoreService.ts` | `getBedtimeStories`, `getBedtimeStoryById`, `getSleepMeditations`, `getSleepMeditationById`, `getSeries` (series goes to library), `getSeriesById` (→ library) |
+
+### `features/library/` — NEW (the biggest extraction win)
+| Current location | Notes |
+|---|---|
+| `app/album/[id].tsx`, `app/series/[id].tsx`, `app/course/[id].tsx` | collapse into `CollectionDetailScreen.tsx` parameterized by content type |
+| `app/album/track/[id].tsx`, `app/series/chapter/[id].tsx`, `app/course/session/[id].tsx` | collapse into `CollectionItemPlayerScreen.tsx` parameterized by content type |
+| Library data from `firestoreService.ts` | `getContentById` + `ResolvedContent` (polymorphic resolver), `getAlbumById`, `getSeriesById`, `findAlbumIdByTrackId`, `findSeriesIdByChapterId`, `findCourseIdBySessionId`, `getNarrators`, `getNarratorByName`, `getNarratorProfileUrl`, `getUserFavorites`, `toggleFavorite`, `isFavorite`, `getUserRating`, `setContentRating`, `reportContent`, `getTodayQuote` |
+| `src/utils/courseCodeParser.ts` | utility for course content type |
+| `navigation.ts` | `navigateToContent(id, type, router)` — used by home, downloads, search, future features |
+| `contentIcons.ts` | dedupe `getCategoryIcon` from 5 places |
+
+### `features/breathing/`
+| Current location | Notes |
+|---|---|
+| `app/breathing.tsx` | → `BreathingScreen.tsx`; hardcoded technique catalogue → `data/techniques.ts` |
+| `src/components/BreathingGuide.tsx` | clean |
+| `src/hooks/useBreathing.ts` | clean |
+| `getBreathingExercises` from `firestoreService.ts` | move here |
+
+### `features/emergency/`
+| Current location | Notes |
+|---|---|
+| `app/emergency/[id].tsx` | → `EmergencyPlayerScreen.tsx`; local `adjustColor` → `src/utils/color.ts` |
+| Emergency data from `firestoreService.ts` | `getEmergencyMeditations`, `getEmergencyMeditationById`, `FirestoreEmergencyMeditation` |
+
+### `features/downloads/`
+| Current location | Notes |
+|---|---|
+| `app/downloads/index.tsx` | → `DownloadsScreen.tsx`; uses shared `navigateToContent` |
+| `app/downloads/player.tsx` | → `OfflinePlayerScreen.tsx`; decide whether to adopt `usePlayerBehavior` |
+| `src/components/DownloadButton.tsx` | clean |
+| `src/services/downloadService.ts` | clean; `deleteAllDownloads` should be invoked via core/auth cleanup-registry, not imported by AuthContext |
+
+### `features/progress/`
+| Current location | Notes |
+|---|---|
+| `app/stats.tsx` | → `StatsScreen.tsx`; extract time-range math to `utils/timeRange.ts` |
+| `src/hooks/useStats.ts` | clean |
+| `src/components/StatsCard.tsx` | move here |
+| Progress data from `firestoreService.ts` | `createSession`, `getUserSessions`, `getUserStats`, `updateUserStats`, `calculateStreak`, `addToListeningHistory`, `getListeningHistory`, `savePlaybackProgress`, `getPlaybackProgress`, `clearPlaybackProgress`, `markContentCompleted`, `getCompletedContentIds`, `isContentCompleted` |
+| Milestones array + `getNextMilestone` (currently in profile.tsx) | move here |
+
+### `features/profile/`
+| Current location | Notes |
+|---|---|
+| `app/(tabs)/profile.tsx` | → `ProfileScreen.tsx`; stats summary fragment can compose `features/progress` |
+
+### `features/settings/`
+| Current location | Notes |
+|---|---|
+| `app/settings.tsx` | → `SettingsScreen.tsx`; delete-account flow → `features/auth/hooks/useAccountDeletion.ts` |
+
+### `features/legal/`
+| Current location | Notes |
+|---|---|
+| `app/privacy.tsx`, `app/terms.tsx` | move screen bodies; consider Markdown assets for the policy text |
+
+### `app/` — routing layer (thin)
+All route files reduce to 5–20 line wrappers that import a screen from `features/<name>/screens/`. The two real routing files stay:
+- `app/_layout.tsx` (provider tree → moves to `src/app/AppProviders.tsx`; Stack.Screen list regenerated after feature moves)
+- `app/(tabs)/_layout.tsx` (tab bar config)
+
+---
+
+## 4. Files to delete (~5,000 LOC, do this first)
+
+### Dead components (no callers in repo)
+- `src/components/MeditationCard.tsx` (301 LOC)
+- `src/components/MeditationTimer.tsx` (297 LOC) — if revived, must compose `ProgressRing` instead of reimplementing SVG arc math
+- `src/components/AccountSwitchConfirmModal.tsx` (293 LOC) — `AccountSwitchWarning.tsx` is the one actually wired in
+- `src/components/PremiumGate.tsx` (355 LOC) — premium gating currently done ad-hoc via `useSubscription` + `PaywallModal`. Decide adopt-or-delete.
+- `src/components/ProgressRing.tsx` — KEEP as `core/ui` primitive (architecturally pure, even if unused today)
+
+### Dead routes
+- `app/meditations/technique/_layout.tsx` — registers a `[id]` screen that doesn't exist
+- `app/sleep-sounds.tsx` — older duplicate of `app/music/nature-sounds.tsx` using direct Firestore + local audio player instead of React Query
+
+### Dev-only files shipping in bundle
+- `src/data/seedContent.ts` (1,314 LOC) — no runtime consumers; move to `scripts/seed/`
+
+### Architecture-level deletion
+- `src/contexts/ContentPreloadContext.tsx` (and `src/components/PreloadGate.tsx` if appropriate) — duplicates React Query. Migrate consumers to `useQuery` + `refetch`, then delete.
+- `src/services/audioService.ts` — the exported `audioService` is self-documented dead code. Keep only `configureAudioMode` (inlined into bootstrap).
+
+### Hygiene: pre-refactor cleanup
+- Strip `fetch('http://127.0.0.1:7242/ingest/...')` calls from `AuthContext.tsx` (lines 363-388) and `AccountPromptModal.tsx` (lines 107/114/123)
+- Move secrets to env config: RevenueCat keys (`SubscriptionContext.tsx`), Google OAuth client IDs (`AuthContext.tsx`), Firebase config (`firebase.ts`), admin UID allowlist (`SubscriptionContext.tsx`)
+- Fix theme storage-key inconsistency (`@calmdemy_theme_mode` vs `@theme_mode`)
+- Dedupe `PREMIUM_ENTITLEMENT_ID` (in `SubscriptionContext.tsx` and `AuthSubscriptionManager.ts`)
+- Dedupe `fonts` (in `useFonts.ts` and `theme/index.ts`)
+- Dedupe `generateGuestNickname` (in `home.tsx` and `profile.tsx`)
+- Dedupe `getCategoryIcon` (in `music.tsx`, `sleep.tsx`, `bedtime-stories.tsx`, `music/asmr.tsx` and siblings)
+- Dedupe `themeCategories`, `therapyCategories`, `techniqueCategories` (each in 2-3 files)
+- Constant for `@calmdemy_onboarding` AsyncStorage key (used as string literal in 2 files)
+
+---
+
+## 5. Cross-feature couplings to break
+
+Prioritized by blast radius:
+
+1. **`firestoreService.ts` → every feature** (severity: blocker). Split per the bucket map in §3. Keep a barrel re-export at the old path during transition so nothing breaks.
+2. **`ContentPreloadContext` → every feature**. Delete and replace with React Query consumers.
+3. **`(tabs)/home.tsx` → 8 content types via a switch + 3 cross-feature lookup helpers**. Extract to `features/library/navigation.ts`; home composes feature data via `useQuery` hooks.
+4. **`AuthContext.deleteAccount` → `downloadService.deleteAllDownloads` + multi-feature Firestore cleanup**. Solution: `core/auth/cleanup-registry`, features register teardown hooks at boot.
+5. **`PaywallModal` (subscription) → `AccountPromptModal` (auth)**. Pass auth modal via callback or via a `core/billing-flows` orchestrator.
+6. **`RecoveryWizard` (subscription) → auth `signInWith*` methods**. Same pattern — invert.
+7. **`BackgroundAudioPicker` (in shared media-player) → `useSleepSounds` (music feature data)**. Solution: sound list is passed in as a prop, or a `core/data/ambient-sounds` source serves both.
+8. **`SleepTimerContext` → `MediaPlayer.registerAudioPlayer` (side-channel callback)**. Invert: player accepts a `fadeOutController` prop owned by sleep.
+9. **`usePlayerBehavior` → library (favorites/ratings) + progress (history) + subscription (paywall) + core/audio**. Decompose into smaller hooks owned by their features; the media-player screen composes them.
+10. **`OfflineNavigator` hardcodes `/downloads` and `/(tabs)/home`**. Extract to route constants.
+
+---
+
+## 6. Things that must be split
+
+- **`src/services/firestoreService.ts` (2,604 LOC)** — split per the bucket map in §3.
+- **`src/hooks/queries/useHomeQueries.ts`** — split: `useTodayQuote` → library, `useListeningHistory` → progress (or library), `useFavorites` → library, `useDownloadedContent` → downloads, `useUserStats` → progress.
+- **`src/types/index.ts`** — keep cross-feature discriminators in `shared/types`; move per-feature shapes to features.
+- **`src/constants/audioFiles.ts`** — split: keep helpers (`getAudioUrl`, `getAudioUrlFromPath`, `preloadAudioUrls`, URL cache) in `core/audio`; asset registry `storagePaths` can stay central or be split per feature.
+- **`src/components/MediaPlayer.tsx` (1,461 LOC)** — extract `useMediaPlayerOrchestration` hook; thinner view component.
+
+---
+
+## 7. Refined migration plan
+
+**Phase 0a — Cleanup & hygiene (1–2 days)**
+- Strip debug telemetry fetches
+- Move secrets to env config
+- Delete 5,000+ LOC of dead/duplicate code (per §4)
+- Dedupe constants and helpers
+- Fix theme storage-key bug
+- No architectural moves yet — just deletions and small fixes; ship and verify before refactoring
+
+**Phase 0b — Commit on ambiguous ownership (½ day)**
+- SleepTimerContext: sleep-only or shared?
+- PremiumGate: adopt or delete?
+- MeditationTimer / MeditationCard: revive or delete?
+- ReportModal: shared or media-player-local?
+- Tab structure: keep current 5 or switch to a Discover-style layout?
+
+**Phase 1 — Extract `core/` (2 days)**
+- Move all infra (`auth`, `theme`, `network`, `firebase`, `query`, `subscription`, `audio`, `notifications`, `nav`, `storage`) to `src/core/`
+- Update imports across the repo
+- Establish `core/auth/cleanup-registry` and switch `deleteAccount` to use it
+- App keeps working throughout; this is mechanical refactor
+
+**Phase 2 — Establish the feature module pattern with `breathing` (½–1 day)**
+- Migrate `breathing` into `src/features/breathing/{api,components,hooks,screens,data,manifest,index}` as the canonical template
+- Validate the pattern (public API via `index.ts`, manifest shape, screen extraction from route)
+- Document the template for the remaining features
+
+**Phase 3 — Split `firestoreService.ts` (1–2 days)**
+- Carve into per-feature data modules (per §3 mapping)
+- Keep a barrel re-export at the old path so nothing breaks during transition
+- Migrate consumers off the barrel; remove old path
+
+**Phase 4 — Delete `ContentPreloadContext` (½ day)**
+- Replace consumers with React Query `useQuery`/`refetch`
+- Remove `ContentPreloadContext` and `PreloadGate`
+
+**Phase 5 — Build `library` feature (2 days; biggest LOC win)**
+- Create `features/library/` with `CollectionDetailScreen` + `CollectionItemPlayerScreen` parameterized by content-type config
+- Migrate `album/*`, `series/*`, `course/*` route files to thin wrappers around the unified screens
+- Add `navigateToContent`, `contentIcons`, collection lookups
+- ~3,000 LOC reduction
+
+**Phase 6 — Migrate remaining existing features (1 day each)**
+- Order: `meditation` → `music` → `sleep` → `progress` → `profile` → `settings` → `legal` → `auth` → `subscription` → `onboarding` → `home` → `emergency` → `downloads`
+- Each migration includes: screen extraction from route, data extraction from feature, manifest creation, hook decomposition where applicable
+- For `music`/`sleep`/`meditation`: also apply the shared list-screen template
+- For media-player: extract orchestration hook, rename for clarity (`AudioPlayer` → `AudioControls`, etc.)
+
+**Phase 7 — Build the registry + Discover screen (½–1 day)**
+- Wire `features/*/manifest.ts` into `src/registry.ts`
+- Build the Discover screen that lists every feature by category, with search
+
+**Phase 8 — Enforce boundaries (½ day)**
+- ESLint `no-restricted-imports` rules: `features/X` can't import from `features/Y`, only from `core/*` and `shared/*`
+- Type-check passes
+- CI enforcement
+
+**Phase 9 — New features (Journal/CBT, Mood, etc.)**
+Now each new feature is just a `src/features/<name>/` folder + a thin route in `app/`. Same template as breathing.
+
+**Total: ~3 weeks of focused refactor work.** App ships throughout; each phase is a self-contained PR.
+
+---
+
+## 8. Decisions needed before code moves
+
+1. **Tab structure** — keep Home/Music/Meditate/Sleep/Profile, or rebalance to Home/Discover/Practice/Library/Profile (more super-app, enables the registry-driven Discover tab)?
+2. **`SleepTimerContext` ownership** — sleep-only feature, or shared timer used by music/meditation too?
+3. **`PremiumGate`** — adopt the abstraction (and refactor ad-hoc paywall checks to use it) or delete?
+4. **`MeditationTimer` / `MeditationCard`** — revive or delete?
+5. **`ReportModal`** — live in `shared/modals/` or next to `MediaPlayer` in `shared/media-player/`?
+6. **`storagePaths` audio registry** — keep centralized as an asset manifest, or split per feature?
+7. **Music single-item player rewrite** — `app/music/[id].tsx` currently fetches all 4 sources and searches in JS; OK to add a `getSoundById` Firestore helper as part of the music feature migration?
+8. **List-screen template location** — `src/shared/AudioListScreen.tsx` (one shared template) or a per-feature `SoundListScreen.tsx` (parameterized within the feature)?
+9. **Hold-the-line strictness** — ESLint boundary violations as errors (refuses to compile) or warnings?
+10. **Naming** — rename `AudioPlayer` → `AudioControls`, `MediaPlayer` → `TrackPlayerScreen`, `SoundPlayer` → `LoopingSoundScreen` (current names are confusing) — agree?

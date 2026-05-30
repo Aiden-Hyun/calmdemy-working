@@ -15,9 +15,8 @@ import { Theme } from "../theme";
  * Architectural Role:
  *   A versatile card component used across multiple feature pages to display
  *   content items in a horizontal scrolling grid (meditation courses, sleep stories,
- *   wellness modules). Unlike MeditationCard (rich, full-featured), ContentCard
- *   is simpler and more flexible, supporting optional badges, codes, and subtitle
- *   labels. It integrates with SubscriptionContext to gate premium content.
+ *   wellness modules). Simple and flexible, supporting optional badges, codes, and
+ *   subtitle labels. Integrates with SubscriptionContext to gate premium content.
  *
  * Design Patterns:
  *   - Controlled Theming: Accepts darkMode prop (for sleep page) and adapts

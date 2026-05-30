@@ -103,25 +103,16 @@ export function AccountPromptModal({
    * for user decision (switch accounts or use different method).
    */
   const handleGoogleLink = async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AccountPromptModal.tsx:handleGoogleLink:entry',message:'handleGoogleLink called',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     setIsLoading(true);
     setLoadingProvider("google");
     try {
       await upgradeAnonymousWithGoogle();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AccountPromptModal.tsx:handleGoogleLink:success',message:'upgradeAnonymousWithGoogle succeeded - THIS SHOULD NOT HAPPEN for collision',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       Alert.alert(
         "Account Secured!",
         "Your subscription is now linked to your Google account."
       );
       onClose();
     } catch (error: any) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AccountPromptModal.tsx:handleGoogleLink:catch',message:'Caught error',data:{errorType:error?.constructor?.name,isCollisionError:error instanceof CredentialCollisionError,errorMessage:error?.message,errorCode:error?.code},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,D'})}).catch(()=>{});
-      // #endregion
       if (error instanceof CredentialCollisionError) {
         setCollisionError(error);
       } else if (error.message !== "User cancelled") {

@@ -6,5 +6,9 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
+  ],
+  "exclude": [
+    "scripts/**",
+    "node_modules"
   ]
 }

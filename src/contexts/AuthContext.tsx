@@ -360,33 +360,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * @throws CredentialCollisionError if the Google account is already linked
    */
   const upgradeAnonymousWithGoogle = async (): Promise<void> => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:upgradeAnonymousWithGoogle:entry',message:'upgradeAnonymousWithGoogle called',data:{hasUser:!!user,isAnonymous:user?.isAnonymous,userId:user?.uid},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E'})}).catch(()=>{});
-    // #endregion
     if (!user?.isAnonymous) {
       throw new Error("User is not anonymous");
     }
     const credential = await getGoogleCredential();
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:upgradeAnonymousWithGoogle:afterGetCred',message:'Got Google credential',data:{hasCredential:!!credential,userStillAnonymous:user?.isAnonymous,userId:user?.uid},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     if (!credential) {
       throw new Error("User cancelled");
     }
 
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:upgradeAnonymousWithGoogle:beforeLink',message:'About to call linkWithCredential',data:{userId:user?.uid,isAnonymous:user?.isAnonymous},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       await linkWithCredential(user, credential);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:upgradeAnonymousWithGoogle:linkSuccess',message:'linkWithCredential SUCCEEDED - no collision',data:{userId:user?.uid},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
     } catch (error: any) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/abd8d170-6f53-45be-bd37-3634e6180c4d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:upgradeAnonymousWithGoogle:linkError',message:'linkWithCredential threw error',data:{errorCode:error?.code,errorMessage:error?.message,errorName:error?.name,fullError:JSON.stringify(error,Object.getOwnPropertyNames(error))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-
       // Collision Detection Pattern: Firebase throws auth/credential-already-in-use
       // when a credential is already linked to another account. We catch this,
       // wrap it in a typed exception (CredentialCollisionError) with the email of
