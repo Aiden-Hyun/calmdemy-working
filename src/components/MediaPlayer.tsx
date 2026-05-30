@@ -25,7 +25,7 @@ import { useAudioPlayer } from '../core/audio/useAudioPlayer';
 import { useBackgroundAudio } from '../core/audio/useBackgroundAudio';
 import { getAudioUrlFromPath } from '../core/audio/audioFiles';
 import { getSleepSoundById, getNarratorByName, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../services/firestoreService';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../core/auth/AuthContext';
 import { useNetwork } from '../core/network/NetworkContext';
 import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../services/downloadService';
 

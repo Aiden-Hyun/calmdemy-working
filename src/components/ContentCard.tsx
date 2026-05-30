@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressable } from "../core/ui/AnimatedPressable";
 import { useTheme } from "../core/theme/ThemeContext";
-import { useSubscription } from "../contexts/SubscriptionContext";
+import { useSubscription } from "../core/subscription/SubscriptionContext";
 import { Theme } from "../core/theme";
 
 /**

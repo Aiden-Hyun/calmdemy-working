@@ -10,7 +10,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { ProtectedRoute } from '../../src/components/ProtectedRoute';
+import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { AnimatedView } from '../../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SkeletonListItem } from '../../src/core/ui/Skeleton';
@@ -21,7 +21,7 @@ import { useMeditationsByTechnique } from '../../src/hooks/queries/useMeditateQu
 import { getAudioUrlFromPath } from '../../src/core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { GuidedMeditation, MeditationTechnique } from '../../src/types';
-import { useSubscription } from '../../src/contexts/SubscriptionContext';
+import { useSubscription } from '../../src/core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../src/components/PaywallModal';
 
 // Technique categories defined as constants (not fetched from Firebase)

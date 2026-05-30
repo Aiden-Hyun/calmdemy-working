@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useRouter, usePathname, useRootNavigationState } from 'expo-router';
-import { useNetwork } from '../core/network/NetworkContext';
+import { useNetwork } from '../network/NetworkContext';
 
 interface OfflineNavigatorProps {
   children: React.ReactNode;

@@ -44,7 +44,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../core/theme/ThemeContext";
-import { useAuth, CredentialCollisionError } from "../contexts/AuthContext";
+import { useAuth, CredentialCollisionError } from "../core/auth/AuthContext";
 import { Theme } from "../core/theme";
 import { CredentialCollisionModal } from "./CredentialCollisionModal";
 import { AccountSwitchWarning } from "./AccountSwitchWarning";

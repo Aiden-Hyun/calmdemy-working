@@ -14,7 +14,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
-import { useAuth, CredentialCollisionError } from "../src/contexts/AuthContext";
+import { useAuth, CredentialCollisionError } from "../src/core/auth/AuthContext";
 import { useTheme } from "../src/core/theme/ThemeContext";
 import { AnimatedPressable } from "../src/core/ui/AnimatedPressable";
 import { AnimatedView } from "../src/core/ui/AnimatedView";

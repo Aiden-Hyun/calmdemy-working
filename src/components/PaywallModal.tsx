@@ -14,11 +14,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../core/theme/ThemeContext";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../core/auth/AuthContext";
 import {
   useSubscription,
   PurchasesPackage,
-} from "../contexts/SubscriptionContext";
+} from "../core/subscription/SubscriptionContext";
 import { AccountPromptModal } from "./AccountPromptModal";
 import { RecoveryWizard } from "./RecoveryWizard";
 import { Theme } from "../core/theme";

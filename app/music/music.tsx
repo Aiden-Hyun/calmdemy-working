@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { ProtectedRoute } from "../../src/components/ProtectedRoute";
+import { ProtectedRoute } from "../../src/core/auth/ProtectedRoute";
 import { AnimatedView } from "../../src/core/ui/AnimatedView";
 import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
 import { DownloadButton } from "../../src/components/DownloadButton";
@@ -14,7 +14,7 @@ import { useMusic } from '../../src/hooks/queries/useMusicQueries';
 import { useAudioUrls } from '../../src/core/audio/useAudioUrlQueries';
 import { getDownloadedContentIds } from "../../src/services/downloadService";
 import { Theme } from "../../src/core/theme";
-import { useSubscription } from "../../src/contexts/SubscriptionContext";
+import { useSubscription } from "../../src/core/subscription/SubscriptionContext";
 import { PaywallModal } from "../../src/components/PaywallModal";
 
 function MusicListScreen() {

@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ProtectedRoute } from '../../src/components/ProtectedRoute';
+import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { AnimatedView } from '../../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SkeletonListItem } from '../../src/core/ui/Skeleton';
@@ -21,7 +21,7 @@ import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { Theme } from '../../src/core/theme';
 import { BedtimeStory } from '../../src/types';
-import { useSubscription } from '../../src/contexts/SubscriptionContext';
+import { useSubscription } from '../../src/core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../src/components/PaywallModal';
 
 const categories = [

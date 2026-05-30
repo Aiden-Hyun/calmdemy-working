@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ProtectedRoute } from '../../../src/components/ProtectedRoute';
+import { ProtectedRoute } from '../../../src/core/auth/ProtectedRoute';
 import { MediaPlayer } from '../../../src/components/MediaPlayer';
 import { useAudioPlayer } from '../../../src/core/audio/useAudioPlayer';
 import { usePlayerBehavior } from '../../../src/hooks/usePlayerBehavior';
 import { useTheme } from '../../../src/core/theme/ThemeContext';
-import { useAuth } from '../../../src/contexts/AuthContext';
+import { useAuth } from '../../../src/core/auth/AuthContext';
 import { getAudioUrlFromPath } from '../../../src/core/audio/audioFiles';
 import { markContentCompleted } from '../../../src/services/firestoreService';
 import { getLocalAudioPath } from '../../../src/services/downloadService';
-import { useSubscription } from '../../../src/contexts/SubscriptionContext';
+import { useSubscription } from '../../../src/core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../../src/components/PaywallModal';
 
 interface TrackItem {

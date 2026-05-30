@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { useAuth } from '../core/auth/AuthContext';
+import { useSubscription } from '../core/subscription/SubscriptionContext';
 import {
   isFavorite,
   toggleFavorite,

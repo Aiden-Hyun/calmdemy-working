@@ -4,13 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ProtectedRoute } from '../../src/components/ProtectedRoute';
+import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SoundPlayer } from '../../src/components/SoundPlayer';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { useAudioPlayer } from '../../src/core/audio/useAudioPlayer';
 import { useTheme } from '../../src/core/theme/ThemeContext';
-import { useAuth } from '../../src/contexts/AuthContext';
+import { useAuth } from '../../src/core/auth/AuthContext';
 import { getAudioUrlFromPath } from '../../src/core/audio/audioFiles';
 import {
   addToListeningHistory,

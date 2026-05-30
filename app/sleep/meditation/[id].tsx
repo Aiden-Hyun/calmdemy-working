@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { ProtectedRoute } from "../../../src/components/ProtectedRoute";
+import { ProtectedRoute } from "../../../src/core/auth/ProtectedRoute";
 import { MediaPlayer } from "../../../src/components/MediaPlayer";
 import { useAudioPlayer } from "../../../src/core/audio/useAudioPlayer";
 import { usePlayerBehavior } from "../../../src/hooks/usePlayerBehavior";

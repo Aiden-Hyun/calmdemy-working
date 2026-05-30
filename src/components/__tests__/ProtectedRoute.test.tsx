@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react-native';
-import { ProtectedRoute } from '../ProtectedRoute';
+import { ProtectedRoute } from '../../core/auth/ProtectedRoute';
 
 // Mock expo-router
 vi.mock('expo-router', () => ({

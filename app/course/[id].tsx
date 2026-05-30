@@ -5,19 +5,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { ProtectedRoute } from "../../src/components/ProtectedRoute";
+import { ProtectedRoute } from "../../src/core/auth/ProtectedRoute";
 import { AnimatedView } from "../../src/core/ui/AnimatedView";
 import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
 import { useTheme } from "../../src/core/theme/ThemeContext";
 import { Theme } from "../../src/core/theme";
 import { getCourseById, FirestoreCourse, FirestoreCourseSession, getCompletedContentIds } from "../../src/services/firestoreService";
-import { useAuth } from "../../src/contexts/AuthContext";
+import { useAuth } from "../../src/core/auth/AuthContext";
 import { DownloadButton } from "../../src/components/DownloadButton";
 import { getAudioUrlFromPath } from "../../src/core/audio/audioFiles";
 import { useNetwork } from "../../src/core/network/NetworkContext";
 import { getDownloadedContentIds, getLocalAudioPath } from "../../src/services/downloadService";
 import { buildSessionMetaInfo } from "../../src/utils/courseCodeParser";
-import { useSubscription } from "../../src/contexts/SubscriptionContext";
+import { useSubscription } from "../../src/core/subscription/SubscriptionContext";
 import { PaywallModal } from "../../src/components/PaywallModal";
 
 function CourseDetailScreen() {

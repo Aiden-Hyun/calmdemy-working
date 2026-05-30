@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
 import { AuthCredential } from "firebase/auth";
-import { useAuth, CredentialCollisionError } from "../contexts/AuthContext";
+import { useAuth, CredentialCollisionError } from "./AuthContext";
 
 /**
  * ============================================================

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ProtectedRoute } from '../../src/components/ProtectedRoute';
+import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { MediaPlayer } from '../../src/components/MediaPlayer';
 import { useAudioPlayer } from '../../src/core/audio/useAudioPlayer';
 import { useTheme } from '../../src/core/theme/ThemeContext';

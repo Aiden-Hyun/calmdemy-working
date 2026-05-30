@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { useTheme } from '../src/core/theme/ThemeContext';
-import { useSubscription } from '../src/contexts/SubscriptionContext';
+import { useSubscription } from '../src/core/subscription/SubscriptionContext';
 import { AnimatedView, FadeView } from '../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../src/core/ui/AnimatedPressable';
 import { Theme } from '../src/core/theme';

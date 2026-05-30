@@ -95,9 +95,53 @@ All four cleanup chunks landed. Codebase is now:
 | `core/network` | ✅ DONE | `contexts/NetworkContext.tsx` → `core/network/NetworkContext.tsx` |
 | `core/notifications` | ✅ DONE | `services/notificationService.ts` → `core/notifications/notificationService.ts` (no consumers yet — moved to its rightful home for when wired up) |
 | `core/audio` | ✅ DONE | `useAudioPlayer`, `useBackgroundAudio`, `useAudioUrlQueries`, `audioFiles` (4 files moved); `services/audioService.ts` **deleted** (dead — `configureAudioMode` had zero callers, the `audioService` shim was self-documented as dead). The `audioFiles.ts` split (helpers vs `storagePaths` asset registry) deferred to Phase 5 when we extract features. |
-| `core/auth` | pending | `AuthContext`, `ProtectedRoute`, `useProviderManagement` |
-| `core/subscription` | pending | `SubscriptionContext`, `AuthSubscriptionManager` |
-| `core/nav` | pending | `OfflineNavigator`, `PreloadGate` |
+| `core/auth` | ✅ DONE | `AuthContext` (24 importers), `ProtectedRoute` (29 importers), `useProviderManagement` (1 importer) |
+| `core/subscription` | ✅ DONE | `SubscriptionContext` (26 importers), `AuthSubscriptionManager` (1 importer) |
+| `core/nav` | ✅ DONE | `OfflineNavigator` (1 importer); `PreloadGate` and `ContentPreloadContext` **deleted** (both had zero consumers, slated for Phase 4 deletion anyway) |
+
+## Phase 1 — complete
+
+All 11 subsystems landed in `src/core/`. 12 if you count `core/env/` which we added during execution (not in the original target arch — env access deserved its own folder rather than getting bundled under storage).
+
+Final layout under `src/core/`:
+```
+src/core/
+  ui/          AnimatedPressable, AnimatedView, Skeleton, ProgressRing, TabBarButton, scale
+  theme/       ThemeContext, index (tokens), useFonts
+  firebase/    index (Firebase init + auth/db/storage exports)
+  env/         index (requireEnv, getEnv, getEnvList helpers)
+  storage/     keys (ONBOARDING_KEY, THEME_MODE_KEY)
+  query/       QueryProvider (TanStack + persistence)
+  network/     NetworkContext
+  notifications/  notificationService (no consumers; here for when wired up)
+  audio/       useAudioPlayer, useBackgroundAudio, useAudioUrlQueries, audioFiles
+  auth/        AuthContext, ProtectedRoute, useProviderManagement
+  subscription/  SubscriptionContext, AuthSubscriptionManager
+  nav/         OfflineNavigator
+```
+
+What's still left in `src/` (to be addressed in later phases):
+- `src/components/` — shared UI like ContentCard, MediaPlayer, LoadingScreen, PaywallModal, etc. (Phase 2 destinations: `shared/`, `features/auth`, `features/subscription`, etc.)
+- `src/contexts/SleepTimerContext.tsx` — going to `shared/media-player/` in Phase 5
+- `src/hooks/` — feature-specific hooks (useBreathing, useMeditation, usePlayerBehavior, useStats) plus `hooks/queries/` (will split into per-feature data modules)
+- `src/services/firestoreService.ts` — the 2,604-line mega-repository, slated for splitting per feature in Phase 3
+- `src/services/downloadService.ts` — going to `features/downloads/` in Phase 6
+- `src/constants/imageFiles.ts`, `src/types/index.ts`, `src/utils/{courseCodeParser, guestNickname}.ts` — various Phase 5/6 destinations
+- `src/components/__tests__/` — stays put, test files
+
+Dead code removed during Phase 1:
+- `src/services/audioService.ts` (146 LOC — `configureAudioMode` + dead `audioService` shim)
+- `src/components/PreloadGate.tsx`
+- `src/contexts/ContentPreloadContext.tsx` (was already slated for Phase 4 deletion; pulled forward because zero consumers)
+- `src/managers/` directory (emptied after `AuthSubscriptionManager` moved)
+- `src/providers/` directory (emptied after `QueryProvider` moved)
+
+TypeScript: still 0 errors throughout. Five Phase 1 commits on `main`:
+- `ef5bd9e` core/ui
+- `fe11302` core/theme
+- `e87bb61` core/{firebase, env, storage, query, network, notifications}
+- `8c8e5d2` core/audio
+- (this commit) core/{auth, subscription, nav}
 
 ---
 

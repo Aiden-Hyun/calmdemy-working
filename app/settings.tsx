@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, Te
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../src/contexts/AuthContext';
+import { useAuth } from '../src/core/auth/AuthContext';
 import { useTheme, ThemeMode } from '../src/core/theme/ThemeContext';
-import { useSubscription } from '../src/contexts/SubscriptionContext';
-import { ProtectedRoute } from '../src/components/ProtectedRoute';
+import { useSubscription } from '../src/core/subscription/SubscriptionContext';
+import { ProtectedRoute } from '../src/core/auth/ProtectedRoute';
 
 const themeModes: { id: ThemeMode; label: string; icon: string }[] = [
   { id: 'light', label: 'Light', icon: 'sunny-outline' },

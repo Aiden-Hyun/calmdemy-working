@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BarChart } from 'react-native-chart-kit';
-import { ProtectedRoute } from '../src/components/ProtectedRoute';
+import { ProtectedRoute } from '../src/core/auth/ProtectedRoute';
 import { StatsCard } from '../src/components/StatsCard';
 import { AnimatedView } from '../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../src/core/ui/AnimatedPressable';

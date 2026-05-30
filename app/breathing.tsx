@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ProtectedRoute } from '../src/components/ProtectedRoute';
+import { ProtectedRoute } from '../src/core/auth/ProtectedRoute';
 import { BreathingGuide } from '../src/components/BreathingGuide';
 import { useBreathing } from '../src/hooks/useBreathing';
 import { useTheme } from '../src/core/theme/ThemeContext';

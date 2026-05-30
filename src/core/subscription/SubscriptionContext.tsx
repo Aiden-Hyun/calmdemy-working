@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { Alert, Platform } from "react-native";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../auth/AuthContext";
 import {
   PREMIUM_ENTITLEMENT_ID,
   syncRevenueCatIdentity,
@@ -16,12 +16,12 @@ import {
   restorePurchasesWithRecovery,
   type CustomerInfo as ManagerCustomerInfo,
   type RestoreResult,
-} from "../managers/AuthSubscriptionManager";
+} from "./AuthSubscriptionManager";
 
 // Re-exported so consumers that imported from SubscriptionContext keep working.
 // Source of truth lives in AuthSubscriptionManager.
 export { PREMIUM_ENTITLEMENT_ID };
-import { requireEnv, getEnvList } from "../core/env";
+import { requireEnv, getEnvList } from "../env";
 
 /**
  * ============================================================

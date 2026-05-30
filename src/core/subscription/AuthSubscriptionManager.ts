@@ -48,7 +48,7 @@
  */
 
 import { User, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../core/firebase";
+import { auth } from "../firebase";
 
 /**
  * Entitlement ID configured in RevenueCat dashboard.
