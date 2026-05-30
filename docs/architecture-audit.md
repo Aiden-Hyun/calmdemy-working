@@ -43,11 +43,17 @@ The Library tab IS the library feature. `features/library/` owns both the tab ho
 - ✅ Added `"exclude": ["scripts/**", "node_modules"]` to `tsconfig.json`
 - ✅ TypeScript: no new errors introduced (24 pre-existing errors flagged separately for triage)
 
-**Chunk 2 — secrets to env (next)**
-- RevenueCat API keys (`SubscriptionContext.tsx`)
-- Google OAuth client IDs (`AuthContext.tsx`)
-- Firebase config (`firebase.ts`)
-- Admin UID allowlist (`SubscriptionContext.tsx`)
+**Chunk 2 — DONE (this turn)**
+- ✅ Added `requireEnv` / `getEnv` / `getEnvList` helpers at `src/utils/env.ts` — fail-fast on missing config with helpful errors
+- ✅ Migrated RevenueCat SDK keys (`SubscriptionContext.tsx`) to `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS` / `_ANDROID`
+- ✅ Migrated Google OAuth client IDs (`AuthContext.tsx`) to `EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID` / `_IOS_CLIENT_ID`
+- ✅ Migrated Firebase config (`firebase.ts`) to `EXPO_PUBLIC_FIREBASE_*`
+- ✅ Migrated admin UID allowlist (`SubscriptionContext.tsx`) to comma-separated `EXPO_PUBLIC_ADMIN_UIDS`
+- ✅ Created `.env` (real values, gitignored) and overwrote stale Supabase-era `.env.example` with the current Firebase + RevenueCat + OAuth structure
+- ✅ Expanded `.gitignore`: `.env*.local`, `.DS_Store`, `.expo/`, `node_modules/`
+- ✅ Verified: zero hardcoded secrets remain in source; no new TypeScript errors
+
+**Note:** these "secrets" are not cryptographic — Firebase apiKey, RevenueCat SDK keys, and OAuth client IDs are public client identifiers by design. The migration win is hygiene + flexibility (dev/staging/prod separation, rotation without code edits), not security per se.
 
 **Chunk 3 — dedupe constants and helpers**
 - `PREMIUM_ENTITLEMENT_ID` (2 locations)

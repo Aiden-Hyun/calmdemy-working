@@ -85,6 +85,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { deleteUserAccount } from "../services/firestoreService";
 import { deleteAllDownloads } from "../services/downloadService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { requireEnv } from "../utils/env";
 
 /**
  * CredentialCollisionError — Typed Exception Pattern
@@ -121,11 +122,11 @@ export class CredentialCollisionError extends Error {
   }
 }
 
-// Configure Google Sign In with platform-specific client IDs.
+// Configure Google Sign In with platform-specific client IDs (sourced from env).
 // This setup is required before any GoogleSignin method is called.
 GoogleSignin.configure({
-  webClientId: "1012641376582-d37ir0jp1r9a4hb4r82dbn5nemaddnki.apps.googleusercontent.com",
-  iosClientId: "1012641376582-q3b2a8q3k1qlvgqokaq229aujeat7hme.apps.googleusercontent.com",
+  webClientId: requireEnv('EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID'),
+  iosClientId: requireEnv('EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID'),
 });
 
 /**
@@ -322,7 +323,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return provider.credential({ idToken: identityToken });
     } catch (err: any) {
       if (
-        err?.code === AppleAuthentication.AppleAuthenticationError?.CANCELED ||
         err?.code === "ERR_CANCELED" ||
         err?.code === "ERR_REQUEST_CANCELED"
       ) {
@@ -425,7 +425,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       credential = provider.credential({ idToken: identityToken });
     } catch (err: any) {
       if (
-        err?.code === AppleAuthentication.AppleAuthenticationError?.CANCELED ||
         err?.code === "ERR_CANCELED" ||
         err?.code === "ERR_REQUEST_CANCELED"
       ) {
@@ -738,7 +737,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       // Swallow user-cancelled sign-in
       if (
-        err?.code === AppleAuthentication.AppleAuthenticationError?.CANCELED ||
         err?.code === "ERR_CANCELED" ||
         err?.code === "ERR_REQUEST_CANCELED"
       ) {

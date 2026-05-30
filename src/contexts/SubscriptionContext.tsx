@@ -16,6 +16,7 @@ import {
   type CustomerInfo as ManagerCustomerInfo,
   type RestoreResult,
 } from "../managers/AuthSubscriptionManager";
+import { requireEnv, getEnvList } from "../utils/env";
 
 /**
  * ============================================================
@@ -56,10 +57,10 @@ import {
  * ============================================================
  */
 
-// RevenueCat API Key — platform-specific (iOS vs Android)
+// RevenueCat SDK key — platform-specific, sourced from env (.env / .env.example)
 const REVENUECAT_API_KEY = Platform.select({
-  ios: "appl_JhsFtEMqcEsdxXadtbKkjhXGoZT",
-  android: "goog_ArHQjIsqrfyDDgznWuhfaqbHsUu",
+  ios: requireEnv('EXPO_PUBLIC_REVENUECAT_API_KEY_IOS'),
+  android: requireEnv('EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID'),
 }) as string;
 
 // Entitlement ID configured in RevenueCat dashboard
@@ -67,19 +68,19 @@ const REVENUECAT_API_KEY = Platform.select({
 // not the display name (often something simple like "premium")
 export const PREMIUM_ENTITLEMENT_ID = "Calmdemy Premium";
 
-// Admin UIDs that always get premium access (no subscription required)
-const ADMIN_UIDS = [
-  "JYsGeh2x20Xpv9nkZxVLyh02PUQ2",
-];
+// Admin UIDs that always get premium access (no subscription required).
+// Sourced from env so the allowlist can vary by environment without code changes.
+const ADMIN_UIDS = getEnvList('EXPO_PUBLIC_ADMIN_UIDS');
 
 /**
  * Checks if a user UID belongs to the admin allowlist.
  *
- * This implements the Admin Bypass pattern — certain hardcoded UIDs (employees,
- * testers) receive premium access without owning a RevenueCat subscription. Used
- * for internal testing and developer access without polluting production purchase
- * data. In production, this should be replaced with a server-side entitlement check
- * (e.g., a Firestore field or custom claim) to avoid secrets in client code.
+ * This implements the Admin Bypass pattern — certain UIDs (employees, testers)
+ * receive premium access without owning a RevenueCat subscription. Used for
+ * internal testing and developer access without polluting production purchase
+ * data. In production, this should be replaced with a server-side entitlement
+ * check (Firestore field or custom claim) so the allowlist doesn't ship in the
+ * client bundle at all.
  *
  * @param uid - The Firebase Auth UID to check
  * @returns true if the UID is in ADMIN_UIDS, false otherwise
@@ -122,32 +123,15 @@ async function loadRevenueCat() {
   }
 }
 
-// Type definitions (since we're dynamically importing)
-interface PurchasesPackage {
-  identifier: string;
-  product: {
-    price: number;
-    priceString: string;
-    title: string;
-    description: string;
-  };
-}
-
-interface CustomerInfo {
-  entitlements: {
-    active: Record<string, any>;
-  };
-  activeSubscriptions: string[];
-  allExpirationDates: Record<string, string | null>;
-  allPurchaseDates: Record<string, string | null>;
-}
-
-interface PurchasesOffering {
-  identifier: string;
-  monthly?: PurchasesPackage;
-  annual?: PurchasesPackage;
-  availablePackages: PurchasesPackage[];
-}
+// Type-only imports of the full RevenueCat shapes. The runtime SDK is loaded
+// lazily (`Purchases: any`) so these never affect bundling — they just keep
+// consumers from drifting against an inlined partial that omits fields the
+// real SDK requires (packageType, offeringIdentifier, presentedOfferingContext).
+import type {
+  PurchasesPackage,
+  PurchasesOffering,
+  CustomerInfo,
+} from "react-native-purchases";
 
 interface RestorePurchasesResult {
   success: boolean;

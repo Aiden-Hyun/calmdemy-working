@@ -28,34 +28,43 @@
  *   or Cloud Storage access.
  *
  * Configuration:
- *   Firebase credentials are embedded here (apiKey, projectId, etc.).
- *   In production, these should be environment variables or
- *   google-services.json/GoogleService-Info.plist auto-linking.
+ *   Firebase credentials are sourced from EXPO_PUBLIC_FIREBASE_* env vars
+ *   (see .env.example). The apiKey is not sensitive — it is client-side
+ *   by design and security is enforced via Firestore security rules.
  * ============================================================
  */
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { getAuth, initializeAuth, type Persistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requireEnv } from './utils/env';
+
+// `getReactNativePersistence` ships from the React Native build variant of
+// `@firebase/auth` (Metro picks it via package conditional exports) but the
+// umbrella `firebase/auth` type definitions only describe the web build, so
+// the symbol isn't typed there. Pull it in at runtime and assert the shape.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { getReactNativePersistence } = require('firebase/auth') as {
+  getReactNativePersistence: (storage: unknown) => Persistence;
+};
 
 // --- Firebase Configuration ---
 
 /**
- * Firebase project configuration.
+ * Firebase project configuration, sourced from environment.
  *
- * These credentials are from google-services.json (Android) or
- * GoogleService-Info.plist (iOS). The apiKey is not sensitive
- * (it's client-side and has security rules enforced server-side).
+ * Each value must be present in `.env` (or the build environment) or
+ * `requireEnv` throws at module load with a clear error message.
  */
 const firebaseConfig = {
-  apiKey: "AIzaSyDkCd6LiHEhvn_i10bvLwM11kotU3Gpbb0",
-  authDomain: "calmnest-e910e.firebaseapp.com",
-  projectId: "calmnest-e910e",
-  storageBucket: "calmnest-e910e.firebasestorage.app",
-  messagingSenderId: "1012641376582",
-  appId: "1:1012641376582:android:9ed0b2e187aeb9cb375d47"
+  apiKey: requireEnv('EXPO_PUBLIC_FIREBASE_API_KEY'),
+  authDomain: requireEnv('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+  projectId: requireEnv('EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
+  storageBucket: requireEnv('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: requireEnv('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: requireEnv('EXPO_PUBLIC_FIREBASE_APP_ID'),
 };
 
 // --- Initialization ---
