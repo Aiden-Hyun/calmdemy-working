@@ -18,7 +18,7 @@ import { DownloadButton } from '../../src/components/DownloadButton';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { Theme } from '../../src/core/theme';
 import { useMeditationsByTechnique } from '../../src/hooks/queries/useMeditateQueries';
-import { getAudioUrlFromPath } from '../../src/constants/audioFiles';
+import { getAudioUrlFromPath } from '../../src/core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { GuidedMeditation, MeditationTechnique } from '../../src/types';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';

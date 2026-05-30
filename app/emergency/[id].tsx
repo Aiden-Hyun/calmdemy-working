@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ProtectedRoute } from "../../src/components/ProtectedRoute";
 import { MediaPlayer } from "../../src/components/MediaPlayer";
-import { useAudioPlayer } from "../../src/hooks/useAudioPlayer";
+import { useAudioPlayer } from "../../src/core/audio/useAudioPlayer";
 import { usePlayerBehavior } from "../../src/hooks/usePlayerBehavior";
-import { getAudioUrlFromPath } from "../../src/constants/audioFiles";
+import { getAudioUrlFromPath } from "../../src/core/audio/audioFiles";
 
 // Helper to lighten a hex color
 function adjustColor(hex: string, percent: number): string {

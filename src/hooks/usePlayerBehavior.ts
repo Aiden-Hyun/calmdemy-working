@@ -13,7 +13,7 @@ import {
   createSession,
 } from '../services/firestoreService';
 import { RatingType, ReportCategory } from '../types';
-import { useAudioPlayer } from './useAudioPlayer';
+import { useAudioPlayer } from '../core/audio/useAudioPlayer';
 
 /**
  * ============================================================

@@ -11,7 +11,7 @@ import { DownloadButton } from "../../src/components/DownloadButton";
 import { useTheme } from "../../src/core/theme/ThemeContext";
 import { FirestoreMusicItem } from "../../src/services/firestoreService";
 import { useMusic } from '../../src/hooks/queries/useMusicQueries';
-import { useAudioUrls } from '../../src/hooks/queries/useAudioUrlQueries';
+import { useAudioUrls } from '../../src/core/audio/useAudioUrlQueries';
 import { getDownloadedContentIds } from "../../src/services/downloadService";
 import { Theme } from "../../src/core/theme";
 import { useSubscription } from "../../src/contexts/SubscriptionContext";

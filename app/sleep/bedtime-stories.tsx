@@ -16,7 +16,7 @@ import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SkeletonListItem } from '../../src/core/ui/Skeleton';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { useBedtimeStories } from '../../src/hooks/queries/useSleepQueries';
-import { getAudioUrl } from '../../src/constants/audioFiles';
+import { getAudioUrl } from '../../src/core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { Theme } from '../../src/core/theme';

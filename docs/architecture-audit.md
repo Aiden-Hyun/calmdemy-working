@@ -94,7 +94,7 @@ All four cleanup chunks landed. Codebase is now:
 | `core/query` | ✅ DONE | `providers/QueryProvider.tsx` → `core/query/QueryProvider.tsx` |
 | `core/network` | ✅ DONE | `contexts/NetworkContext.tsx` → `core/network/NetworkContext.tsx` |
 | `core/notifications` | ✅ DONE | `services/notificationService.ts` → `core/notifications/notificationService.ts` (no consumers yet — moved to its rightful home for when wired up) |
-| `core/audio` | pending | `useAudioPlayer`, `useBackgroundAudio`, `useAudioUrlQueries`, audio URL helpers, `configureAudioMode` |
+| `core/audio` | ✅ DONE | `useAudioPlayer`, `useBackgroundAudio`, `useAudioUrlQueries`, `audioFiles` (4 files moved); `services/audioService.ts` **deleted** (dead — `configureAudioMode` had zero callers, the `audioService` shim was self-documented as dead). The `audioFiles.ts` split (helpers vs `storagePaths` asset registry) deferred to Phase 5 when we extract features. |
 | `core/auth` | pending | `AuthContext`, `ProtectedRoute`, `useProviderManagement` |
 | `core/subscription` | pending | `SubscriptionContext`, `AuthSubscriptionManager` |
 | `core/nav` | pending | `OfflineNavigator`, `PreloadGate` |

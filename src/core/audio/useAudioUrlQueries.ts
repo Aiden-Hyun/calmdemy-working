@@ -30,7 +30,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getAudioUrlFromPath } from '../../constants/audioFiles';
+import { getAudioUrlFromPath } from './audioFiles';
 
 interface SoundWithAudio {
   id: string;

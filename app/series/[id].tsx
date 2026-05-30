@@ -19,7 +19,7 @@ import { Theme } from '../../src/core/theme';
 import { getSeriesById, FirestoreSeries, FirestoreSeriesChapter, getCompletedContentIds } from '../../src/services/firestoreService';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { DownloadButton } from '../../src/components/DownloadButton';
-import { getAudioUrlFromPath } from '../../src/constants/audioFiles';
+import { getAudioUrlFromPath } from '../../src/core/audio/audioFiles';
 import { useNetwork } from '../../src/core/network/NetworkContext';
 import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';

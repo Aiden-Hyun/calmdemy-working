@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ProtectedRoute } from '../../src/components/ProtectedRoute';
 import { MediaPlayer } from '../../src/components/MediaPlayer';
-import { useAudioPlayer } from '../../src/hooks/useAudioPlayer';
+import { useAudioPlayer } from '../../src/core/audio/useAudioPlayer';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { DownloadedContent, getDownloadedContent } from '../../src/services/downloadService';
 

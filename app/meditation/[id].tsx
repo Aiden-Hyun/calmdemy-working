@@ -6,11 +6,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProtectedRoute } from '../../src/components/ProtectedRoute';
 import { MediaPlayer } from '../../src/components/MediaPlayer';
-import { useAudioPlayer } from '../../src/hooks/useAudioPlayer';
+import { useAudioPlayer } from '../../src/core/audio/useAudioPlayer';
 import { usePlayerBehavior } from '../../src/hooks/usePlayerBehavior';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { getMeditationById } from '../../src/services/firestoreService';
-import { getAudioUrlFromPath } from '../../src/constants/audioFiles';
+import { getAudioUrlFromPath } from '../../src/core/audio/audioFiles';
 import { Theme } from '../../src/core/theme';
 import { GuidedMeditation } from '../../src/types';
 
