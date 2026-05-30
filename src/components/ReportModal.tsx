@@ -45,6 +45,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../theme';
 import { ReportCategory } from '../types';
 
+interface ReportModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (category: ReportCategory, description?: string) => Promise<boolean>;
+  contentTitle?: string;
+}
+
 /**
  * Report category definitions with localized UI strings.
  *

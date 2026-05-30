@@ -1349,6 +1349,7 @@ export interface FirestoreCourseSession {
   duration_minutes: number;
   audioPath: string;
   order: number;
+  dayNumber?: number; // Display ordinal shown in the course detail UI (e.g., "Day 1").
   isFree?: boolean;
 }
 
@@ -1362,6 +1363,8 @@ export interface FirestoreCourse {
   color: string;
   icon?: string;
   duration_minutes?: number;
+  totalDuration?: number; // Aggregated session minutes, surfaced in the detail header.
+  difficulty?: string;    // Free-form difficulty label (e.g., "Beginner").
   session_count?: number;
   sessionCount: number; // Computed from sessions.length
   instructor: string;

@@ -69,10 +69,14 @@ export interface ThemeColors {
   // Text colors
   text: string;
   textLight: string;
+  textSecondary: string;
   textMuted: string;
   textOnPrimary: string;
   textOnDark: string;
-  
+
+  // Borders / dividers
+  border: string;
+
   // Status colors
   success: string;
   warning: string;
@@ -145,10 +149,14 @@ export const lightColors: ThemeColors = {
     // Text colors - Warm charcoal
     text: '#3D3A38',
     textLight: '#8B8685',
+    textSecondary: '#5C5856',
     textMuted: '#A8A5A3',
     textOnPrimary: '#FFFFFF',
     textOnDark: '#F5F0E8',
-    
+
+    // Borders / dividers - warm neutral
+    border: '#EBE8E4',
+
     // Status colors - Muted versions
     success: '#7BA37B',
     warning: '#D4B896',
@@ -216,10 +224,14 @@ export const darkColors: ThemeColors = {
   // Text colors - Light warm tones
   text: '#F5F0E8',
   textLight: '#B8B4AE',
+  textSecondary: '#D9D5D0',
   textMuted: '#8B8685',
   textOnPrimary: '#1A1917',
   textOnDark: '#F5F0E8',
-  
+
+  // Borders / dividers - subdued warm dark
+  border: '#3D3A38',
+
   // Status colors - Slightly brighter for dark mode
   success: '#8BB38B',
   warning: '#E4C8A6',

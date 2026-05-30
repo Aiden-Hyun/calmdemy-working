@@ -30,7 +30,10 @@ export function TabBarButton(props: BottomTabBarButtonProps) {
   // --- Props Deconstruction ---
   // Expo Router passes web-compatible props (aria-label instead of
   // accessibilityLabel). We extract these and adapt them for React Native.
-  const { children, style, onPress, testID, ...rest } = props;
+  // `ref` is intentionally excluded — Bottom Tabs widened it to
+  // `Ref<View | LegacyRef<View>>`, which is incompatible with Pressable's
+  // `Ref<View>`. Tab buttons don't need a forwarded ref here.
+  const { children, style, onPress, testID, ref: _ref, ...rest } = props;
   const ariaLabel = (props as any)["aria-label"] as string | undefined;
 
   // --- Press Handling ---

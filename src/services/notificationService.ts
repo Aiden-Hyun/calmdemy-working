@@ -44,6 +44,7 @@
  */
 
 import * as Notifications from 'expo-notifications';
+import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -69,6 +70,8 @@ export class NotificationService {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
       }),
@@ -148,9 +151,9 @@ export class NotificationService {
         data: { type: 'daily_reminder' },
       },
       trigger: {
+        type: SchedulableTriggerInputTypes.DAILY,
         hour,
         minute,
-        repeats: true,
       },
     });
 
@@ -284,6 +287,7 @@ export class NotificationService {
         data: { type: 'mindful_moment' },
       },
       trigger: {
+        type: SchedulableTriggerInputTypes.TIME_INTERVAL,
         // Randomize the delay (1–3 hours) so the notification doesn't arrive
         // at a predictable time. This is a soft form of variable interval reinforcement.
         seconds: 3600 + Math.floor(Math.random() * 7200), // Random between 1-3 hours
@@ -329,10 +333,10 @@ export class NotificationService {
    */
   removeListeners() {
     if (this.notificationListener) {
-      Notifications.removeNotificationSubscription(this.notificationListener);
+      this.notificationListener.remove();
     }
     if (this.responseListener) {
-      Notifications.removeNotificationSubscription(this.responseListener);
+      this.responseListener.remove();
     }
   }
 }

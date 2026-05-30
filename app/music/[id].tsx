@@ -50,7 +50,7 @@ function SoundPlayerScreen() {
   const [userRating, setUserRating] = useState<RatingType | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioPlayer = useAudioPlayer();
   
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -346,7 +346,7 @@ function SoundPlayerScreen() {
                     title: sound.title,
                     duration_minutes: timerMinutes || 30,
                     audioPath: sound.audioPath,
-                    thumbnailUrl: sound.thumbnail_url,
+                    thumbnailUrl: sound.thumbnailUrl,
                   }}
                   size={24}
                   darkMode={true}

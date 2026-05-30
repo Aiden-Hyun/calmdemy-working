@@ -71,7 +71,7 @@ export function useMeditation({ duration, sessionType, onComplete }: UseMeditati
   const [progress, setProgress] = useState(0);
 
   // --- Mutable state (refs): Not reactive, used for timing calculations ---
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
   const pausedTimeRef = useRef<number>(0);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);

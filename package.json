@@ -46,6 +46,7 @@
     "react-native-svg": "15.12.1"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^13.3.3",
     "@types/react": "~19.1.10",
     "firebase-admin": "^13.6.0",
     "music-metadata": "^11.10.3",

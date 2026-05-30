@@ -135,7 +135,7 @@ export function useBreathing({ pattern, onCycleComplete, onComplete }: UseBreath
    * Phase transition timer. Holds the setTimeout handle returned by setTimeout.
    * Stored here so we can clearTimeout in cleanup functions.
    */
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Timestamp (Date.now()) when the current phase started. Used to calculate
