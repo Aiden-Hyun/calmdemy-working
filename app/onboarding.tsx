@@ -16,8 +16,7 @@ import { useSubscription } from '../src/contexts/SubscriptionContext';
 import { AnimatedView, FadeView } from '../src/components/AnimatedView';
 import { AnimatedPressable } from '../src/components/AnimatedPressable';
 import { Theme } from '../src/theme';
-
-const ONBOARDING_KEY = '@calmdemy_onboarding';
+import { ONBOARDING_KEY } from '../src/constants/storageKeys';
 
 // --- DATA ---
 

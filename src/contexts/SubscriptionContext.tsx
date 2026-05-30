@@ -8,6 +8,7 @@ import React, {
 import { Alert, Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 import {
+  PREMIUM_ENTITLEMENT_ID,
   syncRevenueCatIdentity,
   resetRevenueCatIdentity,
   hasPremiumEntitlement,
@@ -16,6 +17,10 @@ import {
   type CustomerInfo as ManagerCustomerInfo,
   type RestoreResult,
 } from "../managers/AuthSubscriptionManager";
+
+// Re-exported so consumers that imported from SubscriptionContext keep working.
+// Source of truth lives in AuthSubscriptionManager.
+export { PREMIUM_ENTITLEMENT_ID };
 import { requireEnv, getEnvList } from "../utils/env";
 
 /**
@@ -63,10 +68,6 @@ const REVENUECAT_API_KEY = Platform.select({
   android: requireEnv('EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID'),
 }) as string;
 
-// Entitlement ID configured in RevenueCat dashboard
-// IMPORTANT: Verify this matches the actual Entitlement Identifier in RevenueCat,
-// not the display name (often something simple like "premium")
-export const PREMIUM_ENTITLEMENT_ID = "Calmdemy Premium";
 
 // Admin UIDs that always get premium access (no subscription required).
 // Sourced from env so the allowlist can vary by environment without code changes.

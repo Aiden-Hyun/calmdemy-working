@@ -4,20 +4,22 @@
  * ============================================================
  *
  * Architectural Role:
- *   This module configures React Query (TanStack Query) with sensible
- *   defaults for a mobile meditation app: 5-minute stale time,
- *   24-hour cache lifetime, and persistent cache via AsyncStorage
- *   for offline resilience.
+ *   This module configures React Query (TanStack Query) with explicit-invalidation
+ *   semantics suitable for a content app where data changes from defined user
+ *   actions (purchase, favorite, complete) rather than at unpredictable times:
+ *   never-stale queries, 24-hour cache lifetime, and persistent cache via
+ *   AsyncStorage for offline resilience.
  *
  * Design Patterns:
  *   - Provider Pattern: Wraps the app in PersistQueryClientProvider
  *     to inject query client and caching logic into all descendants.
- *   - Cache Warming & Stale-While-Revalidate: staleTime = 5 minutes
- *     means data is fresh for 5 mins; after that, React Query marks
- *     it stale and refetches in the background while serving stale data.
- *   - Persistence (Read-Through Cache): AsyncStorage persists successful
- *     queries. On cold start, hydrates from disk before any fetch.
- *     This is the Read-Through Cache pattern applied to mobile.
+ *   - Explicit Invalidation: staleTime is Infinity, so React Query never
+ *     auto-refetches in the background. Mutations are responsible for
+ *     invalidating affected query keys so subsequent reads refetch. This
+ *     keeps cold-start fast and reduces unnecessary Firestore reads.
+ *   - Persistence: AsyncStorage persists successful queries. On cold start,
+ *     hydrates from disk before any fetch so the app displays cached data
+ *     immediately while consumers decide whether to invalidate.
  *   - Selective Dehydration: Only successful queries with non-null data
  *     are persisted; failed queries are discarded to prevent stale errors.
  *
@@ -44,13 +46,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * Singleton QueryClient with app-wide defaults.
  *
  * Configuration:
- *   - staleTime: 5 minutes. After 5 mins, data is marked stale and
- *     React Query fetches fresh data in the background (Stale-While-Revalidate).
+ *   - staleTime: Infinity. Queries never auto-refetch; mutations must call
+ *     queryClient.invalidateQueries(key) when they change data the UI is
+ *     reading. This trades automatic freshness for explicit, predictable
+ *     refetches — appropriate for a content app where most reads are
+ *     long-lived (catalog, narrators, course structure).
  *   - gcTime: 24 hours. Cache entries older than 24h are garbage-collected.
  *   - retry: 2 attempts. Failed requests retry twice before giving up.
- *
- * These defaults balance responsiveness (fresh data every 5 mins),
- * offline resilience (24h of cache), and bandwidth (don't retry aggressively).
  */
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -27,6 +27,7 @@ import {
 } from '../../src/services/firestoreService';
 import { Theme } from '../../src/theme';
 import { ListeningHistoryItem } from '../../src/types';
+import { generateGuestNickname } from '../../src/utils/guestNickname';
 
 function HomeScreen() {
   const { user, isAnonymous } = useAuth();
@@ -48,24 +49,6 @@ function HomeScreen() {
 
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   
-  // Generate a consistent random nickname for anonymous users based on their UID
-  const generateGuestNickname = (uid: string): string => {
-    const adjectives = [
-      'Calm', 'Peaceful', 'Serene', 'Gentle', 'Mindful', 'Tranquil', 'Zen',
-      'Cozy', 'Dreamy', 'Blissful', 'Mellow', 'Quiet', 'Still', 'Soft',
-      'Happy', 'Bright', 'Sunny', 'Warm', 'Kind', 'Sweet', 'Lovely'
-    ];
-    const animals = [
-      'Panda', 'Koala', 'Bunny', 'Owl', 'Fox', 'Bear', 'Deer', 'Dove',
-      'Swan', 'Cloud', 'Moon', 'Star', 'Wave', 'Breeze', 'Leaf', 'Lotus',
-      'Butterfly', 'Dolphin', 'Seal', 'Otter', 'Sloth', 'Cat', 'Penguin'
-    ];
-    // Use UID to generate consistent indices
-    const hash = uid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const adjIndex = hash % adjectives.length;
-    const animalIndex = (hash * 7) % animals.length;
-    return `${adjectives[adjIndex]} ${animals[animalIndex]}`;
-  };
 
   const displayName = useMemo(() => {
     const directName =

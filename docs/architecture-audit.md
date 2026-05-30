@@ -55,17 +55,34 @@ The Library tab IS the library feature. `features/library/` owns both the tab ho
 
 **Note:** these "secrets" are not cryptographic — Firebase apiKey, RevenueCat SDK keys, and OAuth client IDs are public client identifiers by design. The migration win is hygiene + flexibility (dev/staging/prod separation, rotation without code edits), not security per se.
 
-**Chunk 3 — dedupe constants and helpers**
-- `PREMIUM_ENTITLEMENT_ID` (2 locations)
-- `fonts` (2 locations)
-- `generateGuestNickname` (2 locations)
-- `getCategoryIcon` (5 locations)
-- `themeCategories`, `therapyCategories`, `techniqueCategories` (2–3 locations each)
-- `@calmdemy_onboarding` AsyncStorage key (2 locations)
+**Chunk 3 — DONE (this turn)**
+- ✅ Added `src/constants/storageKeys.ts` with `ONBOARDING_KEY` and `THEME_MODE_KEY` exports
+- ✅ Added `src/utils/guestNickname.ts` extracting the 16-line nickname helper that was duplicated in home + profile
+- ✅ Replaced inline `ONBOARDING_KEY` string literals in `app/index.tsx` and `app/onboarding.tsx` with the constant
+- ✅ Replaced inline `generateGuestNickname` functions in `app/(tabs)/home.tsx` and `app/(tabs)/profile.tsx` with the imported helper
+- ✅ Deleted the redundant `fonts` const export from `src/hooks/useFonts.ts` (nothing imports it — all consumers use `theme.fonts.*` via `useTheme()`)
+- ✅ `PREMIUM_ENTITLEMENT_ID`: kept canonical in `AuthSubscriptionManager.ts`, removed duplicate from `SubscriptionContext.tsx`, re-exported there for backward compatibility
+- ✅ `ThemeContext.tsx` now imports `THEME_MODE_KEY` from constants instead of defining locally
 
-**Chunk 4 — small fixes**
-- Theme storage key inconsistency (`@calmdemy_theme_mode` vs `@theme_mode` in delete-account preserve list)
-- Stale comment in `QueryProvider.tsx` (staleTime says 5min, actual is Infinity)
+**Deferred to later phases** (audit had these as duplicates, but they're not actually identical — would change behavior to consolidate):
+- `themeCategories` / `therapyCategories` / `techniqueCategories` — tab-version has 6 entries; browser-version has 7-8 (adds an "all" pivot plus extra entries like `loving-kindness`/`progressive-relaxation`, plus a `description` field for techniques). Will reconcile when we extract `features/meditation/`.
+- `getCategoryIcon` — 6 call sites, but 3 are no-param inline switches in detail screens (`album/[id]`, `series/[id]`, `sleep/[id]`) that use a captured local value. They're not actually shareable functions. The 3 param-taking versions could share a util, but the cleanup is small relative to the disruption. Defer until list-screen template work in Phase 5.
+
+**Chunk 4 — DONE (this turn)**
+- ✅ Fixed theme storage-key bug in `AuthContext.deleteAccount`: the preserve list was `["@theme_mode"]` while `ThemeContext` writes `@calmdemy_theme_mode`. The preserve was a no-op and theme got wiped on account deletion. Now both use `THEME_MODE_KEY` from `storageKeys.ts`.
+- ✅ Updated `QueryProvider.tsx` JSDoc to reflect actual behavior (staleTime is `Infinity` with explicit invalidation, not "5-minute Stale-While-Revalidate" as the comments claimed).
+
+## Phase 0a — complete
+
+All four cleanup chunks landed. Codebase is now:
+- ~7,500 LOC of dead/duplicate code removed (Chunk 1: ~2,300 LOC; Chunk 3: ~150 LOC of inline functions + `fonts` redefinition)
+- Zero debug telemetry remaining in source
+- All secrets sourced from `EXPO_PUBLIC_*` env vars
+- Two known-bad bugs fixed (theme preserve key, stale React Query staleTime comment)
+- 0 new TypeScript errors introduced
+- TypeScript baseline: **0 errors** (down from 24 — the spawned task resolved the pre-existing drift)
+
+Ready to start Phase 1 (extract `core/`).
 
 ---
 

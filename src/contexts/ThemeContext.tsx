@@ -36,6 +36,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme, createTheme, lightColors, darkColors } from '../theme';
+import { THEME_MODE_KEY } from '../constants/storageKeys';
 
 // --- Type Definitions ---
 
@@ -53,9 +54,6 @@ interface ThemeContextValue {
   isDark: boolean;
   setThemeMode: (mode: ThemeMode) => void;
 }
-
-// --- Constants ---
-const THEME_MODE_KEY = '@calmdemy_theme_mode';
 
 // --- Context Definition ---
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);

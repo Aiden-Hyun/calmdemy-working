@@ -4,8 +4,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../src/contexts/AuthContext';
 import { lightColors } from '../src/theme';
-
-const ONBOARDING_KEY = '@calmdemy_onboarding';
+import { ONBOARDING_KEY } from '../src/constants/storageKeys';
 
 export default function Index() {
   const { user, loading: authLoading } = useAuth();

@@ -86,6 +86,7 @@ import { deleteUserAccount } from "../services/firestoreService";
 import { deleteAllDownloads } from "../services/downloadService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { requireEnv } from "../utils/env";
+import { THEME_MODE_KEY } from "../constants/storageKeys";
 
 /**
  * CredentialCollisionError — Typed Exception Pattern
@@ -777,7 +778,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Re-authentication is required by Firebase for security. We try multiple
    * strategies in order: email/password → Google → Apple → unknown (fallback).
    *
-   * Selective Teardown: We explicitly preserve the theme preference (@theme_mode)
+   * Selective Teardown: We explicitly preserve the theme preference (THEME_MODE_KEY)
    * because it's system-level state, not user-account state. All other user
    * preferences (favorites, downloads, etc.) are cleared.
    *
@@ -842,12 +843,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await deleteAllDownloads();
 
       // --- Phase 4: Selective Teardown of AsyncStorage ---
-      // We explicitly preserve @theme_mode because it's system-level state,
+      // We explicitly preserve the theme preference because it's system-level state,
       // not user-account state. All other user preferences (favorites, settings, etc.)
       // are removed. This is a Defensive Programming approach: we enumerate what
       // to keep rather than what to delete, reducing the risk of accidentally
-      // wiping important system data.
-      const keysToKeep = ["@theme_mode"]; // Keep theme preference
+      // wiping important system data. The key constant lives in storageKeys.ts so
+      // writer and reader can't drift apart (a previous bug had this list looking
+      // for "@theme_mode" while ThemeContext writes "@calmdemy_theme_mode" — so
+      // the preserve was a no-op and theme got wiped on delete).
+      const keysToKeep = [THEME_MODE_KEY];
       const allKeys = await AsyncStorage.getAllKeys();
       const keysToRemove = allKeys.filter(key => !keysToKeep.includes(key));
       if (keysToRemove.length > 0) {

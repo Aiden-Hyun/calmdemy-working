@@ -102,46 +102,8 @@ export function useFonts() {
   return { fontsLoaded, fontError };
 }
 
-/**
- * Centralized font family constants for consistent typography across the app.
- *
- * This object groups fonts by semantic role (display, body, ui) rather than
- * technical name, allowing screens to request fonts by intent rather than
- * hard-coding font names. Changing the typography system only requires
- * updates in this one location.
- *
- * Usage: Text style={{ fontFamily: fonts.display.bold }}
- */
-export const fonts = {
-  // --- Display / Headlines ---
-  // Warm, editorial serif for visual emphasis. Use bold or semiBold for section
-  // headers, screen titles, and call-to-action text that needs prominence.
-  display: {
-    regular: 'Fraunces-Regular',
-    medium: 'Fraunces-Medium',
-    semiBold: 'Fraunces-SemiBold',
-    bold: 'Fraunces-Bold',
-  },
-
-  // --- Body / Long-form Content ---
-  // Readable serif for meditation descriptions, story text, and quoted content.
-  // Includes italic for emphasis and citations.
-  body: {
-    regular: 'Lora-Regular',
-    medium: 'Lora-Medium',
-    semiBold: 'Lora-SemiBold',
-    bold: 'Lora-Bold',
-    italic: 'Lora-Italic',
-  },
-
-  // --- UI / Labels & Controls ---
-  // Friendly, rounded sans-serif for buttons, labels, form fields, and interface chrome.
-  // Balances the warm serif system with modern, approachable UI typography.
-  ui: {
-    regular: 'DMSans-Regular',
-    medium: 'DMSans-Medium',
-    semiBold: 'DMSans-SemiBold',
-    bold: 'DMSans-Bold',
-  },
-};
+// Font family constants live on the theme object (theme.fonts.display.bold, etc.) —
+// see src/theme/index.ts. Components access fonts via useTheme() rather than
+// importing a constant from this file. This hook only owns the asset-loading
+// side of typography.
 

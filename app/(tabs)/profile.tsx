@@ -15,6 +15,7 @@ import { useTheme } from '../../src/contexts/ThemeContext';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';
 import { useStats } from '../../src/hooks/useStats';
 import { Theme } from '../../src/theme';
+import { generateGuestNickname } from '../../src/utils/guestNickname';
 
 const milestones = [
   { id: 'week', icon: 'leaf-outline' as const, label: 'First Week', days: 7, description: 'Planted the seed', color: '#8B9F82' },
@@ -34,23 +35,6 @@ function ProfileScreen() {
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   const avatarGradient = theme.gradients.sage as [string, string];
 
-  // Generate a consistent random nickname for anonymous users based on their UID
-  const generateGuestNickname = (uid: string): string => {
-    const adjectives = [
-      'Calm', 'Peaceful', 'Serene', 'Gentle', 'Mindful', 'Tranquil', 'Zen',
-      'Cozy', 'Dreamy', 'Blissful', 'Mellow', 'Quiet', 'Still', 'Soft',
-      'Happy', 'Bright', 'Sunny', 'Warm', 'Kind', 'Sweet', 'Lovely'
-    ];
-    const animals = [
-      'Panda', 'Koala', 'Bunny', 'Owl', 'Fox', 'Bear', 'Deer', 'Dove',
-      'Swan', 'Cloud', 'Moon', 'Star', 'Wave', 'Breeze', 'Leaf', 'Lotus',
-      'Butterfly', 'Dolphin', 'Seal', 'Otter', 'Sloth', 'Cat', 'Penguin'
-    ];
-    const hash = uid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const adjIndex = hash % adjectives.length;
-    const animalIndex = (hash * 7) % animals.length;
-    return `${adjectives[adjIndex]} ${animals[animalIndex]}`;
-  };
 
   const displayName = useMemo(() => {
     const directName =
