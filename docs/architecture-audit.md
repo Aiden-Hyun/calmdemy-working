@@ -99,6 +99,159 @@ All four cleanup chunks landed. Codebase is now:
 | `core/subscription` | ✅ DONE | `SubscriptionContext` (26 importers), `AuthSubscriptionManager` (1 importer) |
 | `core/nav` | ✅ DONE | `OfflineNavigator` (1 importer); `PreloadGate` and `ContentPreloadContext` **deleted** (both had zero consumers, slated for Phase 4 deletion anyway) |
 
+## Phase 3 plan — split firestoreService.ts
+
+**Status:** not started. This section is the canonical checklist for a fresh session.
+
+**Goal:** Carve `src/services/firestoreService.ts` (currently 2,607 lines, ~60 exports) into per-feature `api/` modules so each feature owns its own data access. Keep `firestoreService.ts` as a thin barrel re-export during transition so no consumer breaks.
+
+**Why this matters:** Until this split happens, every feature secretly depends on every other feature through this one file. Phase 1 moved infrastructure into `core/`, but `firestoreService` is still the universal coupling point.
+
+### Strategy
+
+1. **One commit per target group** (8 groups total — see mapping below). Each commit:
+   - Creates the target folder (`features/<name>/api/` or `core/auth/cleanup.ts`).
+   - Moves the relevant functions + interfaces into a new file.
+   - Replaces the original definitions in `firestoreService.ts` with `export { ... } from '<new path>'` re-exports.
+   - Verifies `npx tsc --noEmit` → 0 errors.
+
+2. **Consumers don't change during Phase 3.** Every screen and hook keeps importing from `firestoreService` because the barrel re-export preserves the same surface. Consumer migration happens later (interleaved with Phase 5/6 feature extractions).
+
+3. **`firestoreService.ts` ends Phase 3 as a barrel-only file** — ~60 lines of `export { x } from './path'` and nothing else. Phase 5/6 walks consumers off the barrel, then it gets deleted.
+
+### Function-by-function mapping (current line numbers in `firestoreService.ts`)
+
+#### Group A — `features/breathing/api/` (1 function)
+- `getBreathingExercises` (line 614)
+- Note: type `BreathingExercise` already lives in `src/features/breathing/types.ts` (from Phase 2). Update the function to import from there.
+
+#### Group B — `features/emergency/api/` (2 functions + 1 type)
+- `FirestoreEmergencyMeditation` interface (1276)
+- `getEmergencyMeditations` (1298)
+- `getEmergencyMeditationById` (1320)
+
+#### Group C — `features/progress/api/` (12 functions + 1 type)
+- `createSession` (259)
+- `getUserSessions` (289)
+- `getUserStats` (459)
+- `addToListeningHistory` (1983)
+- `getListeningHistory` (2045)
+- `PlaybackProgress` interface (2186)
+- `savePlaybackProgress` (2218)
+- `getPlaybackProgress` (2257)
+- `clearPlaybackProgress` (2283)
+- `markContentCompleted` (2316)
+- `getCompletedContentIds` (2344)
+- `isContentCompleted` (2376)
+
+#### Group D — `core/auth/cleanup.ts` (1 function)
+- `deleteUserAccount` (2418) — cross-collection cleanup invoked from `AuthContext.deleteAccount`. Lives in core because it's auth-housekeeping that touches many features. (Phase 6 may further evolve this into a `core/auth/cleanup-registry` where features register their own teardown — keep the function single-purpose for now.)
+
+#### Group E — `features/meditation/api/` (9 functions + 2 types)
+- `getMeditations` (133)
+- `getMeditationsByTheme` (162)
+- `getMeditationsByTechnique` (196)
+- `getMeditationById` (228)
+- `getPrograms` (580) — likely dead (`MeditationProgram` may have no consumers); verify with grep before moving and delete if dead
+- `FirestoreCourseSession` interface (1343)
+- `FirestoreCourse` interface (1356)
+- `getCourses` (1405)
+- `getCourseById` (1435)
+
+#### Group F — `features/sleep/api/` (6 functions + 2 types + aliases)
+- `getBedtimeStories` (660)
+- `getBedtimeStoryById` (687)
+- `getSleepStories` alias (702) and `getSleepStoryById` alias (703)
+- `FirestoreSleepMeditation` interface (1209)
+- `getSleepMeditations` (1231)
+- `getSleepMeditationById` (1253)
+- `FirestoreSeriesChapter` interface (1550)
+- `FirestoreSeries` interface (1560)
+- `getSeries` (1583)
+  - Series detail (`getSeriesById`, `findSeriesIdByChapterId`) goes to `library` — see Group H
+
+#### Group G — `features/music/api/` (11 functions + 4 types)
+- `FirestoreAlbumTrack` interface (1632)
+- `FirestoreAlbum` interface (1641)
+- `getAlbums` (1663) — list, surfaced on music tab
+  - Album detail (`getAlbumById`, `findAlbumIdByTrackId`) goes to `library` — see Group H
+- `FirestoreSleepSound` interface (1709)
+- `getSleepSounds` (1729)
+- `getSleepSoundsByCategory` (1750)
+- `getSleepSoundById` (1777)
+- `FirestoreBackgroundSound` interface (1796)
+- `getBackgroundSounds` (1813)
+- `getBackgroundSoundsByCategory` (1834)
+- `getBackgroundSoundById` (1860)
+- `FirestoreMusicItem` interface (1879)
+- `getWhiteNoise` (1901)
+- `getMusic` (1921)
+- `getAsmr` (1942)
+
+#### Group H — `features/library/api/` (15 functions + 3 types) — the biggest, do last
+- `getTodayQuote` (720)
+- `getUserFavorites` (770)
+- `toggleFavorite` (830)
+- `isFavorite` (902)
+- `ResolvedContent` interface (932)
+- `getContentById` (987) — polymorphic resolver across all content types
+- `getFavoritesWithDetails` (1165)
+- `findSeriesIdByChapterId` (1480) — moved from sleep collection because it's library-routing
+- `findAlbumIdByTrackId` (1503) — same reasoning for albums
+- `findCourseIdBySessionId` (1527) — same reasoning for courses
+- `getSeriesById` (1610)
+- `getAlbumById` (1690)
+- `FirestoreNarrator` interface (2098)
+- `getNarrators` (2120)
+- `getNarratorByName` (2144)
+- `getNarratorProfileUrl` (2179)
+- `getUserRating` (2476)
+- `setContentRating` (2516)
+- `reportContent` (2586)
+
+### Cross-feature dependencies after Phase 3
+
+These types are imported by other groups and will need to be either:
+1. Re-exported through the owning feature's `index.ts`, OR
+2. Imported directly via a relative path during Phase 3 (treat as temporary until Phase 5/6).
+
+| Type | Owner | Imported by |
+|---|---|---|
+| `FirestoreCourse` / `FirestoreCourseSession` | meditation | library's `getContentById` (polymorphic resolver) |
+| `FirestoreSleepMeditation` / `FirestoreSeries` / `FirestoreSeriesChapter` | sleep | library's `getContentById` |
+| `FirestoreAlbum` / `FirestoreAlbumTrack` / `FirestoreMusicItem` / `FirestoreSleepSound` | music | library's `getContentById` |
+| `FirestoreEmergencyMeditation` | emergency | library's `getContentById` |
+| `BreathingExercise` (already in features/breathing/types) | breathing | nothing in firestoreService except its own function |
+
+The polymorphic `getContentById` is the worst case — it imports every content-type interface. After Phase 3 it imports them directly from each feature's `api/` file. Phase 5 (library extraction) is the time to clean this up properly.
+
+### Suggested commit order
+
+Easiest first (proves the pattern), then by size:
+
+1. **Group A — breathing** (smallest, 1 function — proves the barrel-export technique)
+2. **Group B — emergency** (small, no cross-feature consumers)
+3. **Group D — core/auth/cleanup** (1 function, lifts a long-running coupling out)
+4. **Group C — progress** (medium, no cross-feature deps)
+5. **Group E — meditation** (medium, exports types that library needs)
+6. **Group F — sleep** (medium, exports types that library needs)
+7. **Group G — music** (medium-large, exports types that library needs)
+8. **Group H — library** (largest, depends on types from groups E/F/G; do last so its dependencies are in place)
+
+### Verification protocol (per commit)
+
+After each group:
+1. `npx tsc --noEmit` — must be 0 errors.
+2. `grep -c "^export " src/services/firestoreService.ts` should decrease (or hold flat as re-exports replace originals).
+3. `git diff --stat` on `firestoreService.ts` should show the file shrinking.
+4. Commit message format: `Split firestoreService: <group> -> <target path>` with the function list in the body.
+
+### Other splits to consider (defer to later phases or fold in as you go)
+
+- `src/types/index.ts` — currently re-exports `BreathingPattern`/`BreathingExercise` from breathing (from Phase 2). When `BreathingExercise` is no longer imported by `firestoreService.ts` (after Group A lands), the re-export can be deleted.
+- Per-feature types still in `src/types/index.ts` (`GuidedMeditation`, `BedtimeStory`, `MeditationSession`, `ListeningHistoryItem`, `UserFavorite`, `DailyQuote`, `NatureSound`, etc.) should move into their respective features. Do this alongside the function move for each group — it's natural to relocate the type with its only data consumer.
+- `src/hooks/queries/useHomeQueries.ts` — split it later. The hook is consumed by the Home screen; updating it after firestoreService is split is one of the first steps of Phase 5 (Home/library).
+
 ## Phase 2 — complete
 
 The feature module pattern is now established with `breathing` as the canonical template. Every subsequent feature follows this shape:
