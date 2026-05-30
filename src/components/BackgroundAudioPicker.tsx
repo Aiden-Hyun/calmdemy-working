@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
-import { useTheme } from "../contexts/ThemeContext";
-import { Theme } from "../theme";
+import { useTheme } from "../core/theme/ThemeContext";
+import { Theme } from "../core/theme";
 import { FirestoreSleepSound } from "../services/firestoreService";
 import { useSleepSounds } from '../hooks/queries/useMusicQueries';
 

@@ -7,8 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ProtectedRoute } from '../src/components/ProtectedRoute';
 import { BreathingGuide } from '../src/components/BreathingGuide';
 import { useBreathing } from '../src/hooks/useBreathing';
-import { useTheme } from '../src/contexts/ThemeContext';
-import { Theme } from '../src/theme';
+import { useTheme } from '../src/core/theme/ThemeContext';
+import { Theme } from '../src/core/theme';
 import { BreathingPattern } from '../src/types';
 
 interface BreathingTechnique {

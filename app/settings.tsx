@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
-import { useTheme, ThemeMode } from '../src/contexts/ThemeContext';
+import { useTheme, ThemeMode } from '../src/core/theme/ThemeContext';
 import { useSubscription } from '../src/contexts/SubscriptionContext';
 import { ProtectedRoute } from '../src/components/ProtectedRoute';
 
@@ -276,7 +276,7 @@ function SettingsScreen() {
   );
 }
 
-const createStyles = (theme: ReturnType<typeof import('../src/theme').createTheme>) =>
+const createStyles = (theme: ReturnType<typeof import('../src/core/theme').createTheme>) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,

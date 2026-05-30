@@ -10,8 +10,8 @@ import { AnimatedView } from '../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../src/core/ui/AnimatedPressable';
 import { Skeleton } from '../src/core/ui/Skeleton';
 import { useStats } from '../src/hooks/useStats';
-import { useTheme } from '../src/contexts/ThemeContext';
-import { Theme } from '../src/theme';
+import { useTheme } from '../src/core/theme/ThemeContext';
+import { Theme } from '../src/core/theme';
 
 const { width } = Dimensions.get('window');
 

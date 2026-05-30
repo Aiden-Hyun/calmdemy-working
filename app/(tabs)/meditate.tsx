@@ -9,10 +9,10 @@ import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { ContentCard } from '../../src/components/ContentCard';
 import { Skeleton } from '../../src/core/ui/Skeleton';
 import { PaywallModal } from '../../src/components/PaywallModal';
-import { useTheme } from '../../src/contexts/ThemeContext';
+import { useTheme } from '../../src/core/theme/ThemeContext';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';
 import { useCourses, useGuidedMeditations } from '../../src/hooks/queries/useMeditateQueries';
-import { Theme } from '../../src/theme';
+import { Theme } from '../../src/core/theme';
 import { FirestoreCourse } from '../../src/services/firestoreService';
 import { GuidedMeditation, MeditationTechnique } from '../../src/types';
 

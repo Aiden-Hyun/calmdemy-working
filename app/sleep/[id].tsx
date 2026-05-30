@@ -8,10 +8,10 @@ import { ProtectedRoute } from "../../src/components/ProtectedRoute";
 import { MediaPlayer } from "../../src/components/MediaPlayer";
 import { useAudioPlayer } from "../../src/hooks/useAudioPlayer";
 import { usePlayerBehavior } from "../../src/hooks/usePlayerBehavior";
-import { useTheme } from "../../src/contexts/ThemeContext";
+import { useTheme } from "../../src/core/theme/ThemeContext";
 import { getBedtimeStoryById } from "../../src/services/firestoreService";
 import { getAudioUrl } from "../../src/constants/audioFiles";
-import { Theme } from "../../src/theme";
+import { Theme } from "../../src/core/theme";
 import { BedtimeStory } from "../../src/types";
 
 function SleepStoryPlayerScreen() {

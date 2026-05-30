@@ -33,8 +33,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../contexts/ThemeContext";
-import { Theme } from "../theme";
+import { useTheme } from "../core/theme/ThemeContext";
+import { Theme } from "../core/theme";
 
 interface AccountSwitchConfirmModalProps {
   visible: boolean;

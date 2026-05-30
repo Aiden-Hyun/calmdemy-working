@@ -13,8 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../src/contexts/ThemeContext';
-import { Theme } from '../../src/theme';
+import { useTheme } from '../../src/core/theme/ThemeContext';
+import { Theme } from '../../src/core/theme';
 import { useNetwork } from '../../src/contexts/NetworkContext';
 import {
   getDownloadedContent,

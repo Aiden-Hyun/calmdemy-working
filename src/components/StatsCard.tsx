@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
-import { Theme } from '../theme';
+import { useTheme } from '../core/theme/ThemeContext';
+import { Theme } from '../core/theme';
 
 /**
  * ============================================================

@@ -13,12 +13,12 @@ import {
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../src/contexts/ThemeContext";
+import { useTheme } from "../src/core/theme/ThemeContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useProviderManagement } from "../src/hooks/useProviderManagement";
 import { CredentialCollisionModal } from "../src/components/CredentialCollisionModal";
 import { AccountSwitchWarning } from "../src/components/AccountSwitchWarning";
-import { Theme } from "../src/theme";
+import { Theme } from "../src/core/theme";
 
 export default function AccountSecurityScreen() {
   const { theme, isDark } = useTheme();

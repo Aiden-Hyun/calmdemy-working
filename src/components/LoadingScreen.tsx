@@ -8,8 +8,8 @@ import {
   Easing,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../contexts/ThemeContext';
-import { Theme } from '../theme';
+import { useTheme } from '../core/theme/ThemeContext';
+import { Theme } from '../core/theme';
 
 /**
  * ============================================================

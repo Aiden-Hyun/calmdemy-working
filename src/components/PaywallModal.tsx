@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme } from "../core/theme/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import {
   useSubscription,
@@ -21,7 +21,7 @@ import {
 } from "../contexts/SubscriptionContext";
 import { AccountPromptModal } from "./AccountPromptModal";
 import { RecoveryWizard } from "./RecoveryWizard";
-import { Theme } from "../theme";
+import { Theme } from "../core/theme";
 
 /**
  * ============================================================

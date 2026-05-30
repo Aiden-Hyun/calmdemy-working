@@ -11,10 +11,10 @@ import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { Skeleton } from '../../src/core/ui/Skeleton';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { useTheme } from '../../src/contexts/ThemeContext';
+import { useTheme } from '../../src/core/theme/ThemeContext';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';
 import { useStats } from '../../src/hooks/useStats';
-import { Theme } from '../../src/theme';
+import { Theme } from '../../src/core/theme';
 import { generateGuestNickname } from '../../src/utils/guestNickname';
 
 const milestones = [

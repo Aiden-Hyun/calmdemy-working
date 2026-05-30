@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { useTheme } from '../../src/contexts/ThemeContext';
+import { useTheme } from '../../src/core/theme/ThemeContext';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';
 import { ProtectedRoute } from '../../src/components/ProtectedRoute';
 import { useTodayQuote, useListeningHistory, useFavorites } from '../../src/hooks/queries/useHomeQueries';
@@ -25,7 +25,7 @@ import {
   findAlbumIdByTrackId,
   findCourseIdBySessionId,
 } from '../../src/services/firestoreService';
-import { Theme } from '../../src/theme';
+import { Theme } from '../../src/core/theme';
 import { ListeningHistoryItem } from '../../src/types';
 import { generateGuestNickname } from '../../src/utils/guestNickname';
 

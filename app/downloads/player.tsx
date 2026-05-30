@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ProtectedRoute } from '../../src/components/ProtectedRoute';
 import { MediaPlayer } from '../../src/components/MediaPlayer';
 import { useAudioPlayer } from '../../src/hooks/useAudioPlayer';
-import { useTheme } from '../../src/contexts/ThemeContext';
+import { useTheme } from '../../src/core/theme/ThemeContext';
 import { DownloadedContent, getDownloadedContent } from '../../src/services/downloadService';
 
 function OfflinePlayerScreen() {

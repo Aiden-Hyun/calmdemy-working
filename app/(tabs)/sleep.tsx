@@ -14,10 +14,10 @@ import {
   FirestoreSleepMeditation,
   FirestoreSeries
 } from "../../src/services/firestoreService";
-import { useTheme } from "../../src/contexts/ThemeContext";
+import { useTheme } from "../../src/core/theme/ThemeContext";
 import { useSubscription } from "../../src/contexts/SubscriptionContext";
 import { useBedtimeStories, useSleepMeditations, useSeries } from '../../src/hooks/queries/useSleepQueries';
-import { Theme } from "../../src/theme";
+import { Theme } from "../../src/core/theme";
 import { BedtimeStory } from "../../src/types";
 
 function SleepScreen() {

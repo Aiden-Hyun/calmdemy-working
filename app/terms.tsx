@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../src/contexts/ThemeContext';
+import { useTheme } from '../src/core/theme/ThemeContext';
 
 export default function TermsScreen() {
   const router = useRouter();

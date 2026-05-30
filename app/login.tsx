@@ -15,13 +15,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
 import { useAuth, CredentialCollisionError } from "../src/contexts/AuthContext";
-import { useTheme } from "../src/contexts/ThemeContext";
+import { useTheme } from "../src/core/theme/ThemeContext";
 import { AnimatedPressable } from "../src/core/ui/AnimatedPressable";
 import { AnimatedView } from "../src/core/ui/AnimatedView";
 import { CredentialCollisionModal } from "../src/components/CredentialCollisionModal";
 import { AccountSwitchConfirmModal } from "../src/components/AccountSwitchConfirmModal";
 import { router, useLocalSearchParams } from "expo-router";
-import { Theme } from "../src/theme";
+import { Theme } from "../src/core/theme";
 
 export default function LoginScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();

@@ -11,11 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PurchasesPackage } from 'react-native-purchases';
-import { useTheme } from '../src/contexts/ThemeContext';
+import { useTheme } from '../src/core/theme/ThemeContext';
 import { useSubscription } from '../src/contexts/SubscriptionContext';
 import { AnimatedView, FadeView } from '../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../src/core/ui/AnimatedPressable';
-import { Theme } from '../src/theme';
+import { Theme } from '../src/core/theme';
 import { ONBOARDING_KEY } from '../src/constants/storageKeys';
 
 // --- DATA ---

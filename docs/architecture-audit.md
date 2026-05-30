@@ -87,7 +87,7 @@ All four cleanup chunks landed. Codebase is now:
 | Subsystem | Status | Files moved |
 |---|---|---|
 | `core/ui` | ✅ DONE | `AnimatedPressable`, `AnimatedView`, `Skeleton`, `ProgressRing`, `TabBarButton`, `scale` (6 files; 52 import sites updated) |
-| `core/theme` | pending | `ThemeContext`, `theme/index.ts`, `useFonts` |
+| `core/theme` | ✅ DONE | `ThemeContext`, `theme/index.ts`, `useFonts` (3 files; ~100 import sites updated across `app/` and `src/components/`) |
 | `core/storage` | pending | `storageKeys`, `utils/env` |
 | `core/firebase` | pending | `firebase.ts` |
 | `core/query` | pending | `QueryProvider` |

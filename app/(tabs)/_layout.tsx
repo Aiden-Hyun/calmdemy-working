@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/contexts/ThemeContext';
+import { useTheme } from '../../src/core/theme/ThemeContext';
 import { TabBarButton } from '../../src/core/ui/TabBarButton';
 
 export default function TabLayout() {

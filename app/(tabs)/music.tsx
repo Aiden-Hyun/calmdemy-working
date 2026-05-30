@@ -9,10 +9,10 @@ import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
 import { ContentCard } from "../../src/components/ContentCard";
 import { Skeleton } from "../../src/core/ui/Skeleton";
 import { PaywallModal } from "../../src/components/PaywallModal";
-import { useTheme } from "../../src/contexts/ThemeContext";
+import { useTheme } from "../../src/core/theme/ThemeContext";
 import { useSubscription } from "../../src/contexts/SubscriptionContext";
 import { useSleepSounds, useWhiteNoise, useMusic, useAsmr, useAlbums } from '../../src/hooks/queries/useMusicQueries';
-import { Theme } from "../../src/theme";
+import { Theme } from "../../src/core/theme";
 import {
   FirestoreSleepSound,
   FirestoreMusicItem,

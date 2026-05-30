@@ -103,7 +103,7 @@ export function useFonts() {
 }
 
 // Font family constants live on the theme object (theme.fonts.display.bold, etc.) —
-// see src/theme/index.ts. Components access fonts via useTheme() rather than
+// see src/core/theme/index.ts. Components access fonts via useTheme() rather than
 // importing a constant from this file. This hook only owns the asset-loading
 // side of typography.
 

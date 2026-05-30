@@ -2,13 +2,13 @@ import { useEffect, useMemo } from 'react';
 import { Stack } from 'expo-router';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { AuthProvider } from '../src/contexts/AuthContext';
-import { ThemeProvider, useTheme } from '../src/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '../src/core/theme/ThemeContext';
 import { NetworkProvider } from '../src/contexts/NetworkContext';
 import { SleepTimerProvider } from '../src/contexts/SleepTimerContext';
 import { SubscriptionProvider } from '../src/contexts/SubscriptionContext';
 import { QueryProvider } from '../src/providers/QueryProvider';
-import { useFonts } from '../src/hooks/useFonts';
-import { lightColors } from '../src/theme';
+import { useFonts } from '../src/core/theme/useFonts';
+import { lightColors } from '../src/core/theme';
 import { OfflineNavigator } from '../src/components/OfflineNavigator';
 
 function LoadingScreen() {

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../src/contexts/AuthContext';
-import { lightColors } from '../src/theme';
+import { lightColors } from '../src/core/theme';
 import { ONBOARDING_KEY } from '../src/constants/storageKeys';
 
 export default function Index() {

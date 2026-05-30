@@ -9,7 +9,7 @@ import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SoundPlayer } from '../../src/components/SoundPlayer';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { useAudioPlayer } from '../../src/hooks/useAudioPlayer';
-import { useTheme } from '../../src/contexts/ThemeContext';
+import { useTheme } from '../../src/core/theme/ThemeContext';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { getAudioUrlFromPath } from '../../src/constants/audioFiles';
 import {
@@ -25,7 +25,7 @@ import {
   setContentRating,
   reportContent,
 } from '../../src/services/firestoreService';
-import { Theme } from '../../src/theme';
+import { Theme } from '../../src/core/theme';
 import { RatingType, ReportCategory } from '../../src/types';
 import { ReportModal } from '../../src/components/ReportModal';
 
