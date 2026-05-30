@@ -194,35 +194,11 @@ export interface UserProgramProgress {
   program?: MeditationProgram; // Denormalized for quick display
 }
 
-/**
- * Breathing exercise content.
- *
- * A standalone breathing technique with pattern instructions
- * (inhale duration, hold, exhale, pause). Stored in /breathingExercises.
- */
-export interface BreathingExercise {
-  id: string;
-  name: string;
-  description: string;
-  pattern: BreathingPattern;
-  duration_minutes: number;
-  difficulty_level: "beginner" | "intermediate" | "advanced";
-  benefits: string[];
-}
-
-/**
- * Breathing pattern: the structure of a single breathing cycle.
- *
- * All durations in seconds. For example, Box Breathing (4-4-4-4):
- * { inhale: 4, hold: 4, exhale: 4, pause: 4, cycles: 5 }
- */
-export interface BreathingPattern {
-  inhale_duration: number;
-  hold_duration?: number;
-  exhale_duration: number;
-  pause_duration?: number;
-  cycles: number; // Number of times to repeat the pattern
-}
+// BreathingPattern and BreathingExercise live in features/breathing/types.
+// Re-exported here so legacy consumers (firestoreService) keep compiling
+// until Phase 3 splits that file per feature, at which point this
+// re-export goes away.
+export type { BreathingPattern, BreathingExercise } from '../features/breathing/types';
 
 /**
  * Nature sound content: ambient audio for relaxation/sleep.

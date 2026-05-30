@@ -99,6 +99,41 @@ All four cleanup chunks landed. Codebase is now:
 | `core/subscription` | ✅ DONE | `SubscriptionContext` (26 importers), `AuthSubscriptionManager` (1 importer) |
 | `core/nav` | ✅ DONE | `OfflineNavigator` (1 importer); `PreloadGate` and `ContentPreloadContext` **deleted** (both had zero consumers, slated for Phase 4 deletion anyway) |
 
+## Phase 2 — complete
+
+The feature module pattern is now established with `breathing` as the canonical template. Every subsequent feature follows this shape:
+
+```
+src/features/<name>/
+  components/    private React components used only inside the feature
+  hooks/         private React hooks used only inside the feature
+  screens/       screen implementations imported by /app/<route>.tsx
+  data/          static catalogues, seed content (kept here so the feature works offline)
+  api/           Firestore + network calls (added in Phase 3 when firestoreService is split)
+  types.ts       feature-local domain types
+  manifest.ts    declaration matching FeatureManifest from src/registry.ts
+  index.ts       public API — the only file other features may import from
+```
+
+Established in this phase:
+- `src/registry.ts` — the `FeatureManifest` type contract (id, label, description, icon, color, route, category, requiresAuth, requiresSubscription, searchKeywords, enabled) plus a placeholder `featureRegistry: FeatureManifest[]` array. Phase 7 fills the array with a builder.
+- `FeatureCategory` taxonomy: `practice | library | progress | account | legal`
+- The convention that `index.ts` is the only externally-visible surface (enforced by ESLint in Phase 8)
+- The convention that route files in `/app/<route>.tsx` import the screen from `features/<name>` (via index.ts) and apply route-level concerns (`ProtectedRoute`, etc.)
+
+Breathing-specific moves:
+- `src/components/BreathingGuide.tsx` → `src/features/breathing/components/BreathingGuide.tsx`
+- `src/hooks/useBreathing.ts` → `src/features/breathing/hooks/useBreathing.ts`
+- Created `src/features/breathing/screens/BreathingScreen.tsx` from the body of `app/breathing.tsx`
+- Created `src/features/breathing/data/techniques.ts` with the 4 hardcoded techniques (Box, 4-7-8, Belly, Coherent)
+- Created `src/features/breathing/types.ts` (moved `BreathingPattern` + `BreathingExercise` from `src/types`, plus the local `BreathingTechnique` UI catalogue type)
+- Created `src/features/breathing/manifest.ts` (the canonical example manifest)
+- Created `src/features/breathing/index.ts` (re-exports `BreathingScreen` + `manifest`)
+- `app/breathing.tsx` reduced to a 13-line wrapper that just imports the screen and wraps it in `ProtectedRoute`
+- `src/types/index.ts` now re-exports `BreathingPattern` and `BreathingExercise` from the feature (legacy compat for `firestoreService` until Phase 3 splits it)
+
+TypeScript: still 0 errors.
+
 ## Phase 1 — complete
 
 All 11 subsystems landed in `src/core/`. 12 if you count `core/env/` which we added during execution (not in the original target arch — env access deserved its own folder rather than getting bundled under storage).

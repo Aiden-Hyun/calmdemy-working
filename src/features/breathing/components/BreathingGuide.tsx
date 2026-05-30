@@ -31,8 +31,8 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../core/theme/ThemeContext';
-import { Theme } from '../core/theme';
+import { useTheme } from '../../../core/theme/ThemeContext';
+import { Theme } from '../../../core/theme';
 
 interface BreathingGuideProps {
   isActive: boolean;
