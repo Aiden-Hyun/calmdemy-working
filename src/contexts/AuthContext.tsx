@@ -76,7 +76,7 @@ import {
   updateEmail,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth } from "../core/firebase";
 import {
   GoogleSignin,
   statusCodes,
@@ -85,8 +85,8 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { deleteUserAccount } from "../services/firestoreService";
 import { deleteAllDownloads } from "../services/downloadService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { requireEnv } from "../utils/env";
-import { THEME_MODE_KEY } from "../constants/storageKeys";
+import { requireEnv } from "../core/env";
+import { THEME_MODE_KEY } from "../core/storage/keys";
 
 /**
  * CredentialCollisionError — Typed Exception Pattern

@@ -16,7 +16,7 @@ import { useSubscription } from '../src/contexts/SubscriptionContext';
 import { AnimatedView, FadeView } from '../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../src/core/ui/AnimatedPressable';
 import { Theme } from '../src/core/theme';
-import { ONBOARDING_KEY } from '../src/constants/storageKeys';
+import { ONBOARDING_KEY } from '../src/core/storage/keys';
 
 // --- DATA ---
 

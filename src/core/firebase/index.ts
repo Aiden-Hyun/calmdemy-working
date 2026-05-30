@@ -39,7 +39,7 @@ import { getAuth, initializeAuth, type Persistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { requireEnv } from './utils/env';
+import { requireEnv } from '../env';
 
 // `getReactNativePersistence` ships from the React Native build variant of
 // `@firebase/auth` (Metro picks it via package conditional exports) but the

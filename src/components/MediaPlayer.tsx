@@ -26,7 +26,7 @@ import { useBackgroundAudio } from '../hooks/useBackgroundAudio';
 import { getAudioUrlFromPath } from '../constants/audioFiles';
 import { getSleepSoundById, getNarratorByName, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
-import { useNetwork } from '../contexts/NetworkContext';
+import { useNetwork } from '../core/network/NetworkContext';
 import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../services/downloadService';
 
 /**

@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { Theme } from '../../src/core/theme';
-import { useNetwork } from '../../src/contexts/NetworkContext';
+import { useNetwork } from '../../src/core/network/NetworkContext';
 import {
   getDownloadedContent,
   deleteDownload,

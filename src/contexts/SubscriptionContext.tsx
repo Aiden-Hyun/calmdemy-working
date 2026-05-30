@@ -21,7 +21,7 @@ import {
 // Re-exported so consumers that imported from SubscriptionContext keep working.
 // Source of truth lives in AuthSubscriptionManager.
 export { PREMIUM_ENTITLEMENT_ID };
-import { requireEnv, getEnvList } from "../utils/env";
+import { requireEnv, getEnvList } from "../core/env";
 
 /**
  * ============================================================

@@ -20,7 +20,7 @@ import { getSeriesById, FirestoreSeries, FirestoreSeriesChapter, getCompletedCon
 import { useAuth } from '../../src/contexts/AuthContext';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { getAudioUrlFromPath } from '../../src/constants/audioFiles';
-import { useNetwork } from '../../src/contexts/NetworkContext';
+import { useNetwork } from '../../src/core/network/NetworkContext';
 import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { useSubscription } from '../../src/contexts/SubscriptionContext';
 import { PaywallModal } from '../../src/components/PaywallModal';

@@ -36,7 +36,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Theme, createTheme, lightColors, darkColors } from '.';
-import { THEME_MODE_KEY } from '../../constants/storageKeys';
+import { THEME_MODE_KEY } from '../storage/keys';
 
 // --- Type Definitions ---
 

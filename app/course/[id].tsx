@@ -14,7 +14,7 @@ import { getCourseById, FirestoreCourse, FirestoreCourseSession, getCompletedCon
 import { useAuth } from "../../src/contexts/AuthContext";
 import { DownloadButton } from "../../src/components/DownloadButton";
 import { getAudioUrlFromPath } from "../../src/constants/audioFiles";
-import { useNetwork } from "../../src/contexts/NetworkContext";
+import { useNetwork } from "../../src/core/network/NetworkContext";
 import { getDownloadedContentIds, getLocalAudioPath } from "../../src/services/downloadService";
 import { buildSessionMetaInfo } from "../../src/utils/courseCodeParser";
 import { useSubscription } from "../../src/contexts/SubscriptionContext";

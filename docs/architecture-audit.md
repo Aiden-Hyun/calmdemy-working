@@ -88,11 +88,12 @@ All four cleanup chunks landed. Codebase is now:
 |---|---|---|
 | `core/ui` | ✅ DONE | `AnimatedPressable`, `AnimatedView`, `Skeleton`, `ProgressRing`, `TabBarButton`, `scale` (6 files; 52 import sites updated) |
 | `core/theme` | ✅ DONE | `ThemeContext`, `theme/index.ts`, `useFonts` (3 files; ~100 import sites updated across `app/` and `src/components/`) |
-| `core/storage` | pending | `storageKeys`, `utils/env` |
-| `core/firebase` | pending | `firebase.ts` |
-| `core/query` | pending | `QueryProvider` |
-| `core/network` | pending | `NetworkContext` |
-| `core/notifications` | pending | `notificationService` |
+| `core/firebase` | ✅ DONE | `firebase.ts` → `core/firebase/index.ts` |
+| `core/env` | ✅ DONE | `utils/env.ts` → `core/env/index.ts` (new subsystem; not in original target arch) |
+| `core/storage` | ✅ DONE | `constants/storageKeys.ts` → `core/storage/keys.ts` |
+| `core/query` | ✅ DONE | `providers/QueryProvider.tsx` → `core/query/QueryProvider.tsx` |
+| `core/network` | ✅ DONE | `contexts/NetworkContext.tsx` → `core/network/NetworkContext.tsx` |
+| `core/notifications` | ✅ DONE | `services/notificationService.ts` → `core/notifications/notificationService.ts` (no consumers yet — moved to its rightful home for when wired up) |
 | `core/audio` | pending | `useAudioPlayer`, `useBackgroundAudio`, `useAudioUrlQueries`, audio URL helpers, `configureAudioMode` |
 | `core/auth` | pending | `AuthContext`, `ProtectedRoute`, `useProviderManagement` |
 | `core/subscription` | pending | `SubscriptionContext`, `AuthSubscriptionManager` |

@@ -37,7 +37,7 @@
  */
 
 import { ref, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase';
+import { storage } from '../core/firebase';
 
 /**
  * Fragrant Heart base URL factory.
