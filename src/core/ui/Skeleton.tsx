@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Animated, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
-import { Theme } from '../theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { Theme } from '../../theme';
 
 /**
  * ============================================================

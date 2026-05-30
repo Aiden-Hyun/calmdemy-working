@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProtectedRoute } from '../../src/components/ProtectedRoute';
-import { AnimatedPressable } from '../../src/components/AnimatedPressable';
+import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SoundPlayer } from '../../src/components/SoundPlayer';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { useAudioPlayer } from '../../src/hooks/useAudioPlayer';

@@ -5,10 +5,10 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProtectedRoute } from "../../src/components/ProtectedRoute";
-import { AnimatedView } from "../../src/components/AnimatedView";
-import { AnimatedPressable } from "../../src/components/AnimatedPressable";
+import { AnimatedView } from "../../src/core/ui/AnimatedView";
+import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
 import { ContentCard } from "../../src/components/ContentCard";
-import { Skeleton } from "../../src/components/Skeleton";
+import { Skeleton } from "../../src/core/ui/Skeleton";
 import { PaywallModal } from "../../src/components/PaywallModal";
 import { 
   FirestoreSleepMeditation,

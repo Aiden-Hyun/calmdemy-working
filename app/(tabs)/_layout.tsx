@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/contexts/ThemeContext';
-import { TabBarButton } from '../../src/components/TabBarButton';
+import { TabBarButton } from '../../src/core/ui/TabBarButton';
 
 export default function TabLayout() {
   const { theme } = useTheme();

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { AnimatedPressable } from "./AnimatedPressable";
+import { AnimatedPressable } from "../core/ui/AnimatedPressable";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { Theme } from "../theme";

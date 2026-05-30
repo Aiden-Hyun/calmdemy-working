@@ -82,7 +82,21 @@ All four cleanup chunks landed. Codebase is now:
 - 0 new TypeScript errors introduced
 - TypeScript baseline: **0 errors** (down from 24 — the spawned task resolved the pre-existing drift)
 
-Ready to start Phase 1 (extract `core/`).
+## Phase 1 progress
+
+| Subsystem | Status | Files moved |
+|---|---|---|
+| `core/ui` | ✅ DONE | `AnimatedPressable`, `AnimatedView`, `Skeleton`, `ProgressRing`, `TabBarButton`, `scale` (6 files; 52 import sites updated) |
+| `core/theme` | pending | `ThemeContext`, `theme/index.ts`, `useFonts` |
+| `core/storage` | pending | `storageKeys`, `utils/env` |
+| `core/firebase` | pending | `firebase.ts` |
+| `core/query` | pending | `QueryProvider` |
+| `core/network` | pending | `NetworkContext` |
+| `core/notifications` | pending | `notificationService` |
+| `core/audio` | pending | `useAudioPlayer`, `useBackgroundAudio`, `useAudioUrlQueries`, audio URL helpers, `configureAudioMode` |
+| `core/auth` | pending | `AuthContext`, `ProtectedRoute`, `useProviderManagement` |
+| `core/subscription` | pending | `SubscriptionContext`, `AuthSubscriptionManager` |
+| `core/nav` | pending | `OfflineNavigator`, `PreloadGate` |
 
 ---
 

@@ -35,7 +35,7 @@
  * ============================================================
  */
 
-import { scale, moderateScale } from '../utils/scale';
+import { scale, moderateScale } from '../core/ui/scale';
 
 // --- Type Definitions ---
 

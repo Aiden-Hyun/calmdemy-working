@@ -12,9 +12,9 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/contexts/ThemeContext";
 import { Theme } from "../../src/theme";
-import { AnimatedView } from "../../src/components/AnimatedView";
-import { AnimatedPressable } from "../../src/components/AnimatedPressable";
-import { Skeleton } from "../../src/components/Skeleton";
+import { AnimatedView } from "../../src/core/ui/AnimatedView";
+import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
+import { Skeleton } from "../../src/core/ui/Skeleton";
 import { FirestoreCourse } from "../../src/services/firestoreService";
 import { useCourses } from "../../src/hooks/queries/useMeditateQueries";
 
