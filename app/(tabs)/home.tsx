@@ -21,10 +21,8 @@ import { parseSessionCode } from '../../src/utils/courseCodeParser';
 import {
   ResolvedContent,
   FirestoreEmergencyMeditation,
-  findSeriesIdByChapterId,
-  findAlbumIdByTrackId,
-  findCourseIdBySessionId,
 } from '../../src/services/firestoreService';
+import { navigateToContent as libNavigateToContent } from '../../src/features/library';
 import { Theme } from '../../src/core/theme';
 import { ListeningHistoryItem } from '../../src/types';
 import { generateGuestNickname } from '../../src/utils/guestNickname';
@@ -131,88 +129,11 @@ function HomeScreen() {
     return dots;
   };
 
-  const navigateToContent = useCallback(async (contentId: string, contentType: string) => {
-    // Handle emergency content that may have been saved with wrong type
-    if (contentId.startsWith('emergency_')) {
-      const em = emergencyMeditations.find(e => e.id === contentId);
-      if (em) {
-        router.push({
-          pathname: '/emergency/[id]',
-          params: {
-            id: em.id, title: em.title, description: em.description,
-            duration: String(em.duration_minutes), audioPath: em.audioPath,
-            color: em.color, icon: em.icon, narrator: em.narrator || '',
-            thumbnailUrl: em.thumbnailUrl || ''
-          }
-        });
-      } else {
-        router.push('/(tabs)/meditate');
-      }
-      return;
-    }
-
-    switch (contentType) {
-      case 'meditation':
-        router.push({ pathname: '/meditation/[id]', params: { id: contentId } });
-        break;
-      case 'bedtime_story':
-        router.push({ pathname: '/sleep/[id]', params: { id: contentId } });
-        break;
-      case 'breathing_exercise':
-        router.push('/breathing');
-        break;
-      case 'nature_sound':
-        router.push({ pathname: '/music/[id]', params: { id: contentId } });
-        break;
-      case 'series_chapter': {
-        const seriesId = await findSeriesIdByChapterId(contentId);
-        if (seriesId) {
-          router.push({ pathname: '/series/[id]', params: { id: seriesId, autoOpenItemId: contentId } });
-        } else {
-          router.push('/(tabs)/sleep');
-        }
-        break;
-      }
-      case 'album_track': {
-        const albumId = await findAlbumIdByTrackId(contentId);
-        if (albumId) {
-          router.push({ pathname: '/album/[id]', params: { id: albumId, autoOpenItemId: contentId } });
-        } else {
-          router.push('/(tabs)/music');
-        }
-        break;
-      }
-      case 'emergency': {
-        const emergency = emergencyMeditations.find(e => e.id === contentId);
-        if (emergency) {
-          router.push({
-            pathname: '/emergency/[id]',
-            params: {
-              id: emergency.id, title: emergency.title, description: emergency.description,
-              duration: String(emergency.duration_minutes), audioPath: emergency.audioPath,
-              color: emergency.color, icon: emergency.icon, narrator: emergency.narrator || '',
-              thumbnailUrl: emergency.thumbnailUrl || ''
-            }
-          });
-        } else {
-          router.push('/(tabs)/meditate');
-        }
-        break;
-      }
-      case 'course_session': {
-        const courseId = await findCourseIdBySessionId(contentId);
-        if (courseId) {
-          router.push({ pathname: '/course/[id]', params: { id: courseId, autoOpenItemId: contentId } });
-        } else {
-          router.push('/(tabs)/meditate');
-        }
-        break;
-      }
-      case 'sleep_meditation':
-        router.push({ pathname: '/sleep/meditation/[id]', params: { id: contentId } });
-        break;
-    }
-  }, [emergencyMeditations, router]);
+  const navigateToContent = useCallback(
+    (contentId: string, contentType: string) =>
+      libNavigateToContent(contentId, contentType, router, { emergencyMeditations }),
+    [emergencyMeditations, router]
+  );
 
   const getContentIcon = (contentType: string): keyof typeof Ionicons.glyphMap => {
     switch (contentType) {

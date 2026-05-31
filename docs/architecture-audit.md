@@ -446,7 +446,9 @@ Mirror of Step 3 for the player. The three player screens share: receive child f
 
 **Verify** same as Step 4: TS clean, simulator parity, commit per route or batched.
 
-#### Step 7 — Extract `navigateToContent` to `features/library/navigation.ts`
+#### Step 7 — Extract `navigateToContent` to `features/library/navigation.ts` ✅ DONE
+
+**Done:** Moved the polymorphic `navigateToContent` (the `emergency_` prefix handling + 8-type switch) out of `app/(tabs)/home.tsx` into `features/library/navigation.ts`. Chose option (a): the caller passes its loaded `emergencyMeditations` list in via a `NavigateToContentContext` (Home keeps owning the fetch); the `find*` lookups are called directly from `./api/content` (same module). `router` is typed as expo-router's `Router`. home.tsx now keeps a 4-line `useCallback` that delegates to the extracted function (same `[emergencyMeditations, router]` deps), and dropped the now-unused `find*` imports — 831 → 752 LOC. Exported `navigateToContent` from `index.ts`. tsc 0 errors. **User verifies Home still routes all 8 content types (recently-played / favorites taps) correctly in the simulator.**
 
 `navigateToContent(contentId, contentType, router, ctx)` currently lives inline in `app/(tabs)/home.tsx` with hardcoded knowledge of all 8 content types. It needs to move to the library feature so home (and downloads, and future Discover) can share it.
 
