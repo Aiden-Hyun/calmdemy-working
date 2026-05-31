@@ -74,7 +74,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../core/firebase";
 import {
-  NatureSound,
   DailyQuote,
   UserFavorite,
   RatingType,
@@ -97,6 +96,10 @@ import {
   getSleepMeditations,
   getSleepMeditationById,
 } from "../features/sleep/api/sleepMeditations";
+// Phase 3 (Group G): getAlbums imported so getContentById / findAlbumIdByTrackId can call it;
+// album interfaces imported for type-only use by getAlbumById (a library lookup staying here).
+import { getAlbums } from "../features/music/api/albums";
+import type { FirestoreAlbum, FirestoreAlbumTrack } from "../features/music/api/albums";
 
 /**
  * In-memory Cache-Aside pattern: we populate these caches when calling getSeries()
@@ -808,59 +811,12 @@ export async function getSeriesById(
 }
 
 // ============================================================
-// ALBUMS SECTION
-// Music/sound collections (multi-track albums of ambient sounds, music, or ASMR).
-// Hierarchical structure: album → tracks, with denormalized metadata.
+// ALBUMS SECTION (Phase 3, Group G) — list + interfaces moved to features/music/api/albums.ts
+// getAlbums is imported below (getContentById / findAlbumIdByTrackId call it). Album *detail*
+// lookups (getAlbumById) stay here until Group H (library).
 // ============================================================
-
-export interface FirestoreAlbumTrack {
-  id: string;
-  trackNumber: number;
-  title: string;
-  duration_minutes: number;
-  audioPath: string;
-  isFree?: boolean;
-}
-
-export interface FirestoreAlbum {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl?: string;
-  color: string;
-  artist: string;
-  trackCount: number;
-  totalDuration: number;
-  category: string;
-  tracks: FirestoreAlbumTrack[];
-}
-
-/**
- * Retrieve all albums (music/sound collections).
- *
- * Also populates _albumsCache (Cache-Aside pattern) for fast subsequent lookups.
- * Albums contain denormalized track metadata to avoid N+1 lookups when rendering.
- *
- * @returns Array of all albums with embedded tracks
- *         Empty array on error (Graceful Degradation)
- */
-export async function getAlbums(): Promise<FirestoreAlbum[]> {
-  try {
-    const snapshot = await getDocs(collection(db, "albums"));
-    const result = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      // Denormalization: tracks are stored inside the album document
-      const tracks = (data.tracks || []).map((t: FirestoreAlbumTrack) => ({ ...t, isFree: true }));
-      return { id: doc.id, ...data, tracks } as FirestoreAlbum;
-    });
-    // Update cache for subsequent calls (Cache-Aside)
-    _albumsCache = result;
-    return result;
-  } catch (error) {
-    console.error("Error fetching albums:", error);
-    return [];
-  }
-}
+export type { FirestoreAlbum, FirestoreAlbumTrack };
+export { getAlbums };
 
 /**
  * Retrieve a single album by ID (with all embedded tracks).
@@ -886,254 +842,23 @@ export async function getAlbumById(id: string): Promise<FirestoreAlbum | null> {
 }
 
 // ============================================================
-// SLEEP SOUNDS SECTION
-// Ambient nature sounds and sleep soundscapes (water, rain, forest, etc.).
+// SOUNDS / MUSIC SECTION (Phase 3, Group G) — moved to features/music/api/*
+// sleepSounds.ts, backgroundSounds.ts, music.ts (white noise / music / asmr).
 // ============================================================
-
-export interface FirestoreSleepSound {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  category: string;
-  audioPath: string;
-  color: string;
-  thumbnailUrl?: string;
-  isFree?: boolean;
-}
-
-/**
- * Retrieve all sleep sounds.
- *
- * Simple full-collection read. Typically paired with React Query for caching.
- *
- * @returns Array of all sleep sounds
- *         Empty array on error (Graceful Degradation)
- */
-export async function getSleepSounds(): Promise<FirestoreSleepSound[]> {
-  try {
-    const snapshot = await getDocs(collection(db, "sleep_sounds"));
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: true } as FirestoreSleepSound)
-    );
-  } catch (error) {
-    console.error("Error fetching sleep sounds:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve sleep sounds filtered by category.
- *
- * Special case: category === "all" bypasses the filter and returns all sounds.
- *
- * @param category - Category to filter by (e.g., "nature", "urban"), or "all"
- * @returns Array of sleep sounds matching the category
- *         Empty array on error (Graceful Degradation)
- */
-export async function getSleepSoundsByCategory(
-  category: string
-): Promise<FirestoreSleepSound[]> {
-  try {
-    if (category === "all") return getSleepSounds();
-    const q = query(
-      collection(db, "sleep_sounds"),
-      where("category", "==", category)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: true } as FirestoreSleepSound)
-    );
-  } catch (error) {
-    console.error("Error fetching sleep sounds by category:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve a single sleep sound by ID.
- *
- * Direct document access; returns null if not found.
- *
- * @param id - Firestore document ID
- * @returns The sleep sound object, or null if not found
- */
-export async function getSleepSoundById(
-  id: string
-): Promise<FirestoreSleepSound | null> {
-  try {
-    const docRef = doc(db, "sleep_sounds", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    return { id: docSnap.id, ...docSnap.data(), isFree: true } as FirestoreSleepSound;
-  } catch (error) {
-    console.error("Error fetching sleep sound by id:", error);
-    return null;
-  }
-}
-
-// ============================================================
-// BACKGROUND SOUNDS SECTION
-// Ambient sounds for work/focus (ambient noise, coffee shop, etc.).
-// ============================================================
-
-export interface FirestoreBackgroundSound {
-  id: string;
-  title: string;
-  icon: string;
-  category: string;
-  audioPath: string;
-  color: string;
-}
-
-/**
- * Retrieve all background sounds.
- *
- * Simple full-collection read for ambient focus/work sounds.
- *
- * @returns Array of all background sounds
- *         Empty array on error (Graceful Degradation)
- */
-export async function getBackgroundSounds(): Promise<
-  FirestoreBackgroundSound[]
-> {
-  try {
-    const snapshot = await getDocs(collection(db, "background_sounds"));
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data() } as FirestoreBackgroundSound)
-    );
-  } catch (error) {
-    console.error("Error fetching background sounds:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve background sounds filtered by category.
- *
- * @param category - Category to filter by (e.g., "coffee-shop", "ambient")
- * @returns Array of background sounds matching the category
- *         Empty array on error (Graceful Degradation)
- */
-export async function getBackgroundSoundsByCategory(
-  category: string
-): Promise<FirestoreBackgroundSound[]> {
-  try {
-    const q = query(
-      collection(db, "background_sounds"),
-      where("category", "==", category)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data() } as FirestoreBackgroundSound)
-    );
-  } catch (error) {
-    console.error("Error fetching background sounds by category:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve a single background sound by ID.
- *
- * Direct document access; returns null if not found.
- *
- * @param id - Firestore document ID
- * @returns The background sound object, or null if not found
- */
-export async function getBackgroundSoundById(
-  id: string
-): Promise<FirestoreBackgroundSound | null> {
-  try {
-    const docRef = doc(db, "background_sounds", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    return { id: docSnap.id, ...docSnap.data() } as FirestoreBackgroundSound;
-  } catch (error) {
-    console.error("Error fetching background sound:", error);
-    return null;
-  }
-}
-
-// ============================================================
-// WHITE NOISE / MUSIC / ASMR SECTION
-// Ambient audio collections (background sounds for relaxation, sleep, focus).
-// ============================================================
-
-export interface FirestoreMusicItem {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  category: string;
-  audioPath: string;
-  color: string;
-  duration_minutes?: number;
-  thumbnailUrl?: string;
-  isFree?: boolean;
-}
-
-/**
- * Retrieve all white noise tracks.
- *
- * White noise (e.g., static, fan hum) is used for masking environmental noise
- * and aiding sleep/focus.
- *
- * @returns Array of all white noise items
- *         Empty array on error (Graceful Degradation)
- */
-export async function getWhiteNoise(): Promise<FirestoreMusicItem[]> {
-  try {
-    const snapshot = await getDocs(collection(db, "white_noise"));
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: true } as FirestoreMusicItem)
-    );
-  } catch (error) {
-    console.error("Error fetching white noise:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve all music tracks.
- *
- * Music for relaxation, meditation, or background listening.
- *
- * @returns Array of all music items
- *         Empty array on error (Graceful Degradation)
- */
-export async function getMusic(): Promise<FirestoreMusicItem[]> {
-  try {
-    const snapshot = await getDocs(collection(db, "music"));
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: true } as FirestoreMusicItem)
-    );
-  } catch (error) {
-    console.error("Error fetching music:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve all ASMR tracks.
- *
- * ASMR (Autonomous Sensory Meridian Response) content: whispering, tapping, etc.
- * Popular for relaxation and sleep.
- *
- * @returns Array of all ASMR items
- *         Empty array on error (Graceful Degradation)
- */
-export async function getAsmr(): Promise<FirestoreMusicItem[]> {
-  try {
-    const snapshot = await getDocs(collection(db, "asmr"));
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: true } as FirestoreMusicItem)
-    );
-  } catch (error) {
-    console.error("Error fetching asmr:", error);
-    return [];
-  }
-}
+export type { FirestoreSleepSound } from "../features/music/api/sleepSounds";
+export {
+  getSleepSounds,
+  getSleepSoundsByCategory,
+  getSleepSoundById,
+} from "../features/music/api/sleepSounds";
+export type { FirestoreBackgroundSound } from "../features/music/api/backgroundSounds";
+export {
+  getBackgroundSounds,
+  getBackgroundSoundsByCategory,
+  getBackgroundSoundById,
+} from "../features/music/api/backgroundSounds";
+export type { FirestoreMusicItem } from "../features/music/api/music";
+export { getWhiteNoise, getMusic, getAsmr } from "../features/music/api/music";
 
 // ============================================================
 // NARRATORS SECTION
