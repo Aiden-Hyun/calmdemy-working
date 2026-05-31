@@ -121,9 +121,10 @@ All four cleanup chunks landed. Codebase is now:
 
 ### Function-by-function mapping (current line numbers in `firestoreService.ts`)
 
-#### Group A — `features/breathing/api/` (1 function)
-- `getBreathingExercises` (line 614)
+#### Group A — `features/breathing/api/` (1 function) ✅ DONE
+- `getBreathingExercises` (line 614) → `src/features/breathing/api/exercises.ts`
 - Note: type `BreathingExercise` already lives in `src/features/breathing/types.ts` (from Phase 2). Update the function to import from there.
+- Done: function + its own `breathing_exercises` collection ref moved to the new file; `firestoreService.ts` re-exports it; dropped the now-unused `breathingCollection` const and `BreathingExercise` import from the barrel. tsc 0 errors; barrel still exports 70 symbols; file 2607 → 2566 LOC.
 
 #### Group B — `features/emergency/api/` (2 functions + 1 type)
 - `FirestoreEmergencyMeditation` interface (1276)

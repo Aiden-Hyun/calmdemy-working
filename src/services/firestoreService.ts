@@ -77,7 +77,6 @@ import {
   GuidedMeditation,
   MeditationSession,
   MeditationProgram,
-  BreathingExercise,
   NatureSound,
   BedtimeStory,
   DailyQuote,
@@ -106,7 +105,6 @@ let _albumsCache: any[] | null = null;
 const meditationsCollection = collection(db, "guided_meditations");
 const sessionsCollection = collection(db, "meditation_sessions");
 const programsCollection = collection(db, "meditation_programs");
-const breathingCollection = collection(db, "breathing_exercises");
 const bedtimeStoriesCollection = collection(db, "bedtime_stories");
 const quotesCollection = collection(db, "daily_quotes");
 const favoritesCollection = collection(db, "user_favorites");
@@ -603,47 +601,8 @@ export async function getPrograms(): Promise<MeditationProgram[]> {
 // BREATHING EXERCISES SECTION
 // ============================================================
 
-/**
- * Retrieve all breathing exercises.
- *
- * Simple collection read — exercises are standalone, not part of programs.
- *
- * @returns Array of breathing exercises
- *         Empty array on error (Graceful Degradation)
- */
-export async function getBreathingExercises(): Promise<BreathingExercise[]> {
-  try {
-    const snapshot = await getDocs(breathingCollection);
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name,
-        description: data.description,
-        pattern: {
-          inhale_duration: data.inhale_duration,
-          hold_duration: data.hold_duration,
-          exhale_duration: data.exhale_duration,
-          pause_duration: data.pause_duration,
-          cycles: data.cycles,
-        },
-        duration_minutes: Math.ceil(
-          ((data.inhale_duration +
-            (data.hold_duration || 0) +
-            data.exhale_duration +
-            (data.pause_duration || 0)) *
-            data.cycles) /
-            60
-        ),
-        difficulty_level: data.difficulty_level,
-        benefits: data.benefits || [],
-      } as BreathingExercise;
-    });
-  } catch (error) {
-    console.error("Error fetching breathing exercises:", error);
-    return [];
-  }
-}
+// Breathing exercises moved to features/breathing/api/exercises.ts (Phase 3, Group A)
+export { getBreathingExercises } from "../features/breathing/api/exercises";
 
 // ============================================================
 // BEDTIME STORIES SECTION
