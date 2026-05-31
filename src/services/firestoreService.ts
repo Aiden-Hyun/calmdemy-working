@@ -2322,47 +2322,8 @@ export async function isContentCompleted(
  * @param userId - The authenticated user's UID
  * @throws Error if any delete operation fails (transaction incomplete)
  */
-export async function deleteUserAccount(userId: string): Promise<void> {
-  console.log(`Starting account deletion for user: ${userId}`);
-
-  try {
-    // Helper: Query and batch-delete all docs from a collection matching a field value
-    // This pattern queries then mass-deletes in parallel, avoiding a composite index.
-    const deleteCollection = async (
-      collectionRef: ReturnType<typeof collection>,
-      fieldName: string
-    ) => {
-      const q = query(collectionRef, where(fieldName, "==", userId));
-      const snapshot = await getDocs(q);
-      // Batch delete: Promise.all() ensures all deletes happen in parallel
-      const deletePromises = snapshot.docs.map((docSnapshot) =>
-        deleteDoc(docSnapshot.ref)
-      );
-      await Promise.all(deletePromises);
-      console.log(`Deleted ${snapshot.docs.length} docs from ${collectionRef.path}`);
-    };
-
-    // Phase 1: Delete user data from all collections
-    await deleteCollection(favoritesCollection, "user_id");
-    await deleteCollection(listeningHistoryCollection, "user_id");
-    await deleteCollection(sessionsCollection, "user_id");
-    await deleteCollection(playbackProgressCollection, "user_id");
-    await deleteCollection(completedContentCollection, "user_id");
-
-    // Phase 2: Delete the user's stats/profile document
-    const userDocRef = doc(usersCollection, userId);
-    const userDoc = await getDoc(userDocRef);
-    if (userDoc.exists()) {
-      await deleteDoc(userDocRef);
-      console.log("Deleted user document");
-    }
-
-    console.log("Account deletion complete");
-  } catch (error) {
-    console.error("Error deleting user account data:", error);
-    throw error;
-  }
-}
+// Account-deletion purge moved to core/auth/cleanup.ts (Phase 3, Group D).
+export { deleteUserAccount } from "../core/auth/cleanup";
 
 // ============================================================
 // CONTENT RATINGS SECTION

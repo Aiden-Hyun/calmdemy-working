@@ -146,8 +146,9 @@ All four cleanup chunks landed. Codebase is now:
 - `getCompletedContentIds` (2344)
 - `isContentCompleted` (2376)
 
-#### Group D — `core/auth/cleanup.ts` (1 function)
+#### Group D — `core/auth/cleanup.ts` (1 function) ✅ DONE
 - `deleteUserAccount` (2418) — cross-collection cleanup invoked from `AuthContext.deleteAccount`. Lives in core because it's auth-housekeeping that touches many features. (Phase 6 may further evolve this into a `core/auth/cleanup-registry` where features register their own teardown — keep the function single-purpose for now.)
+- Done: moved to `src/core/auth/cleanup.ts` with its own collection refs (user_favorites, listening_history, meditation_sessions, playback_progress, completed_content, users). Barrel bare-re-exports it; `AuthContext` keeps importing from `firestoreService` (consumer unchanged per Phase 3 rule). The collection consts in the barrel stay — other progress/library functions still use them. tsc 0 errors; file 2514 → 2475 LOC.
 
 #### Group E — `features/meditation/api/` (9 functions + 2 types)
 - `getMeditations` (133)
