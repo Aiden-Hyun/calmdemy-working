@@ -132,7 +132,7 @@ All four cleanup chunks landed. Codebase is now:
 - `getEmergencyMeditationById` (1320)
 - Done: all three moved. Barrel **imports** the two functions (not just `export ... from`) because `getContentById` calls `getEmergencyMeditationById` internally — a bare `export { } from` would not create the local binding it needs. Type re-exported via `export type`. tsc 0 errors; surface unchanged; file 2566 → 2514 LOC.
 
-#### Group C — `features/progress/api/` (12 functions + 1 type)
+#### Group C — `features/progress/api/` (12 functions + 1 type) ✅ DONE
 - `createSession` (259)
 - `getUserSessions` (289)
 - `getUserStats` (459)
@@ -145,6 +145,7 @@ All four cleanup chunks landed. Codebase is now:
 - `markContentCompleted` (2316)
 - `getCompletedContentIds` (2344)
 - `isContentCompleted` (2376)
+- Done: split across four cohesive files — `sessions.ts` (sessions + stats, plus the private `updateUserStats`/`calculateStreak` helpers which stay module-private), `listeningHistory.ts`, `playbackProgress.ts`, `completion.ts`. The whole progress cluster is self-contained (only `createSession`→`updateUserStats`→`getUserSessions`/`calculateStreak` and `getUserStats`→`getUserSessions` call each other; nothing remaining in the barrel calls any of them), so plain `export … from` re-exports suffice. Removed now-dead `sessionsCollection`/`listeningHistoryCollection`/`usersCollection` consts and the orphaned `MeditationSession`/`ListeningHistoryItem` type imports from the barrel. tsc 0 errors; surface unchanged; file 2475 → 1823 LOC.
 
 #### Group D — `core/auth/cleanup.ts` (1 function) ✅ DONE
 - `deleteUserAccount` (2418) — cross-collection cleanup invoked from `AuthContext.deleteAccount`. Lives in core because it's auth-housekeeping that touches many features. (Phase 6 may further evolve this into a `core/auth/cleanup-registry` where features register their own teardown — keep the function single-purpose for now.)
