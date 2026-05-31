@@ -306,7 +306,44 @@ Nothing for a future session to do here.
 
 ## Phase 5 plan — build the `library` feature
 
-**Status:** not started. This section is the canonical checklist for a fresh session.
+**Status:** ✅ COMPLETE (pending the user's in-simulator parity pass on Steps 4/6/7/8). All 8 steps landed, one commit each, TypeScript at 0 errors after every commit.
+
+### Phase 5 — complete
+
+| Step | Commit | What landed |
+|---|---|---|
+| 1 — config contract | `54edd8c` | `types.ts`, `data/contentTypes.ts`, `manifest.ts`, `index.ts` |
+| 2 — inventory | `7f594b7` | `docs/library-screen-inventory.md` (design input) |
+| 3 — detail hook | `3d44838` | `hooks/useCollectionDetail.ts` |
+| 4 — detail screen | `bd5b31d` | `screens/CollectionDetailScreen.tsx` + 3 route wrappers |
+| 5 — player hook | `539a068` | `hooks/useCollectionItemPlayer.ts` |
+| 6 — player screen | `6bad867` | `screens/CollectionItemPlayerScreen.tsx` + 3 route wrappers |
+| 7 — navigation | `f422ab9` | `navigation.ts` (`navigateToContent` out of home.tsx) |
+| 8 — content icons | `9f41392` | `contentIcons.ts` (`getCategoryIcon` consolidated) |
+
+**End state:**
+- `src/features/library/` is a complete feature module: `api/` (Phase 3) + `components?`/`hooks/`/`screens/`/`data/` + `navigation.ts` + `contentIcons.ts` + `types.ts` + `manifest.ts` + `index.ts`. (~2,686 LOC total in the module.)
+- The six album/series/course detail+player route files dropped from **2,413 LOC to 126** (each ≤ 23 lines), all thin `ProtectedRoute` wrappers around `CollectionDetailScreen` / `CollectionItemPlayerScreen`. Route URLs unchanged.
+- `app/(tabs)/home.tsx` 831 → 752 (navigateToContent extracted). Three tab/list screens no longer carry their own `getCategoryIcon`.
+- Public surface (`features/library/index.ts`): `CollectionDetailScreen`, `CollectionItemPlayerScreen`, `navigateToContent`, `getCategoryIcon`, `manifest`.
+- TypeScript: **0 errors** throughout.
+
+**Open decisions resolved with the user (all "recommended" options):**
+1. Course-specific rendering lives behind `contentType === 'course'` conditionals in the screen (lean config — no `parseChildCode`).
+2. `MediaPlayer` stays at `src/components/MediaPlayer.tsx` for Phase 5; Phase 6 relocates it to `shared/media-player/`.
+3. Phase 5 delivers the feature *module* only — the Library tab home screen + 5-tab restructure are Phase 7.
+
+**Carry-forward notes for later phases:**
+- `docs/library-screen-inventory.md` is a temporary artifact — delete once the user has confirmed simulator parity.
+- Runtime `permission-denied` on `clearPlaybackProgress` and the expo-audio `pause`/`NativeSharedObjectNotFound` teardown warnings observed in the simulator are pre-existing player/MediaPlayer + Firestore-rules issues (not Phase 5 regressions) — worth addressing during the Phase 6 media-player work.
+- `manifest.route` is `'/library'`, reserved for the Phase 7 tab route (doesn't resolve yet; collection content is reached via `/album`, `/series`, `/course`).
+- The no-param inline `getCategoryIcon` in `app/sleep/[id].tsx` (sleep-meditation detail) is left for the Phase 6 sleep-feature migration.
+
+**Paused before Phase 6** (per-feature migrations — 13 features) per the session brief; that's a larger lift for a fresh session.
+
+---
+
+**Original checklist below (kept for reference).** This section is the canonical checklist for a fresh session.
 
 **Goal:** Collapse the three near-identical content-collection screen pairs (album, series, course) into one parameterized `CollectionDetailScreen` + `CollectionItemPlayerScreen` owned by `features/library/`. Extract the polymorphic content router (`navigateToContent`) and the category-icon mapping out of `app/(tabs)/home.tsx` into the same feature. Expected LOC reduction: ~3,000 across the three triplets.
 
