@@ -423,7 +423,9 @@ Migrate route files:
 
 Original route bodies are deleted in the same commit they're replaced.
 
-#### Step 5 — Build `useCollectionItemPlayer`
+#### Step 5 — Build `useCollectionItemPlayer` ✅ DONE
+
+**Done:** `features/library/hooks/useCollectionItemPlayer.ts` encapsulates the shared player mechanics (audio load with downloaded-first fallback, autoplay-on-nav, 80% completion marking, prev/next within the sibling list with paywall gate + audio cleanup + `router.replace`) and owns the `usePlayerBehavior` wiring. Type-specific presentation and the sibling-param shape stay with the screen via a passed-in `buildSiblingParams` (parent-level fields like `albumTitle`/`artist`/`narrator`/course codes/`color` live in the route params, not the sibling). MediaPlayer stays at `src/components/MediaPlayer.tsx` per the locked decision. Additive only — not wired into any screen yet. tsc 0 errors.
 
 Mirror of Step 3 for the player. The three player screens share: receive child from route params (often passed as JSON), prev/next within the collection, completion tracking, paywall gating, integration with `MediaPlayer` (shared component, still in `src/components/MediaPlayer.tsx` — Phase 6 territory) and `usePlayerBehavior`.
 
