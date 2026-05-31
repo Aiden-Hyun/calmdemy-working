@@ -390,7 +390,9 @@ This file is the design input for Step 3 — saves the fresh session from re-rea
 
 **No commit** (or commit as a docs-only commit, your call).
 
-#### Step 3 — Build `useCollectionDetail`
+#### Step 3 — Build `useCollectionDetail` ✅ DONE
+
+**Done:** `features/library/hooks/useCollectionDetail.ts` encapsulates the shared state machine (parent load, completed-ids on focus, downloaded-ids + refreshKey bump on focus, per-child audio-URL resolution, auto-open-once) and `handleChildPress` (paywall gate → navigate). Behavior mirrors the originals exactly. Refined `CollectionConfig` as the hook needed (anticipated by the doc): added `getChildIsFree`, replaced the placeholder `playerRoute` with `playerPathname` + `buildPlayerParams` (type-specific param assembly — album `artist`/`tracksJson`, series `narrator`/`chaptersJson`, course `courseCode`/`sessionCode`/`color`/`instructor`/`sessionsJson`). Hook not yet wired into any screen. tsc 0 errors.
 
 A single hook that encapsulates the state machine the three screens share: fetch parent, list children, prefetch audio URLs, track download + completion state, handle autoOpen-on-mount, expose paywall gate.
 

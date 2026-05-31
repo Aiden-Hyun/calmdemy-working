@@ -46,10 +46,22 @@ const albumConfig: CollectionConfig<FirestoreAlbum, FirestoreAlbumTrack> = {
   getChildTitle: (track) => track.title,
   getChildAudioPath: (track) => track.audioPath,
   getChildDurationMinutes: (track) => track.duration_minutes,
+  getChildIsFree: (track) => track.isFree,
   parentLabel: 'Album',
   childLabelPlural: 'Tracks',
   detailRoute: (id) => `/album/${id}`,
-  playerRoute: (id) => `/album/track/${id}`,
+  playerPathname: '/album/track/[id]',
+  buildPlayerParams: (album, track, index) => ({
+    id: track.id,
+    audioPath: track.audioPath,
+    title: track.title,
+    albumTitle: album.title,
+    duration: String(track.duration_minutes),
+    artist: album.artist,
+    thumbnailUrl: album.thumbnailUrl || '',
+    tracksJson: JSON.stringify(album.tracks),
+    currentIndex: String(index),
+  }),
 };
 
 const seriesConfig: CollectionConfig<FirestoreSeries, FirestoreSeriesChapter> = {
@@ -63,10 +75,22 @@ const seriesConfig: CollectionConfig<FirestoreSeries, FirestoreSeriesChapter> = 
   getChildTitle: (chapter) => chapter.title,
   getChildAudioPath: (chapter) => chapter.audioPath,
   getChildDurationMinutes: (chapter) => chapter.duration_minutes,
+  getChildIsFree: (chapter) => chapter.isFree,
   parentLabel: 'Series',
   childLabelPlural: 'Chapters',
   detailRoute: (id) => `/series/${id}`,
-  playerRoute: (id) => `/series/chapter/${id}`,
+  playerPathname: '/series/chapter/[id]',
+  buildPlayerParams: (series, chapter, index) => ({
+    id: chapter.id,
+    audioPath: chapter.audioPath,
+    title: chapter.title,
+    seriesTitle: series.title,
+    duration: String(chapter.duration_minutes),
+    narrator: series.narrator,
+    thumbnailUrl: series.thumbnailUrl || '',
+    chaptersJson: JSON.stringify(series.chapters),
+    currentIndex: String(index),
+  }),
 };
 
 const courseConfig: CollectionConfig<FirestoreCourse, FirestoreCourseSession> = {
@@ -80,10 +104,25 @@ const courseConfig: CollectionConfig<FirestoreCourse, FirestoreCourseSession> = 
   getChildTitle: (session) => session.title,
   getChildAudioPath: (session) => session.audioPath,
   getChildDurationMinutes: (session) => session.duration_minutes,
+  getChildIsFree: (session) => session.isFree,
   parentLabel: 'Course',
   childLabelPlural: 'Sessions',
   detailRoute: (id) => `/course/${id}`,
-  playerRoute: (id) => `/course/session/${id}`,
+  playerPathname: '/course/session/[id]',
+  buildPlayerParams: (course, session, index) => ({
+    id: session.id,
+    audioPath: session.audioPath,
+    title: session.title,
+    courseTitle: course.title,
+    courseCode: course.code || '',
+    sessionCode: session.code || '',
+    duration: String(session.duration_minutes),
+    instructor: course.instructor,
+    color: course.color,
+    thumbnailUrl: course.thumbnailUrl || '',
+    sessionsJson: JSON.stringify(course.sessions),
+    currentIndex: String(index),
+  }),
 };
 
 /**

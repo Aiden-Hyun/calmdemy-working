@@ -56,6 +56,8 @@ export interface CollectionConfig<TParent, TChild> {
   getChildTitle: (child: TChild) => string;
   getChildAudioPath: (child: TChild) => string;
   getChildDurationMinutes: (child: TChild) => number;
+  /** Whether the child is free (no subscription required). `isFree` on all three. */
+  getChildIsFree: (child: TChild) => boolean | undefined;
 
   // ---- Display labels ----
   /** Singular noun for the parent, e.g. 'Album', 'Series', 'Course'. */
@@ -66,6 +68,18 @@ export interface CollectionConfig<TParent, TChild> {
   // ---- Routing (URLs are stable; see Phase 5 hard constraints) ----
   /** Detail route for a parent id, e.g. `/album/${id}`. */
   detailRoute: (parentId: string) => string;
-  /** Player route for a child id, e.g. `/album/track/${id}`. */
-  playerRoute: (childId: string) => string;
+  /** Expo Router pathname template for the child player, e.g. '/album/track/[id]'. */
+  playerPathname: string;
+  /**
+   * Build the param object the player route expects when navigating from the
+   * detail list. Type-specific: album/series/course carry different metadata
+   * keys (artist vs narrator vs instructor, tracksJson vs chaptersJson vs
+   * sessionsJson, course codes/color). Phase 6 may simplify these once the
+   * player screens are unified.
+   */
+  buildPlayerParams: (
+    parent: TParent,
+    child: TChild,
+    index: number
+  ) => Record<string, string>;
 }
