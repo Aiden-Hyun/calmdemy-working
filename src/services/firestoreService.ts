@@ -74,8 +74,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../core/firebase";
 import {
-  GuidedMeditation,
-  MeditationProgram,
   NatureSound,
   BedtimeStory,
   DailyQuote,
@@ -89,6 +87,8 @@ import {
   getEmergencyMeditations,
   getEmergencyMeditationById,
 } from "../features/emergency/api/emergencyMeditations";
+// Phase 3 (Group E): getCourses imported so getContentById can resolve course_session content.
+import { getCourses } from "../features/meditation/api/courses";
 
 /**
  * In-memory Cache-Aside pattern: we populate these caches when calling getSeries()
@@ -106,8 +106,6 @@ let _albumsCache: any[] | null = null;
  * narrow these collections using where(), orderBy(), and limit() clauses.
  * (Querying broad collections is fine; Firestore's index optimizer handles it.)
  */
-const meditationsCollection = collection(db, "guided_meditations");
-const programsCollection = collection(db, "meditation_programs");
 const bedtimeStoriesCollection = collection(db, "bedtime_stories");
 const quotesCollection = collection(db, "daily_quotes");
 const favoritesCollection = collection(db, "user_favorites");
@@ -115,128 +113,24 @@ const contentRatingsCollection = collection(db, "content_ratings");
 const contentReportsCollection = collection(db, "content_reports");
 
 // ============================================================
-// MEDITATIONS SECTION
-// Retrieval of guided meditation metadata (full collection scans and filtered queries).
+// MEDITATIONS SECTION (Phase 3, Group E) — moved to features/meditation/api/*
 // ============================================================
+export {
+  getMeditations,
+  getMeditationsByTheme,
+  getMeditationsByTechnique,
+  getMeditationById,
+} from "../features/meditation/api/meditations";
+// getCourses is imported (not bare re-exported) because getContentById below
+// calls it to resolve course_session content.
+export type {
+  FirestoreCourse,
+  FirestoreCourseSession,
+} from "../features/meditation/api/courses";
+export { getCourseById } from "../features/meditation/api/courses";
+export { getCourses };
 
-/**
- * Retrieve all guided meditations from the collection.
- *
- * This performs an unconditional full-collection scan. Suitable for client-side
- * filtering, caching, or building indices. The Graceful Degradation pattern
- * applies: if the query fails, we return an empty array so the UI doesn't crash.
- *
- * @returns Array of meditations with all fields and isFree flag set to true
- *         Empty array on error (Graceful Degradation)
- */
-export async function getMeditations(): Promise<GuidedMeditation[]> {
-  try {
-    const snapshot = await getDocs(meditationsCollection);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-          isFree: true,
-        } as GuidedMeditation)
-    );
-  } catch (error) {
-    console.error("Error fetching meditations:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve meditations by theme using Firestore's array-contains operator.
- *
- * Firestore schema: each meditation has a "themes" array field (e.g., ["stress", "sleep"]).
- * This uses array-contains to match meditations where themes includes the given theme.
- * Note: requires a composite index if combined with other filters, but a single
- * array-contains clause uses the built-in array index (automatic, no configuration needed).
- *
- * @param theme - A single theme string to match (e.g., "stress", "sleep", "morning")
- * @returns Array of meditations tagged with the given theme
- *         Empty array on error (Graceful Degradation)
- */
-export async function getMeditationsByTheme(
-  theme: string
-): Promise<GuidedMeditation[]> {
-  try {
-    const q = query(
-      meditationsCollection,
-      where("themes", "array-contains", theme)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-          isFree: true,
-        } as GuidedMeditation)
-    );
-  } catch (error) {
-    console.error("Error fetching meditations by theme:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve meditations by technique using Firestore's array-contains operator.
- *
- * Analogous to getMeditationsByTheme(), but filters on the "techniques" array field
- * (e.g., ["body-scan", "breathing"]) instead of themes. Allows users to find content
- * by practice method rather than by topic/mood.
- *
- * @param technique - A single technique string to match (e.g., "body-scan", "breathing")
- * @returns Array of meditations tagged with the given technique
- *         Empty array on error (Graceful Degradation)
- */
-export async function getMeditationsByTechnique(
-  technique: string
-): Promise<GuidedMeditation[]> {
-  try {
-    const q = query(
-      meditationsCollection,
-      where("techniques", "array-contains", technique)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-          isFree: true,
-        } as GuidedMeditation)
-    );
-  } catch (error) {
-    console.error("Error fetching meditations by technique:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve a single meditation by document ID.
- *
- * Direct document access is the fastest Firestore operation (no index required).
- * Returns null if the document doesn't exist (Graceful Degradation).
- *
- * @param id - The Firestore document ID of the meditation
- * @returns The meditation object, or null if not found or on error
- */
-export async function getMeditationById(
-  id: string
-): Promise<GuidedMeditation | null> {
-  try {
-    const docRef = doc(meditationsCollection, id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    return { id: docSnap.id, ...docSnap.data(), isFree: true } as GuidedMeditation;
-  } catch (error) {
-    console.error("Error fetching meditation by id:", error);
-    return null;
-  }
-}
+// Note: getPrograms / meditation_programs were dead (no consumers) and removed in Group E.
 
 // ============================================================
 // PROGRESS (Phase 3, Group C) — moved to features/progress/api/*
@@ -255,42 +149,6 @@ export {
   getCompletedContentIds,
   isContentCompleted,
 } from "../features/progress/api/completion";
-
-// ============================================================
-// PROGRAMS SECTION
-// Retrieval of meditation programs/courses (collections of related sessions).
-// ============================================================
-
-/**
- * Retrieve all meditation programs.
- *
- * Programs are structured learning paths (e.g., "8-Week Stress Relief", "CBT Fundamentals").
- * This is a full-collection read. Pair with React Query caching for performance.
- *
- * @returns Array of programs from Firestore
- *         Empty array on error (Graceful Degradation)
- */
-export async function getPrograms(): Promise<MeditationProgram[]> {
-  try {
-    const q = query(
-      programsCollection,
-      where("is_active", "==", true),
-      orderBy("created_at", "desc")
-    );
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as MeditationProgram)
-    );
-  } catch (error) {
-    console.error("Error fetching programs:", error);
-    return [];
-  }
-}
 
 // ============================================================
 // BREATHING EXERCISES SECTION
@@ -930,128 +788,6 @@ export {
   getEmergencyMeditations,
   getEmergencyMeditationById,
 };
-
-// ============================================================
-// COURSES SECTION
-// Structured learning paths with hierarchical modules and lessons (e.g., "CBT Fundamentals").
-// ============================================================
-
-export interface FirestoreCourseSession {
-  id: string;
-  courseId: string;
-  code?: string; // e.g., "CBT101M1P" -> parsed to "Module 1 Practice"
-  title: string;
-  description: string;
-  duration_minutes: number;
-  audioPath: string;
-  order: number;
-  dayNumber?: number; // Display ordinal shown in the course detail UI (e.g., "Day 1").
-  isFree?: boolean;
-}
-
-export interface FirestoreCourse {
-  id: string;
-  code?: string; // e.g., "CBT101"
-  title: string;
-  subtitle?: string;
-  description: string;
-  thumbnailUrl?: string;
-  color: string;
-  icon?: string;
-  duration_minutes?: number;
-  totalDuration?: number; // Aggregated session minutes, surfaced in the detail header.
-  difficulty?: string;    // Free-form difficulty label (e.g., "Beginner").
-  session_count?: number;
-  sessionCount: number; // Computed from sessions.length
-  instructor: string;
-  sessions: FirestoreCourseSession[];
-}
-
-// Helper to fetch sessions for a course
-async function getCourseSessionsByCourseId(
-  courseId: string
-): Promise<FirestoreCourseSession[]> {
-  try {
-    const q = query(
-      collection(db, "course_sessions"),
-      where("courseId", "==", courseId)
-    );
-    const snapshot = await getDocs(q);
-    const sessions = snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: false } as FirestoreCourseSession)
-    );
-    // Sort by order
-    return sessions.sort((a, b) => (a.order || 0) - (b.order || 0));
-  } catch (error) {
-    console.error("Error fetching course sessions:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve all courses (structured learning programs).
- *
- * Returns course metadata without full session lists (for performance).
- * Sessions are loaded on-demand in getCourseById(). The sessionCount field
- * is denormalized in the course document to avoid a separate query.
- *
- * @returns Array of all courses with metadata, sessions empty
- *         Empty array on error (Graceful Degradation)
- */
-export async function getCourses(): Promise<FirestoreCourse[]> {
-  try {
-    const snapshot = await getDocs(collection(db, "courses"));
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        sessions: [], // Sessions loaded on-demand in getCourseById()
-        sessionCount: data.session_count || data.sessionCount || 0,
-      } as FirestoreCourse;
-    });
-  } catch (error) {
-    console.error("Error fetching courses:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve a single course with all its sessions (eager-loading).
- *
- * This is a two-step operation:
- *   1. Fetch the course document metadata
- *   2. Fetch all course_sessions matching the course ID (via getCourseSessionsByCourseId)
- *
- * Hierarchical structure: courses contain sessions, and sessions are ordered.
- *
- * @param id - Firestore document ID of the course
- * @returns The course object with fully populated sessions array, or null if not found
- */
-export async function getCourseById(
-  id: string
-): Promise<FirestoreCourse | null> {
-  try {
-    const docRef = doc(db, "courses", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-
-    const course = {
-      id: docSnap.id,
-      ...docSnap.data(),
-      sessions: [],
-      sessionCount: 0,
-    } as FirestoreCourse;
-    // Phase 2: Fetch and attach all sessions for this course
-    course.sessions = await getCourseSessionsByCourseId(id);
-    course.sessionCount = course.sessions.length;
-
-    return course;
-  } catch (error) {
-    console.error("Error fetching course:", error);
-    return null;
-  }
-}
 
 // ============================================================
 // PARENT LOOKUP HELPERS SECTION

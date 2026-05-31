@@ -151,16 +151,17 @@ All four cleanup chunks landed. Codebase is now:
 - `deleteUserAccount` (2418) — cross-collection cleanup invoked from `AuthContext.deleteAccount`. Lives in core because it's auth-housekeeping that touches many features. (Phase 6 may further evolve this into a `core/auth/cleanup-registry` where features register their own teardown — keep the function single-purpose for now.)
 - Done: moved to `src/core/auth/cleanup.ts` with its own collection refs (user_favorites, listening_history, meditation_sessions, playback_progress, completed_content, users). Barrel bare-re-exports it; `AuthContext` keeps importing from `firestoreService` (consumer unchanged per Phase 3 rule). The collection consts in the barrel stay — other progress/library functions still use them. tsc 0 errors; file 2514 → 2475 LOC.
 
-#### Group E — `features/meditation/api/` (9 functions + 2 types)
+#### Group E — `features/meditation/api/` (9 functions + 2 types) ✅ DONE
 - `getMeditations` (133)
 - `getMeditationsByTheme` (162)
 - `getMeditationsByTechnique` (196)
 - `getMeditationById` (228)
-- `getPrograms` (580) — likely dead (`MeditationProgram` may have no consumers); verify with grep before moving and delete if dead
+- `getPrograms` (580) — **confirmed dead and DELETED** (grep found no consumers in `app/` or `src/` outside the barrel; `MeditationProgram` type stays in `src/types` only because another interface field references it). Removed the function, the `meditation_programs` collection ref, and the `MeditationProgram` import from the barrel.
 - `FirestoreCourseSession` interface (1343)
 - `FirestoreCourse` interface (1356)
 - `getCourses` (1405)
 - `getCourseById` (1435)
+- Done: `meditations.ts` (the four meditation getters) and `courses.ts` (both interfaces + the private `getCourseSessionsByCourseId` helper + `getCourses`/`getCourseById`). `getCourses` is **imported** into the barrel (not bare re-exported) because `getContentById` calls it to resolve `course_session` content; everything else is a plain re-export, course types via `export type`. Also dropped the now-dead `meditationsCollection` const and `GuidedMeditation`/`MeditationProgram` imports. Cross-feature note: library's `getContentById` (Group H) will import `FirestoreCourse`/`FirestoreCourseSession` directly from `meditation/api/courses` in Phase 5; for now it goes through the barrel re-export. tsc 0 errors; file 1823 → 1559 LOC.
 
 #### Group F — `features/sleep/api/` (6 functions + 2 types + aliases)
 - `getBedtimeStories` (660)
