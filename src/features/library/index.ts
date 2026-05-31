@@ -18,3 +18,4 @@
  */
 
 export { manifest } from './manifest';
+export { CollectionDetailScreen } from './screens/CollectionDetailScreen';

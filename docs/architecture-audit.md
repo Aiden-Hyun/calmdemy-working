@@ -402,7 +402,9 @@ A single hook that encapsulates the state machine the three screens share: fetch
 
 **Verify:** `npx tsc --noEmit` clean. Hook exists but isn't yet wired into any screen.
 
-#### Step 4 — Build `CollectionDetailScreen` + migrate three detail routes
+#### Step 4 — Build `CollectionDetailScreen` + migrate three detail routes ✅ DONE (pending user simulator parity check)
+
+**Done:** `features/library/screens/CollectionDetailScreen.tsx` (~595 LOC) unifies all three detail screens, driven by `useCollectionDetail`. Album/series render the dark-only path; course quirks (light/dark palette, code badge, subtitle, difficulty meta, `dayNumber` badge, session-code line via `buildSessionMetaInfo`, `course.color` play tint, `school` icon) live behind `contentType === 'course'` conditionals. The three route files (`app/{album,series,course}/[id].tsx`) are now ~23-line `ProtectedRoute` wrappers — detail side dropped from 1,633 LOC to 69 (routes) + ~595 (shared screen). Parity nuance preserved: course loading/not-found render bare (no gradient), unlike album/series which wrap in `sleepyNight`. Exported `CollectionDetailScreen` from `features/library/index.ts`. tsc 0 errors. **Next: user loads `/album/[id]`, `/series/[id]`, `/course/[id]` in the simulator to confirm parity (paywall gates, completed/downloaded badges, autoOpen deep links, light/dark course theming).**
 
 - File: `features/library/screens/CollectionDetailScreen.tsx`
 - Props: `{ contentType: CollectionContentType; id: string; autoOpenItemId?: string }`
