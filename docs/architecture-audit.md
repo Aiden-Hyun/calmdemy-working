@@ -337,9 +337,11 @@ Same playbook as Phases 1–3, applied incrementally:
 
 ### Step-by-step plan
 
-#### Step 1 — Scaffold `features/library/` + the config contract
+#### Step 1 — Scaffold `features/library/` + the config contract ✅ DONE
 
 Establish the feature directory shape and the type contract for content-type configs. No screens yet; this commit just creates files and types.
+
+**Done:** Created `features/library/types.ts` (`CollectionContentType`, `CollectionItemContentType`, lean `CollectionConfig<TParent, TChild>` — **no `parseChildCode`**, per the locked decision to keep course quirks in the screen), `features/library/data/contentTypes.ts` (`COLLECTION_CONFIGS` with album/series/course configs wired to `getAlbumById`/`getSeriesById`/`getCourseById` + the six Firestore types, all imported through the `firestoreService` barrel to avoid cross-feature imports), `features/library/manifest.ts` (`id: 'library'`, `category: 'library'`, `requiresAuth: true`, `route: '/library'` reserved for the Phase 7 tab), and `features/library/index.ts` (exports `manifest`; screens/navigation/icons added in later steps). `components/`/`hooks/`/`screens/` dirs are materialized as their files land in Steps 3–8. tsc 0 errors.
 
 - Create `features/library/{components,hooks,screens,data}/` directories.
 - Create `features/library/types.ts`:
