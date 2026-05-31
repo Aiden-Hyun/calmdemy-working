@@ -101,7 +101,41 @@ All four cleanup chunks landed. Codebase is now:
 
 ## Phase 3 plan — split firestoreService.ts
 
-**Status:** not started. This section is the canonical checklist for a fresh session.
+**Status:** ✅ COMPLETE. All 8 groups (A–H) landed; `firestoreService.ts` is now a thin barrel.
+
+### Phase 3 — complete
+
+All eight groups are committed (one commit per group, TypeScript at 0 errors after each):
+
+| Commit | Group | Target |
+|---|---|---|
+| `58eb270` | A — breathing | `features/breathing/api/exercises.ts` |
+| `facdf32` | B — emergency | `features/emergency/api/emergencyMeditations.ts` |
+| `723e44d` | D — auth cleanup | `core/auth/cleanup.ts` |
+| `bf408c1` | C — progress | `features/progress/api/{sessions,listeningHistory,playbackProgress,completion}.ts` |
+| `9e2dea0` | E — meditation | `features/meditation/api/{meditations,courses}.ts` |
+| `0783b78` | F — sleep | `features/sleep/api/{bedtimeStories,sleepMeditations,series}.ts` |
+| `b321acd` | G — music | `features/music/api/{albums,sleepSounds,backgroundSounds,music}.ts` |
+| (this commit) | H — library | `features/library/api/{quotes,favorites,content,narrators,ratings}.ts` |
+
+**End state:**
+- `src/services/firestoreService.ts` went from **2,607 LOC of implementation** to a **~135-line pure re-export barrel** — zero function bodies, zero collection refs, zero module state. Every consumer still imports from it unchanged (Phase 3 invariant held).
+- The only surface change is the deliberate deletion of dead `getPrograms` / `meditation_programs` (Group E) — confirmed no consumers repo-wide.
+- Each feature now owns its data access under `features/<name>/api/`; `core/auth/cleanup.ts` owns the account purge.
+- TypeScript: **0 errors** throughout.
+
+**Carried-forward gotchas for Phase 5 (library extraction):**
+- `content.ts` holds the one accepted cross-feature dependency: the polymorphic `getContentById` imports content-type interfaces + getters from emergency/sleep/meditation/music `api/` modules. Clean this up when library is fully extracted.
+- The Cache-Aside `_seriesCache`/`_albumsCache` are now duplicated: `getSeries` (sleep) and `getAlbums` (music) each own a live cache, while `content.ts` keeps its own cold copies (never written → the `?? await get…()` paths always fetch live). Reconcile in Phase 5 (e.g. let the resolver consume the feature caches, or drop the cache vars).
+- `app/`, `src/hooks/queries/`, and other consumers still import from the `firestoreService` barrel — walking them onto the feature `index.ts` public surfaces (and then deleting the barrel) is Phase 5/6 work.
+
+**Paused before Phase 5** (library feature build) per the session brief — that's a larger architectural lift deserving a fresh session.
+
+---
+
+**Original checklist (kept for reference):**
+
+This section is the canonical checklist for a fresh session.
 
 **Goal:** Carve `src/services/firestoreService.ts` (currently 2,607 lines, ~60 exports) into per-feature `api/` modules so each feature owns its own data access. Keep `firestoreService.ts` as a thin barrel re-export during transition so no consumer breaks.
 
@@ -195,7 +229,8 @@ All four cleanup chunks landed. Codebase is now:
 - `getMusic` (1921)
 - `getAsmr` (1942)
 
-#### Group H — `features/library/api/` (15 functions + 3 types) — the biggest, do last
+#### Group H — `features/library/api/` (15 functions + 3 types) — the biggest, do last ✅ DONE
+- Done: split into five files — `quotes.ts` (getTodayQuote), `favorites.ts` (getUserFavorites/toggleFavorite/isFavorite), `content.ts` (ResolvedContent + getContentById + getFavoritesWithDetails + the three find* lookups + getSeriesById + getAlbumById, sharing local cold `_seriesCache`/`_albumsCache`), `narrators.ts` (FirestoreNarrator + cache + 3 getters), `ratings.ts` (getUserRating/setContentRating/reportContent). `content.ts` is where the accepted cross-feature imports land — it pulls `getEmergencyMeditationById`, `getSleepMeditationById`, `getCourses`, `getSeries` (+ series interfaces), `getAlbums` (+ album interfaces) directly from each feature's `api/`, exactly as the doc anticipated for the polymorphic resolver. With `getContentById` and the lookups now living in the library module, **the barrel has no internal callers left**, so all the previously import-and-re-export bindings (getCourses/getSeries/getAlbums/getSleepMeditationById/getEmergencyMeditationById) collapsed back to plain `export … from` re-exports. tsc 0 errors.
 - `getTodayQuote` (720)
 - `getUserFavorites` (770)
 - `toggleFavorite` (830)
