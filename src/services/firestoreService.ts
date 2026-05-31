@@ -75,7 +75,6 @@ import {
 import { db } from "../core/firebase";
 import {
   NatureSound,
-  BedtimeStory,
   DailyQuote,
   UserFavorite,
   RatingType,
@@ -89,6 +88,15 @@ import {
 } from "../features/emergency/api/emergencyMeditations";
 // Phase 3 (Group E): getCourses imported so getContentById can resolve course_session content.
 import { getCourses } from "../features/meditation/api/courses";
+// Phase 3 (Group F): sleep data lives in its feature now. getSeries / getSleepMeditationById are
+// imported so getContentById and findSeriesIdByChapterId (still in the barrel) can call them; the
+// series interfaces are imported for type-only use by getSeriesById (a library lookup staying here).
+import { getSeries } from "../features/sleep/api/series";
+import type { FirestoreSeries, FirestoreSeriesChapter } from "../features/sleep/api/series";
+import {
+  getSleepMeditations,
+  getSleepMeditationById,
+} from "../features/sleep/api/sleepMeditations";
 
 /**
  * In-memory Cache-Aside pattern: we populate these caches when calling getSeries()
@@ -106,7 +114,6 @@ let _albumsCache: any[] | null = null;
  * narrow these collections using where(), orderBy(), and limit() clauses.
  * (Querying broad collections is fine; Firestore's index optimizer handles it.)
  */
-const bedtimeStoriesCollection = collection(db, "bedtime_stories");
 const quotesCollection = collection(db, "daily_quotes");
 const favoritesCollection = collection(db, "user_favorites");
 const contentRatingsCollection = collection(db, "content_ratings");
@@ -158,61 +165,14 @@ export {
 export { getBreathingExercises } from "../features/breathing/api/exercises";
 
 // ============================================================
-// BEDTIME STORIES SECTION
+// BEDTIME STORIES SECTION (Phase 3, Group F) — moved to features/sleep/api/bedtimeStories.ts
 // ============================================================
-
-/**
- * Retrieve all bedtime stories.
- *
- * Stories are simple documents with title, narrator, duration, and audio URL.
- *
- * @returns Array of bedtime stories
- *         Empty array on error (Graceful Degradation)
- */
-export async function getBedtimeStories(): Promise<BedtimeStory[]> {
-  try {
-    const q = query(bedtimeStoriesCollection, orderBy("created_at", "desc"));
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-          isFree: true,
-        } as BedtimeStory)
-    );
-  } catch (error) {
-    console.error("Error fetching bedtime stories:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve a single bedtime story by ID.
- *
- * Direct document lookup, returns null if not found.
- *
- * @param id - Firestore document ID
- * @returns The story object, or null if not found
- */
-export async function getBedtimeStoryById(
-  id: string
-): Promise<BedtimeStory | null> {
-  try {
-    const docRef = doc(db, "bedtime_stories", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    return { id: docSnap.id, ...docSnap.data(), isFree: true } as BedtimeStory;
-  } catch (error) {
-    console.error("Error fetching bedtime story:", error);
-    return null;
-  }
-}
-
-// Legacy aliases for backward compatibility
-export const getSleepStories = getBedtimeStories;
-export const getSleepStoryById = getBedtimeStoryById;
+export {
+  getBedtimeStories,
+  getBedtimeStoryById,
+  getSleepStories,
+  getSleepStoryById,
+} from "../features/sleep/api/bedtimeStories";
 
 // ============================================================
 // DAILY QUOTES SECTION
@@ -711,70 +671,11 @@ export async function getFavoritesWithDetails(
 }
 
 // ============================================================
-// SLEEP MEDITATIONS SECTION
-// Specialized meditation content optimized for sleep induction.
+// SLEEP MEDITATIONS SECTION (Phase 3, Group F) — moved to features/sleep/api/sleepMeditations.ts
+// getSleepMeditationById is imported below so getContentById can resolve sleep_meditation content.
 // ============================================================
-
-/**
- * Sleep meditation data model.
- */
-export interface FirestoreSleepMeditation {
-  id: string;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  instructor: string;
-  icon: string;
-  audioPath: string;
-  thumbnailUrl?: string;
-  color: string;
-  isFree?: boolean;
-}
-
-/**
- * Retrieve all sleep meditations.
- *
- * Sleep meditations are specialized content designed to help users fall asleep.
- * This is a full-collection read; typically cached via React Query for performance.
- *
- * @returns Array of sleep meditations with all fields
- *         Empty array on error (Graceful Degradation)
- */
-export async function getSleepMeditations(): Promise<
-  FirestoreSleepMeditation[]
-> {
-  try {
-    const snapshot = await getDocs(collection(db, "sleep_meditations"));
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: true } as FirestoreSleepMeditation)
-    );
-  } catch (error) {
-    console.error("Error fetching sleep meditations:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve a single sleep meditation by ID.
- *
- * Direct document access; returns null if not found.
- *
- * @param id - Firestore document ID
- * @returns Sleep meditation object, or null if not found
- */
-export async function getSleepMeditationById(
-  id: string
-): Promise<FirestoreSleepMeditation | null> {
-  try {
-    const docRef = doc(db, "sleep_meditations", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    return { id: docSnap.id, ...docSnap.data(), isFree: true } as FirestoreSleepMeditation;
-  } catch (error) {
-    console.error("Error fetching sleep meditation:", error);
-    return null;
-  }
-}
+export type { FirestoreSleepMeditation } from "../features/sleep/api/sleepMeditations";
+export { getSleepMeditations, getSleepMeditationById };
 
 // ============================================================
 // EMERGENCY MEDITATIONS SECTION
@@ -874,61 +775,12 @@ export async function findCourseIdBySessionId(sessionId: string): Promise<string
 }
 
 // ============================================================
-// SERIES SECTION
-// Episodic content (multi-chapter guided meditations, courses, narrated stories).
-// Hierarchical structure: series → chapters, with denormalized metadata.
+// SERIES SECTION (Phase 3, Group F) — list query + interfaces moved to features/sleep/api/series.ts
+// getSeries is imported below (getContentById / findSeriesIdByChapterId call it). Series *detail*
+// lookups (getSeriesById) stay here until Group H (library).
 // ============================================================
-
-export interface FirestoreSeriesChapter {
-  id: string;
-  chapterNumber: number;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  audioPath: string;
-  isFree?: boolean;
-}
-
-export interface FirestoreSeries {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl?: string;
-  color: string;
-  narrator: string;
-  chapterCount: number;
-  totalDuration: number;
-  category: string;
-  chapters: FirestoreSeriesChapter[];
-}
-
-/**
- * Retrieve all series (episodic content collections).
- *
- * Also populates _seriesCache (Cache-Aside pattern) for fast subsequent lookups.
- * Series documents contain denormalized chapter metadata (id, title, duration) to
- * avoid N+1 lookups when rendering series lists.
- *
- * @returns Array of all series with embedded chapters
- *         Empty array on error (Graceful Degradation)
- */
-export async function getSeries(): Promise<FirestoreSeries[]> {
-  try {
-    const snapshot = await getDocs(collection(db, "series"));
-    const result = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      // Denormalization: chapters are stored inside the series document
-      const chapters = (data.chapters || []).map((ch: FirestoreSeriesChapter) => ({ ...ch, isFree: true }));
-      return { id: doc.id, ...data, chapters } as FirestoreSeries;
-    });
-    // Update cache for subsequent calls (Cache-Aside)
-    _seriesCache = result;
-    return result;
-  } catch (error) {
-    console.error("Error fetching series:", error);
-    return [];
-  }
-}
+export type { FirestoreSeries, FirestoreSeriesChapter };
+export { getSeries };
 
 /**
  * Retrieve a single series by ID (with all embedded chapters).

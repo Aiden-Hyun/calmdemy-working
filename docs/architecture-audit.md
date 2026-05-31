@@ -163,7 +163,7 @@ All four cleanup chunks landed. Codebase is now:
 - `getCourseById` (1435)
 - Done: `meditations.ts` (the four meditation getters) and `courses.ts` (both interfaces + the private `getCourseSessionsByCourseId` helper + `getCourses`/`getCourseById`). `getCourses` is **imported** into the barrel (not bare re-exported) because `getContentById` calls it to resolve `course_session` content; everything else is a plain re-export, course types via `export type`. Also dropped the now-dead `meditationsCollection` const and `GuidedMeditation`/`MeditationProgram` imports. Cross-feature note: library's `getContentById` (Group H) will import `FirestoreCourse`/`FirestoreCourseSession` directly from `meditation/api/courses` in Phase 5; for now it goes through the barrel re-export. tsc 0 errors; file 1823 → 1559 LOC.
 
-#### Group F — `features/sleep/api/` (6 functions + 2 types + aliases)
+#### Group F — `features/sleep/api/` (6 functions + 2 types + aliases) ✅ DONE
 - `getBedtimeStories` (660)
 - `getBedtimeStoryById` (687)
 - `getSleepStories` alias (702) and `getSleepStoryById` alias (703)
@@ -174,6 +174,7 @@ All four cleanup chunks landed. Codebase is now:
 - `FirestoreSeries` interface (1560)
 - `getSeries` (1583)
   - Series detail (`getSeriesById`, `findSeriesIdByChapterId`) goes to `library` — see Group H
+- Done: three files — `bedtimeStories.ts` (both getters + the legacy `getSleepStories`/`getSleepStoryById` aliases), `sleepMeditations.ts` (interface + both getters), `series.ts` (both interfaces + `getSeries`, owning its own Cache-Aside `_seriesCache`). Internal-call bindings: `getSeries` (called by `getContentById` + `findSeriesIdByChapterId`) and `getSleepMeditationById` (called by `getContentById`) are **imported** into the barrel; the series interfaces are `import type`'d because `getSeriesById` (a library lookup staying in the barrel until Group H) references them by name. **Cache note:** `getSeries` now populates the *feature's* `_seriesCache`, so the barrel's own `_seriesCache` (read by the two library lookups still here) stays cold until Group H — correctness is unaffected (it just falls back to a live `getSeries()` call), only the in-barrel cache hit is lost temporarily. Dropped the orphaned `bedtimeStoriesCollection` const and `BedtimeStory` import. tsc 0 errors; file 1559 → 1411 LOC.
 
 #### Group G — `features/music/api/` (11 functions + 4 types)
 - `FirestoreAlbumTrack` interface (1632)
