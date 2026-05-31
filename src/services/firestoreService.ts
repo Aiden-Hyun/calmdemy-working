@@ -85,6 +85,12 @@ import {
   RatingType,
   ReportCategory,
 } from "../types";
+// Phase 3 (Group B): emergency data lives in its feature now. Imported here so the
+// barrel can both re-export it and call getEmergencyMeditationById from getContentById.
+import {
+  getEmergencyMeditations,
+  getEmergencyMeditationById,
+} from "../features/emergency/api/emergencyMeditations";
 
 /**
  * In-memory Cache-Aside pattern: we populate these caches when calling getSeries()
@@ -1228,71 +1234,13 @@ export async function getSleepMeditationById(
 // Crisis-focused content for immediate anxiety/stress relief (e.g., panic attacks).
 // ============================================================
 
-/**
- * Emergency meditation data model.
- * Optimized for quick access during high-stress moments.
- */
-export interface FirestoreEmergencyMeditation {
-  id: string;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  icon: string;
-  color: string;
-  audioPath: string;
-  narrator?: string;
-  thumbnailUrl?: string;
-  isFree?: boolean;
-}
-
-/**
- * Retrieve all emergency meditations.
- *
- * Emergency meditations are short, high-impact content for immediate anxiety relief.
- * Typically 1-5 minutes, these are designed for moments of acute stress or panic.
- *
- * @returns Array of emergency meditations
- *         Empty array on error (Graceful Degradation)
- */
-export async function getEmergencyMeditations(): Promise<
-  FirestoreEmergencyMeditation[]
-> {
-  try {
-    const snapshot = await getDocs(collection(db, "emergency_meditations"));
-    return snapshot.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data(), isFree: true } as FirestoreEmergencyMeditation)
-    );
-  } catch (error) {
-    console.error("Error fetching emergency meditations:", error);
-    return [];
-  }
-}
-
-/**
- * Retrieve a single emergency meditation by ID.
- *
- * Direct document access; returns null if not found.
- *
- * @param id - Firestore document ID
- * @returns Emergency meditation object, or null if not found
- */
-export async function getEmergencyMeditationById(
-  id: string
-): Promise<FirestoreEmergencyMeditation | null> {
-  try {
-    const docRef = doc(db, "emergency_meditations", id);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return null;
-    return {
-      id: docSnap.id,
-      ...docSnap.data(),
-      isFree: true,
-    } as FirestoreEmergencyMeditation;
-  } catch (error) {
-    console.error("Error fetching emergency meditation:", error);
-    return null;
-  }
-}
+// Emergency meditations moved to features/emergency/api/emergencyMeditations.ts (Phase 3, Group B).
+// Imported (not just re-exported) because getContentById below calls getEmergencyMeditationById.
+export type { FirestoreEmergencyMeditation } from "../features/emergency/api/emergencyMeditations";
+export {
+  getEmergencyMeditations,
+  getEmergencyMeditationById,
+};
 
 // ============================================================
 // COURSES SECTION

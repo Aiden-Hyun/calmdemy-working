@@ -126,10 +126,11 @@ All four cleanup chunks landed. Codebase is now:
 - Note: type `BreathingExercise` already lives in `src/features/breathing/types.ts` (from Phase 2). Update the function to import from there.
 - Done: function + its own `breathing_exercises` collection ref moved to the new file; `firestoreService.ts` re-exports it; dropped the now-unused `breathingCollection` const and `BreathingExercise` import from the barrel. tsc 0 errors; barrel still exports 70 symbols; file 2607 → 2566 LOC.
 
-#### Group B — `features/emergency/api/` (2 functions + 1 type)
-- `FirestoreEmergencyMeditation` interface (1276)
+#### Group B — `features/emergency/api/` (2 functions + 1 type) ✅ DONE
+- `FirestoreEmergencyMeditation` interface (1276) → `src/features/emergency/api/emergencyMeditations.ts`
 - `getEmergencyMeditations` (1298)
 - `getEmergencyMeditationById` (1320)
+- Done: all three moved. Barrel **imports** the two functions (not just `export ... from`) because `getContentById` calls `getEmergencyMeditationById` internally — a bare `export { } from` would not create the local binding it needs. Type re-exported via `export type`. tsc 0 errors; surface unchanged; file 2566 → 2514 LOC.
 
 #### Group C — `features/progress/api/` (12 functions + 1 type)
 - `createSession` (259)
