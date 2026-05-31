@@ -375,7 +375,9 @@ Establish the feature directory shape and the type contract for content-type con
 
 **Verify:** `npx tsc --noEmit` clean. No screen behavior changed yet.
 
-#### Step 2 — Inventory the current screens (read-only, no code changes)
+#### Step 2 — Inventory the current screens (read-only, no code changes) ✅ DONE
+
+**Done:** Wrote `docs/library-screen-inventory.md` (delete after Phase 5). Key finding: album and series are ~95% identical (dark-only, `sleepyNight` gradient); **course is the outlier** — light/dark-aware theming, course-code badge, subtitle, difficulty, per-session code meta (`buildSessionMetaInfo`), `dayNumber` badge, `course.color` play tint. Also flagged: `downloadedIds` state is set but never read in render (DownloadButton self-manages via `refreshKey`), and course imports `getLocalAudioPath` unused. The doc captures shared state/effects/handlers, the per-type differences table, and the player-route param shapes for Steps 5–6.
 
 Before writing the unified screen, read all three detail-screen files (`app/album/[id].tsx`, `app/series/[id].tsx`, `app/course/[id].tsx`) end-to-end and produce a short notes file: `docs/library-screen-inventory.md` (delete after Phase 5) listing:
 
