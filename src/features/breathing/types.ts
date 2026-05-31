@@ -6,10 +6,9 @@
  * Owned by the breathing feature. Other features should not import
  * these directly; if they need to, surface them through index.ts.
  *
- * Currently only `firestoreService.getBreathingExercises()` reads
- * `BreathingExercise` from outside the feature. Phase 3 splits
- * firestoreService.ts and the breathing data layer moves into
- * `features/breathing/api/` so that cross-feature import goes away.
+ * After Phase 3 these types are only consumed inside the feature
+ * (api/exercises, hooks/useBreathing, screens/BreathingScreen,
+ * data/techniques) — no cross-feature imports remain.
  * ============================================================
  */
 

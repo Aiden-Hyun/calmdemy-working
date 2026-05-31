@@ -161,46 +161,6 @@ export type MeditationTechnique =
 export type MeditationCategory = MeditationTheme;
 
 /**
- * Meditation program (course/series).
- *
- * A multi-part program with sequential sessions, e.g., "10-Day Stress Relief".
- * Users track their progress via UserProgramProgress.
- * Stored in /programs collection.
- */
-export interface MeditationProgram {
-  id: string;
-  title: string;
-  description: string;
-  duration_days: number;
-  difficulty_level: "beginner" | "intermediate" | "advanced";
-  created_at: string;
-  is_active: boolean;
-  sessions?: GuidedMeditation[];
-}
-
-/**
- * User's progress in a program.
- *
- * Tracks which program the user is enrolled in, which day they're on,
- * and completion status. Stored in /users/{uid}/programProgress/{id}.
- */
-export interface UserProgramProgress {
-  id: string;
-  user_id: string;
-  program_id: string;
-  current_day: number;
-  completed_at?: string;
-  started_at: string;
-  program?: MeditationProgram; // Denormalized for quick display
-}
-
-// BreathingPattern and BreathingExercise live in features/breathing/types.
-// Re-exported here so legacy consumers (firestoreService) keep compiling
-// until Phase 3 splits that file per feature, at which point this
-// re-export goes away.
-export type { BreathingPattern, BreathingExercise } from '../features/breathing/types';
-
-/**
  * Nature sound content: ambient audio for relaxation/sleep.
  *
  * Examples: "Rain on Window", "Ocean Waves", "Forest Ambience".
