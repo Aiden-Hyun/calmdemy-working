@@ -434,7 +434,11 @@ Mirror of Step 3 for the player. The three player screens share: receive child f
 
 **Verify:** TS clean.
 
-#### Step 6 — Build `CollectionItemPlayerScreen` + migrate three player routes
+#### Step 6 — Build `CollectionItemPlayerScreen` + migrate three player routes ✅ DONE (pending user simulator parity check)
+
+**Done:** `features/library/screens/CollectionItemPlayerScreen.tsx` (~239 LOC) unifies all three player screens, driven by `useCollectionItemPlayer`. The screen reads its own route params (the union across the three routes) — so the prop surface is just `{ contentType }` rather than the doc's sketched `{ contentType, id, siblingsJson }` (the player has ~13 params; self-reading keeps the wrappers thin). Type-specific bits handled in the screen: `usePlayerBehavior` title (course raw vs album/series prefixed), MediaPlayer presentation (category/instructor/gradient/artworkIcon/loadingText/metaInfo/parentTitle), and `buildSiblingParams` for prev/next. The three player routes (`app/{album/track,series/chapter,course/session}/[id].tsx`) are now ~19-line wrappers. Player side dropped from 780 LOC to 57 (routes) + ~239 (shared). Exported from `index.ts`. tsc 0 errors. **Next: user verifies the three players in the simulator — playback, prev/next (incl. paywall on locked siblings + autoplay on next), favorite/rate/report, 80% completion, course color gradient + session-code meta.**
+
+> Note: the runtime `permission-denied` on `clearPlaybackProgress` and the expo-audio `pause`/`NativeSharedObjectNotFound` teardown warnings seen in the simulator originate in the player/MediaPlayer + Firestore-rules path, not in this refactor — they predate Phase 5 and are flagged for the Phase 6 media-player work.
 
 - File: `features/library/screens/CollectionItemPlayerScreen.tsx`
 - Props: `{ contentType: CollectionContentType; id: string; siblingsJson?: string }`

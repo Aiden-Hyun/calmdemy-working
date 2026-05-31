@@ -50,7 +50,7 @@ export interface UseCollectionItemPlayerArgs<TChild> {
   /** When 'true', auto-start playback on mount. */
   autoPlay: string | undefined;
   /** Title handed to usePlayerBehavior (type-specific prefix; built by the screen). */
-  playerBehaviorTitle: string;
+  playerBehaviorTitle: string | undefined;
   durationMinutes: number;
   thumbnailUrl?: string;
   /**
