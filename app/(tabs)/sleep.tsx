@@ -17,6 +17,7 @@ import {
 import { useTheme } from "../../src/core/theme/ThemeContext";
 import { useSubscription } from "../../src/core/subscription/SubscriptionContext";
 import { useBedtimeStories, useSleepMeditations, useSeries } from '../../src/hooks/queries/useSleepQueries';
+import { getCategoryIcon } from "../../src/features/library";
 import { Theme } from "../../src/core/theme";
 import { BedtimeStory } from "../../src/types";
 
@@ -49,25 +50,6 @@ function SleepScreen() {
     if (hour >= 21 || hour < 5) return "Sweet dreams await";
     if (hour >= 17) return "Wind down and relax";
     return "Rest when you need it";
-  };
-
-  const getCategoryIcon = (
-    category: string
-  ): keyof typeof Ionicons.glyphMap => {
-    switch (category) {
-      case "nature":
-        return "leaf";
-      case "fantasy":
-        return "planet";
-      case "travel":
-        return "airplane";
-      case "thriller":
-        return "skull";
-      case "fiction":
-        return "book";
-      default:
-        return "book";
-    }
   };
 
   const handleSeriesPress = (seriesItem: FirestoreSeries) => {
@@ -144,7 +126,7 @@ function SleepScreen() {
                       key={seriesItem.id}
                       title={seriesItem.title}
                       thumbnailUrl={seriesItem.thumbnailUrl}
-                      fallbackIcon={getCategoryIcon(seriesItem.category)}
+                      fallbackIcon={getCategoryIcon(seriesItem.category, 'book')}
                       fallbackColor={seriesItem.color}
                       meta={`${seriesItem.chapterCount} chapters`}
                       isFree={true}
@@ -191,7 +173,7 @@ function SleepScreen() {
                       key={story.id}
                       title={story.title}
                       thumbnailUrl={story.thumbnail_url}
-                      fallbackIcon={getCategoryIcon(story.category)}
+                      fallbackIcon={getCategoryIcon(story.category, 'book')}
                       fallbackColor={theme.colors.sleepAccent}
                       meta={`${story.duration_minutes} min`}
                       isFree={story.isFree}

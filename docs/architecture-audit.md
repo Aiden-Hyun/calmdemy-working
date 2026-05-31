@@ -463,7 +463,9 @@ Migrate `app/(tabs)/home.tsx` to import `navigateToContent` instead of defining 
 
 **Verify:** TS clean, home screen still navigates correctly to all 8 content types in the simulator.
 
-#### Step 8 — Extract `contentIcons` to `features/library/contentIcons.ts`
+#### Step 8 — Extract `contentIcons` to `features/library/contentIcons.ts` ✅ DONE
+
+**Done:** `features/library/contentIcons.ts` exports `getCategoryIcon(category, fallback = 'disc')`. Reality differed from the audit's "same mapping, different default": the music copy (ambient/piano/classical/lofi) and the sleep/story copy (fantasy/travel/thriller/fiction) were two **domain-disjoint** mappings overlapping only on `nature → leaf`. Merged them into one switch (no real call-site result changes since the category sets don't overlap) and preserved the differing defaults via the `fallback` param: music keeps `getCategoryIcon(cat)` (→ `disc`), sleep/series/story call sites pass `'book'`. Removed the three duplicated local copies (`app/(tabs)/music.tsx`, `app/(tabs)/sleep.tsx`, `app/sleep/bedtime-stories.tsx`) and also folded in the two inline helpers `CollectionDetailScreen` had carried since Step 4. Exported from `index.ts`. The no-param inline switch in `app/sleep/[id].tsx` (sleep-meditation detail — a different feature) is intentionally left for Phase 6. tsc 0 errors. **User confirms category fallback icons are unchanged on the Music tab, Sleep tab (series + stories), and the Bedtime Stories list.**
 
 The category-icon mapping has 3 param-taking copies in `app/(tabs)/music.tsx`, `app/(tabs)/sleep.tsx`, `app/sleep/bedtime-stories.tsx` (Chunk 3 deferred this here). Plus there are 3 no-param inline switches in detail screens (`album/[id]`, `series/[id]`, `sleep/[id]`) — but those are inside the screens that just got collapsed, so they may have already vanished by Step 6.
 

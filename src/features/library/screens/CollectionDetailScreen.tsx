@@ -38,6 +38,7 @@ import type {
   FirestoreCourse,
 } from '../../../services/firestoreService';
 import { COLLECTION_CONFIGS } from '../data/contentTypes';
+import { getCategoryIcon } from '../contentIcons';
 import { useCollectionDetail } from '../hooks/useCollectionDetail';
 import type { CollectionContentType } from '../types';
 
@@ -45,42 +46,6 @@ interface CollectionDetailScreenProps {
   contentType: CollectionContentType;
   id: string;
   autoOpenItemId?: string;
-}
-
-/** Album hero fallback icon (used only when the album has no thumbnail). */
-function albumCategoryIcon(category: string): keyof typeof Ionicons.glyphMap {
-  switch (category) {
-    case 'ambient':
-      return 'planet';
-    case 'piano':
-      return 'musical-notes';
-    case 'nature':
-      return 'leaf';
-    case 'classical':
-      return 'musical-note';
-    case 'lofi':
-      return 'headset';
-    default:
-      return 'disc';
-  }
-}
-
-/** Series hero fallback icon (used only when the series has no thumbnail). */
-function seriesCategoryIcon(category: string): keyof typeof Ionicons.glyphMap {
-  switch (category) {
-    case 'fantasy':
-      return 'planet';
-    case 'nature':
-      return 'leaf';
-    case 'travel':
-      return 'airplane';
-    case 'thriller':
-      return 'skull';
-    case 'fiction':
-      return 'book';
-    default:
-      return 'book';
-  }
 }
 
 export function CollectionDetailScreen({
@@ -186,9 +151,9 @@ export function CollectionDetailScreen({
 
   const heroFallbackIcon: keyof typeof Ionicons.glyphMap =
     contentType === 'album'
-      ? albumCategoryIcon((parent as FirestoreAlbum).category)
+      ? getCategoryIcon((parent as FirestoreAlbum).category) // default 'disc'
       : contentType === 'series'
-        ? seriesCategoryIcon((parent as FirestoreSeries).category)
+        ? getCategoryIcon((parent as FirestoreSeries).category, 'book')
         : 'school';
 
   return (

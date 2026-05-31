@@ -22,3 +22,4 @@ export { CollectionDetailScreen } from './screens/CollectionDetailScreen';
 export { CollectionItemPlayerScreen } from './screens/CollectionItemPlayerScreen';
 export { navigateToContent } from './navigation';
 export type { NavigateToContentContext } from './navigation';
+export { getCategoryIcon } from './contentIcons';

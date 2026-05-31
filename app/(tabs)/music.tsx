@@ -12,6 +12,7 @@ import { PaywallModal } from "../../src/components/PaywallModal";
 import { useTheme } from "../../src/core/theme/ThemeContext";
 import { useSubscription } from "../../src/core/subscription/SubscriptionContext";
 import { useSleepSounds, useWhiteNoise, useMusic, useAsmr, useAlbums } from '../../src/hooks/queries/useMusicQueries';
+import { getCategoryIcon } from "../../src/features/library";
 import { Theme } from "../../src/core/theme";
 import {
   FirestoreSleepSound,
@@ -57,23 +58,6 @@ function MusicScreen() {
   const handleAlbumPress = (album: FirestoreAlbum) => {
     // Allow browsing albums - gating happens at track level
     router.push(`/album/${album.id}`);
-  };
-
-  const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
-    switch (category) {
-      case "ambient":
-        return "planet";
-      case "piano":
-        return "musical-notes";
-      case "nature":
-        return "leaf";
-      case "classical":
-        return "musical-note";
-      case "lofi":
-        return "headset";
-      default:
-        return "disc";
-    }
   };
 
   const renderSoundSection = (

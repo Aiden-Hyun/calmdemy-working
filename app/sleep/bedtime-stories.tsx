@@ -16,6 +16,7 @@ import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SkeletonListItem } from '../../src/core/ui/Skeleton';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { useBedtimeStories } from '../../src/hooks/queries/useSleepQueries';
+import { getCategoryIcon } from '../../src/features/library';
 import { getAudioUrl } from '../../src/core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { useTheme } from '../../src/core/theme/ThemeContext';
@@ -70,23 +71,6 @@ function BedtimeStoriesScreen() {
     return stories.filter((story) => story.category === selectedCategory);
   }, [stories, selectedCategory]);
 
-  const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
-    switch (category) {
-      case 'nature':
-        return 'leaf';
-      case 'fantasy':
-        return 'planet';
-      case 'travel':
-        return 'airplane';
-      case 'thriller':
-        return 'skull';
-      case 'fiction':
-        return 'book';
-      default:
-        return 'book';
-    }
-  };
-
   const handleStoryPress = (story: BedtimeStory) => {
     if (!story.isFree && !hasSubscription) {
       setShowPaywall(true);
@@ -106,7 +90,7 @@ function BedtimeStoriesScreen() {
         ) : (
           <View style={styles.storyIcon}>
             <Ionicons
-              name={getCategoryIcon(item.category)}
+              name={getCategoryIcon(item.category, 'book')}
               size={24}
               color={theme.colors.sleepAccent}
             />
