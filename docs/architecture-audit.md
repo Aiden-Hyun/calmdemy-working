@@ -294,6 +294,198 @@ After each group:
 - Per-feature types still in `src/types/index.ts` (`GuidedMeditation`, `BedtimeStory`, `MeditationSession`, `ListeningHistoryItem`, `UserFavorite`, `DailyQuote`, `NatureSound`, etc.) should move into their respective features. Do this alongside the function move for each group — it's natural to relocate the type with its only data consumer.
 - `src/hooks/queries/useHomeQueries.ts` — split it later. The hook is consumed by the Home screen; updating it after firestoreService is split is one of the first steps of Phase 5 (Home/library).
 
+## Phase 4 — complete (done as a side effect of Phase 1)
+
+Phase 4 in the original migration plan was "Delete `ContentPreloadContext` and `PreloadGate`." Both files had zero consumers in the repo (confirmed by grep). They were pulled forward and deleted in Phase 1's `core/{auth,subscription,nav}` batch (commit `828c3de`), since their slot in the architecture (a render-blocking preload context) was redundant with the existing `core/query` React Query setup.
+
+Verified post-Phase 3:
+- No `ContentPreloadContext*` / `PreloadGate*` files anywhere in the tree.
+- No code references to either symbol.
+
+Nothing for a future session to do here.
+
+## Phase 5 plan — build the `library` feature
+
+**Status:** not started. This section is the canonical checklist for a fresh session.
+
+**Goal:** Collapse the three near-identical content-collection screen pairs (album, series, course) into one parameterized `CollectionDetailScreen` + `CollectionItemPlayerScreen` owned by `features/library/`. Extract the polymorphic content router (`navigateToContent`) and the category-icon mapping out of `app/(tabs)/home.tsx` into the same feature. Expected LOC reduction: ~3,000 across the three triplets.
+
+### What's in vs out of scope
+
+**In Phase 5:**
+- `CollectionDetailScreen.tsx` + `useCollectionDetail.ts` (unifies `album/[id]`, `series/[id]`, `course/[id]`)
+- `CollectionItemPlayerScreen.tsx` + `useCollectionItemPlayer.ts` (unifies `album/track/[id]`, `series/chapter/[id]`, `course/session/[id]`)
+- A `CollectionConfig` type registry that captures the album/series/course differences (parent vs child Firestore types, content-type strings, route shapes, code parsing for courses)
+- `features/library/navigation.ts` — extracted `navigateToContent(contentId, contentType, ctx)` (8 content types; currently inline in `home.tsx`)
+- `features/library/contentIcons.ts` — extracted category icon mapping (currently duplicated across music tab, sleep tab, bedtime-stories, music/asmr)
+- The 6 affected route files in `/app/{album,series,course}/...` collapse to ~10-line wrappers around `<CollectionDetailScreen contentType="album" id={id} />` / `<CollectionItemPlayerScreen ... />`
+- `features/library/manifest.ts` + `index.ts` so the feature is registry-ready
+
+**Explicitly NOT in Phase 5 (defer to noted phases):**
+- **Tab restructure** (Home/Library/Tools/Profile/Discover) → Phase 7, alongside Discover build. The current 5 tabs (Home/Music/Meditate/Sleep/Profile) stay.
+- **`LibraryHomeScreen.tsx`** (the tab home that composes meditation library + music + sleep library + albums/series/courses) → Phase 7.
+- **List-screen template** (the 9 list screens in `meditations/*`, `music/*`, `sleep/*`) → Phase 6, when individual features migrate. The Chunk 3 audit deferred `getCategoryIcon` cleanup here, but the list-screen template stays out.
+- **Migrating consumers off the `firestoreService` barrel** → Phase 6. Library's hooks here continue importing from the barrel, same as Phase 3 invariant.
+- **Album / series / course route URL changes.** Keep `/album/[id]`, `/series/[id]`, `/course/[id]` (and the player sub-routes) as the canonical routes — they become thin wrappers around the unified screens. Don't rewrite to `/library/album/...`; deep links and saved-content references depend on the current paths.
+
+### Strategy
+
+Same playbook as Phases 1–3, applied incrementally:
+1. **One commit per logical step** (8 steps below). TypeScript at 0 errors after every commit (forcing function).
+2. **Existing behavior preserved at each step** — the unified screens render identically to the originals for each content type before the original screen is deleted.
+3. **Route URLs unchanged.** Only the screen *implementations* move; route paths and deep links stay stable.
+
+### Step-by-step plan
+
+#### Step 1 — Scaffold `features/library/` + the config contract
+
+Establish the feature directory shape and the type contract for content-type configs. No screens yet; this commit just creates files and types.
+
+- Create `features/library/{components,hooks,screens,data}/` directories.
+- Create `features/library/types.ts`:
+  ```ts
+  export type CollectionContentType = 'album' | 'series' | 'course';
+  export type CollectionItemContentType =
+    | 'album_track' | 'series_chapter' | 'course_session';
+
+  export interface CollectionConfig<TParent, TChild> {
+    parentContentType: CollectionContentType;
+    childContentType: CollectionItemContentType;
+    // Fetching
+    fetchParentById: (id: string) => Promise<TParent | null>;
+    getChildren: (parent: TParent) => TChild[];
+    getChildId: (child: TChild) => string;
+    getChildAudioPath: (child: TChild) => string;
+    getChildTitle: (child: TChild) => string;
+    // Display
+    parentLabel: string;            // 'Album', 'Series', 'Course'
+    childLabelPlural: string;        // 'Tracks', 'Chapters', 'Sessions'
+    // Routing
+    playerRoute: (childId: string) => `/${string}`;
+    // Optional course-specific: code parsing (CBT101M1L style)
+    parseChildCode?: (child: TChild) => { module?: string; lesson?: string };
+  }
+  ```
+  The exact field set will become clearer as Step 3 starts; treat this as a starting point.
+- Create `features/library/data/contentTypes.ts` populating `COLLECTION_CONFIGS: Record<CollectionContentType, CollectionConfig<any, any>>` with three configs (album/series/course). Wire up the data callbacks to existing functions in `features/library/api/content.ts` (`getAlbumById`, `getSeriesById`, etc., already moved in Phase 3 Group H).
+- Create `features/library/manifest.ts` (use breathing's manifest as the template). The library feature has `requiresAuth: true`, `category: 'library'`, color/icon chosen to match the existing UI.
+- Create `features/library/index.ts` with no exports yet (placeholder; populated in later steps).
+
+**Verify:** `npx tsc --noEmit` clean. No screen behavior changed yet.
+
+#### Step 2 — Inventory the current screens (read-only, no code changes)
+
+Before writing the unified screen, read all three detail-screen files (`app/album/[id].tsx`, `app/series/[id].tsx`, `app/course/[id].tsx`) end-to-end and produce a short notes file: `docs/library-screen-inventory.md` (delete after Phase 5) listing:
+
+- The exact state each screen tracks (`completedIds`, `downloadedIds`, `audioUrls`, `refreshKey`, `autoOpenItemId`).
+- The exact effect bodies (audio-URL prefetch loop, downloaded-IDs refresh on focus).
+- The differences between the three (course code badge, course session lock-by-day, series chapter-number badge, album track-number indicator).
+- The shared visual scaffolding (gradient header, title block, child list, paywall gate).
+
+This file is the design input for Step 3 — saves the fresh session from re-reading the screens repeatedly.
+
+**No commit** (or commit as a docs-only commit, your call).
+
+#### Step 3 — Build `useCollectionDetail`
+
+A single hook that encapsulates the state machine the three screens share: fetch parent, list children, prefetch audio URLs, track download + completion state, handle autoOpen-on-mount, expose paywall gate.
+
+- File: `features/library/hooks/useCollectionDetail.ts`
+- Signature: `function useCollectionDetail<TParent, TChild>(config: CollectionConfig<TParent, TChild>, parentId: string, opts?: { autoOpenItemId?: string }): UseCollectionDetailResult<TParent, TChild>`
+- Pulls in `useAudioUrlsForList`-style logic (or whatever was extracted in Chunk 3 — currently `useAudioUrlQueries` in `core/audio`).
+
+**Verify:** `npx tsc --noEmit` clean. Hook exists but isn't yet wired into any screen.
+
+#### Step 4 — Build `CollectionDetailScreen` + migrate three detail routes
+
+- File: `features/library/screens/CollectionDetailScreen.tsx`
+- Props: `{ contentType: CollectionContentType; id: string; autoOpenItemId?: string }`
+- Internally looks up `COLLECTION_CONFIGS[contentType]`, calls `useCollectionDetail`, renders the shared layout.
+- Course-specific rendering (code badge, day number) lives behind a `if (contentType === 'course')` block — keep it small and clearly demarcated; over-engineering the config to abstract every difference is a smell.
+
+Migrate route files:
+- `app/album/[id].tsx` → 10 lines: `<CollectionDetailScreen contentType="album" id={id} autoOpenItemId={autoOpenItemId} />` wrapped in `ProtectedRoute`.
+- `app/series/[id].tsx` → same pattern, `contentType="series"`.
+- `app/course/[id].tsx` → same pattern, `contentType="course"`.
+
+**Verify after each route migration:**
+- `npx tsc --noEmit` clean.
+- The user manually loads each detail route in the simulator and confirms parity: paywall gates fire correctly, completed/downloaded badges show, autoOpen works for deep links.
+- Commit per route file (3 commits) OR one combined commit for all three — judgment call based on confidence.
+
+Original route bodies are deleted in the same commit they're replaced.
+
+#### Step 5 — Build `useCollectionItemPlayer`
+
+Mirror of Step 3 for the player. The three player screens share: receive child from route params (often passed as JSON), prev/next within the collection, completion tracking, paywall gating, integration with `MediaPlayer` (shared component, still in `src/components/MediaPlayer.tsx` — Phase 6 territory) and `usePlayerBehavior`.
+
+- File: `features/library/hooks/useCollectionItemPlayer.ts`
+- Signature: `function useCollectionItemPlayer<TParent, TChild>(config: CollectionConfig<TParent, TChild>, childId: string, siblingsJson?: string): UseCollectionItemPlayerResult<TChild>`
+
+**Verify:** TS clean.
+
+#### Step 6 — Build `CollectionItemPlayerScreen` + migrate three player routes
+
+- File: `features/library/screens/CollectionItemPlayerScreen.tsx`
+- Props: `{ contentType: CollectionContentType; id: string; siblingsJson?: string }`
+- Migrates `app/album/track/[id].tsx`, `app/series/chapter/[id].tsx`, `app/course/session/[id].tsx` to thin wrappers.
+
+**Verify** same as Step 4: TS clean, simulator parity, commit per route or batched.
+
+#### Step 7 — Extract `navigateToContent` to `features/library/navigation.ts`
+
+`navigateToContent(contentId, contentType, router, ctx)` currently lives inline in `app/(tabs)/home.tsx` with hardcoded knowledge of all 8 content types. It needs to move to the library feature so home (and downloads, and future Discover) can share it.
+
+Wrinkles:
+- The `emergency` case needs the full meditation params object (title, description, audioPath, etc.), not just the id. Currently home.tsx grabs them from a loaded `emergencyMeditations` list. Options:
+  - (a) Accept the list as a parameter: `navigateToContent(id, type, router, { emergencyMeditations })`. Pragmatic; home keeps owning the fetch.
+  - (b) Fetch inside `navigateToContent` via `getEmergencyMeditationById` — extra round-trip but cleaner.
+  - Recommendation: (a) for Phase 5. (b) is a Phase 7+ optimization.
+- `findSeriesIdByChapterId` / `findAlbumIdByTrackId` / `findCourseIdBySessionId` are already in `features/library/api/content.ts` (Phase 3 Group H), so the routing function can call them directly.
+
+Migrate `app/(tabs)/home.tsx` to import `navigateToContent` instead of defining it inline. **Don't extract the rest of home.tsx in Phase 5** — that's a Phase 6 concern. Just pull out this one function.
+
+**Verify:** TS clean, home screen still navigates correctly to all 8 content types in the simulator.
+
+#### Step 8 — Extract `contentIcons` to `features/library/contentIcons.ts`
+
+The category-icon mapping has 3 param-taking copies in `app/(tabs)/music.tsx`, `app/(tabs)/sleep.tsx`, `app/sleep/bedtime-stories.tsx` (Chunk 3 deferred this here). Plus there are 3 no-param inline switches in detail screens (`album/[id]`, `series/[id]`, `sleep/[id]`) — but those are inside the screens that just got collapsed, so they may have already vanished by Step 6.
+
+- File: `features/library/contentIcons.ts`
+- Signature: `export function getCategoryIcon(category: string): keyof typeof Ionicons.glyphMap`
+- Reconcile the three implementations (audit said: "Same icon mapping, slightly different default"). Pick a default that doesn't change visible behavior in any of the consuming screens; default-different cases should be handled at the call site if necessary.
+
+Migrate the call sites. Confirm icons unchanged in simulator.
+
+**Verify:** TS clean, no visual diff.
+
+### Final state expectations
+
+After all 8 steps land:
+- `src/features/library/` is a complete feature module (components, hooks, screens, data, api from Phase 3, navigation, contentIcons, types, manifest, index).
+- The three detail screens + three player screens are unified — total LOC for `app/{album,series,course}/**.tsx` drops from ~2,400 to ~120 (each route ≤10 LOC).
+- `navigateToContent` and `getCategoryIcon` are no longer duplicated; library owns them.
+- `features/library/index.ts` re-exports `CollectionDetailScreen`, `CollectionItemPlayerScreen`, `navigateToContent`, `getCategoryIcon`, `manifest` — the public surface that home, downloads, future Discover use.
+- Route URLs unchanged: `/album/[id]`, `/series/[id]`, `/course/[id]` and their player sub-routes still work.
+
+### Commit cadence
+
+8 steps → 8 commits (or fewer if Steps 4/6 are batched). Use commit message style consistent with prior commits:
+- `Add CollectionConfig contract for library feature`
+- `Add useCollectionDetail hook (library, Phase 5 Step 3)`
+- `Unify album/series/course detail screens (library, Phase 5 Step 4)`
+- etc.
+
+Always include the `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` trailer.
+
+### Open decisions worth raising before coding
+
+These are real choices the fresh session shouldn't make unilaterally. Ask the user before committing to a direction:
+
+1. **Course-specific behavior layering.** The `CollectionConfig` proposal above uses a `parseChildCode` hook for course code parsing (CBT101M1L). Is that the right abstraction, or should course rendering quirks live inside `CollectionDetailScreen` behind a `contentType === 'course'` conditional? Both work; the choice affects how clean the config stays.
+2. **`MediaPlayer` integration.** The three player screens all use `<MediaPlayer>` from `src/components/MediaPlayer.tsx` (still in pre-refactor location). Phase 5 keeps it there; Phase 6 moves it to `shared/media-player/`. Confirm we're OK with this temporary state.
+3. **Library tab home screen.** Confirm we're deferring it to Phase 7 — Phase 5 only delivers the feature *module*, not the tab.
+
 ## Phase 2 — complete
 
 The feature module pattern is now established with `breathing` as the canonical template. Every subsequent feature follows this shape:
