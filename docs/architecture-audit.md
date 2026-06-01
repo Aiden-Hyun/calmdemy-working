@@ -343,7 +343,132 @@ Nothing for a future session to do here.
 
 ---
 
-**Original checklist below (kept for reference).** This section is the canonical checklist for a fresh session.
+## Phase 6 plan — extract `shared/` and migrate the 13 remaining features
+
+**Status:** not started. This section is the canonical checklist.
+
+**Goal:** Empty out the pre-refactor leftovers in `src/components/`, `src/contexts/`, `src/hooks/`, `src/services/`, `src/types/` and land every feature in its own `src/features/<name>/` folder. End state: `src/` contains only `core/`, `shared/`, `features/`, `registry.ts`, `test-setup.ts`. The `firestoreService.ts` barrel disappears when its last consumer migrates.
+
+**Scope:** much bigger than Phase 5. 17 component files, 1 context, 7 hooks, 2 services, 1 types file, 2 utils, 1 constants file in flight, plus 13 feature migrations and ~5 cross-cutting couplings to break. Estimated 2-3 weeks of focused work — **do not attempt as one session.**
+
+**Recommended sub-phases (do in order, fresh session per sub-phase if needed):**
+
+### Phase 6a — Extract `shared/` (the home for cross-feature reusable code) — start here
+
+The pre-refactor `src/components/`, `src/contexts/`, and one hook still hold code that doesn't belong to any single feature. They land in `src/shared/`. Same playbook as Phase 1 — `git mv`, `sed -i ''` for path rewrites, hand-fix intra-module imports, `tsc --noEmit` clean per commit.
+
+**Files in this sub-phase:**
+
+| Current | Target | Rename? | Notes |
+|---|---|---|---|
+| `src/components/MediaPlayer.tsx` | `src/shared/media-player/TrackPlayerScreen.tsx` | yes | 1,461 LOC. Locked decision: rename per audit. Phase 6a moves it; Phase 6d extracts the `useMediaPlayerOrchestration` hook from inside it. |
+| `src/components/AudioPlayer.tsx` | `src/shared/media-player/AudioControls.tsx` | yes | Locked rename. The inner controls widget. |
+| `src/components/BackgroundAudioPicker.tsx` | `src/shared/media-player/BackgroundAudioPicker.tsx` | no | Imports `useSleepSounds` from music feature (cross-feature coupling). Document; fix in 6d. |
+| `src/components/SleepTimerPicker.tsx` | `src/shared/media-player/SleepTimerPicker.tsx` | no | UI for the playback timer. |
+| `src/contexts/SleepTimerContext.tsx` | `src/shared/media-player/PlaybackTimerContext.tsx` | yes | Locked rename: misleadingly named "sleep" but used by every player. |
+| `src/hooks/usePlayerBehavior.ts` | `src/shared/media-player/usePlayerBehavior.ts` | no | Move to shared for 6a; decompose in 6d (favorites/ratings/history/paywall hooks per feature). |
+| `src/components/ContentCard.tsx` | `src/shared/cards/ContentCard.tsx` | no | Used by 4+ tab screens. |
+| `src/components/LoadingScreen.tsx` | `src/shared/loading/LoadingScreen.tsx` | no | Branded splash; used by `ProtectedRoute` and the bootstrap. |
+| `src/components/ReportModal.tsx` | `src/shared/modals/ReportModal.tsx` | no | Locked decision: shared, not media-player-local. |
+
+After the moves, update import sites in `app/` and remaining `src/components/`, `src/features/`, and `core/auth/ProtectedRoute.tsx` (uses `LoadingScreen`).
+
+**Out of scope for 6a:** `MediaPlayer.tsx` decomposition, `usePlayerBehavior` decomposition, `BackgroundAudioPicker` coupling break, AccountSwitchConfirmModal consolidation — all those are 6d. 6a is pure relocation.
+
+**Verification per commit:** `tsc --noEmit` clean. Recommend ~3 commits (media-player, cards/loading/modals, hooks).
+
+**Expected diff:** ~10 file moves + ~80 import-site rewrites. No behavior change.
+
+### Phase 6b — Build the shared list-screen template
+
+The 9 list screens duplicate the same loop (fetch items → resolve audio URLs → track downloaded IDs → render). Build one shared template, then apply it to music/sleep/meditation in their migrations (Phase 6c).
+
+**Files that will adopt the template** (do not migrate them in 6b — just build the template and validate with one):
+- `app/meditations/index.tsx`
+- `app/meditations/techniques.tsx`
+- `app/meditations/therapies.tsx`
+- `app/sleep/bedtime-stories.tsx`
+- `app/sleep/sleep-meditations.tsx`
+- `app/music/asmr.tsx`
+- `app/music/white-noise.tsx`
+- `app/music/music.tsx`
+- `app/music/nature-sounds.tsx`
+
+**Output:** `src/shared/lists/AudioListScreen.tsx` (parameterized by content-type config + a hook returning items) and a hook `useAudioUrlsForList` (or fold into the screen). Validate by migrating one screen (probably `app/music/asmr.tsx` — simplest) and confirming visual parity.
+
+**Verification:** `tsc --noEmit` clean. User simulator-checks the one migrated screen.
+
+### Phase 6c — Per-feature migrations (13 features, one feature per commit-cluster)
+
+Each feature follows the breathing template (Phase 2). Per-feature work:
+1. Move feature-specific hooks from `src/hooks/` → `features/<name>/hooks/`
+2. Move feature-specific types from `src/types/index.ts` → `features/<name>/types.ts`
+3. Move feature-specific components from `src/components/` → `features/<name>/components/`
+4. Extract screens from `app/<route>.tsx` → `features/<name>/screens/`; update route files to thin wrappers
+5. Create `features/<name>/manifest.ts` matching the `FeatureManifest` contract in `src/registry.ts`
+6. Create `features/<name>/index.ts` with public API (screens used by routes + manifest)
+7. Migrate the feature's consumers off the `firestoreService` barrel onto its own `features/<name>/api/` (already populated by Phase 3) — same import target, just via the feature's `index.ts` or `api/` paths
+
+**Recommended order — smallest/least-coupled first to validate the template at each step:**
+
+| Order | Feature | Routes involved | Notable quirks |
+|---|---|---|---|
+| 1 | `legal` | `app/privacy.tsx`, `app/terms.tsx` | Static content, trivial — proves the template |
+| 2 | `emergency` | `app/emergency/[id].tsx` + `_layout.tsx` | Single small player, params-based (no fetch) |
+| 3 | `settings` | `app/settings.tsx` | Delete-account flow → `features/auth/hooks/useAccountDeletion.ts` |
+| 4 | `profile` | `app/(tabs)/profile.tsx` | Milestones array + `getNextMilestone` → `features/progress`; stats summary composes from `features/progress` |
+| 5 | `progress` | `app/stats.tsx` | Time-range math → `features/progress/utils/timeRange.ts`; `StatsCard` moves here |
+| 6 | `downloads` | `app/downloads/{index,player}.tsx` | `downloadService.ts` → `features/downloads/api/`; `DownloadButton` moves here; offline player has its own quirks |
+| 7 | `auth` | `app/login.tsx`, `app/account-security.tsx` | 5 auth-modal components (`AccountPromptModal`, `AccountSwitchWarning`, `CredentialCollisionModal`, plus `AccountSwitchConfirmModal` consolidation per locked decision); inline Google SVG → `features/auth/assets/`; bootstrap routing in `app/index.tsx` extracts to `features/auth/bootstrap/useStartupRoute.ts` |
+| 8 | `subscription` | (no routes; modal-based) | `PaywallModal`, `RecoveryWizard` move here. Phase 6d breaks the `PaywallModal → AccountPromptModal` (subscription → auth) coupling. |
+| 9 | `onboarding` | `app/onboarding.tsx` (869 LOC) | Hardcoded free/premium feature catalogues → `data/`; `@calmdemy_onboarding` AsyncStorage key already centralised in `core/storage/keys`. |
+| 10 | `home` | `app/(tabs)/home.tsx` (752 LOC after Phase 5) | Most cross-feature-coupled screen. Composes from many features via the registry-style pattern. `generateGuestNickname` already in `src/utils/`. |
+| 11 | `meditation` | `app/(tabs)/meditate.tsx`, `app/meditation/[id].tsx`, `app/meditations/{index,techniques,therapies}.tsx` | Themecategories/therapyCategories/techniqueCategories arrays — Chunk 3 deferred dedupe here. Use the 6b list-screen template for index/techniques/therapies. `useMeditation` and `useMeditateQueries` move here. |
+| 12 | `sleep` | `app/(tabs)/sleep.tsx`, `app/sleep/[id].tsx`, `app/sleep/meditation/[id].tsx`, `app/sleep/bedtime-stories.tsx`, `app/sleep/sleep-meditations.tsx` | The remaining inline `getCategoryIcon` (sleep-meditation detail) consolidates with `library/contentIcons`. Use the 6b list-screen template. `useSleepQueries` moves here. |
+| 13 | `music` | `app/(tabs)/music.tsx`, `app/music/[id].tsx`, `app/music/{asmr,white-noise,music,nature-sounds}.tsx` | `SoundPlayer` renames to `LoopingSoundScreen` per locked decision and moves to `features/music/screens/`. `useMusicQueries` moves here. Music single-item player gets `getSoundById` per locked decision (Chunk 4 audit). Use the 6b list-screen template — 4 of music's list screens are near-byte-identical. |
+
+`features/breathing/` already exists from Phase 2 — no migration needed, but check that nothing in `app/(tabs)/meditate.tsx` or anywhere expects to find breathing in `core/`.
+
+After Phase 6c lands, `src/components/`, `src/hooks/`, `src/services/downloadService.ts`, and `src/types/index.ts` should be empty (or near-empty — `src/types/index.ts` keeps the cross-feature discriminators `SessionType`, `RatingType`, `ReportCategory`, `User`, `UserPreferences` — those move to `shared/types/` as the last step of 6c).
+
+`src/hooks/queries/useHomeQueries.ts` splits during the home migration (step 10): `useTodayQuote` → library, `useListeningHistory` → progress (or library), `useFavorites` → library, `useDownloadedContent` → downloads, `useUserStats` → progress. Per the original audit §6.
+
+### Phase 6d — Cross-feature coupling cleanups (do after 6c so feature owners exist)
+
+| Coupling | Current shape | Resolution |
+|---|---|---|
+| `PaywallModal` (subscription) → `AccountPromptModal` (auth) | direct import | Pass auth modal via render prop / callback. Or introduce `core/billing-flows` orchestrator that owns the post-purchase auth prompt. Subscription stops depending on auth. |
+| `RecoveryWizard` (subscription) → auth `signInWith*` methods | direct calls | Same pattern — invert. Recovery wizard consumes injected callbacks from auth. |
+| `BackgroundAudioPicker` (shared/media-player) → `useSleepSounds` (music feature) | direct import | Pass sound list as prop, or move ambient-sound source to `core/data/ambient-sounds`. |
+| `SleepTimerContext` (now `PlaybackTimerContext`) → `MediaPlayer.registerAudioPlayer` side-channel | callback registration | Invert: player accepts a `fadeOutController` prop. Owned by the screen that wants the fade. |
+| `usePlayerBehavior` god-hook | imports library + progress + subscription + core/audio | Decompose: `useFavoriteToggle` (library), `usePlaybackTracking` (progress), `useContentRating` (library), `useContentReport` (library) — each owned by its rightful feature, the media-player screen composes them. |
+| `OfflineNavigator` (core/nav) → hardcoded route literals | hardcoded `/downloads` and `/(tabs)/home` | Extract route constants alongside `core/storage/keys.ts` pattern. |
+| `AccountSwitchConfirmModal` vs `AccountSwitchWarning` | 95% duplicates | Consolidate per locked decision (Chunk 1 audit). |
+| `MediaPlayer.tsx` 1,461 LOC | mixed view + orchestration | Extract `useMediaPlayerOrchestration` hook; view becomes thinner. Locked decision. |
+
+Estimate: 2-3 days for the whole 6d sweep, one commit per coupling.
+
+### Phase 6e — Delete `firestoreService.ts` barrel
+
+When every consumer has migrated to feature-local imports (during their 6c migration), the barrel has no remaining importers. Confirm with `grep -r "from.*services/firestoreService"` returning empty, then `git rm src/services/firestoreService.ts`. Final cleanup.
+
+### Open decisions worth raising before starting Phase 6
+
+These deserve the user's input before the fresh session commits to a direction:
+
+1. **`MediaPlayer` decomposition timing.** Do it inside 6a (one big move + extraction) or split: 6a moves the file, 6d extracts the hook? Recommendation: 6a relocates, 6d extracts — keeps 6a a pure mechanical move with low risk.
+2. **Auth feature scope.** Does `features/auth/` own the bootstrap routing logic in `app/index.tsx` (the route file that decides where unauthenticated/onboarded users go)? Recommendation: yes — extract to `features/auth/bootstrap/useStartupRoute.ts`, route file imports it.
+3. **`features/legal/`** as a feature module — or just move the two static screens into a `shared/legal/` shelf? Recommendation: feature module, because Phase 7 will list it in Discover; a `shared/legal/` shelf doesn't get a manifest. Cost: 5 minutes for the manifest + index.
+4. **`courseCodeParser` ownership** — `features/library/utils/` (because library owns course detail screens, per Phase 5) or `features/meditation/utils/` (because courses are a meditation content type)? Recommendation: `features/library/utils/` — keeps the course parsing alongside the rest of the course content rendering that library now owns.
+5. **`guestNickname` ownership** — `features/auth/utils/`, `features/profile/utils/`, or stay in `src/utils/`? Used by home + profile. Recommendation: leave in `src/utils/` for now since it's used cross-feature; revisit if a clear owner emerges.
+
+### Recommended cadence for the fresh session
+
+Start with **Phase 6a (shared/ extraction) only.** It's a coherent unit, low-risk (no behavior change), and unblocks the rest. ~1-2 days. After 6a lands, come back to plan 6b–6e based on what was learned. Don't attempt 6c–6e in the same session as 6a.
+
+---
+
+**Original Phase 5 checklist below (kept for reference).** This section is the canonical checklist for a fresh session.
 
 **Goal:** Collapse the three near-identical content-collection screen pairs (album, series, course) into one parameterized `CollectionDetailScreen` + `CollectionItemPlayerScreen` owned by `features/library/`. Extract the polymorphic content router (`navigateToContent`) and the category-icon mapping out of `app/(tabs)/home.tsx` into the same feature. Expected LOC reduction: ~3,000 across the three triplets.
 
