@@ -353,11 +353,13 @@ Nothing for a future session to do here.
 
 **Recommended sub-phases (do in order, fresh session per sub-phase if needed):**
 
-### Phase 6a — Extract `shared/` (the home for cross-feature reusable code) — start here
+### Phase 6a — Extract `shared/` (the home for cross-feature reusable code) — ✅ COMPLETE
+
+**Status:** ✅ COMPLETE — all 9 files relocated, 3 commits, tsc 0 errors after each. See "Phase 6a — complete" below for the wrap-up. The table batches are marked ✅ DONE inline.
 
 The pre-refactor `src/components/`, `src/contexts/`, and one hook still hold code that doesn't belong to any single feature. They land in `src/shared/`. Same playbook as Phase 1 — `git mv`, `sed -i ''` for path rewrites, hand-fix intra-module imports, `tsc --noEmit` clean per commit.
 
-**Files in this sub-phase:**
+**Files in this sub-phase:** (all ✅ DONE)
 
 | Current | Target | Rename? | Notes |
 |---|---|---|---|
@@ -378,6 +380,32 @@ After the moves, update import sites in `app/` and remaining `src/components/`, 
 **Verification per commit:** `tsc --noEmit` clean. Recommend ~3 commits (media-player, cards/loading/modals, hooks).
 
 **Expected diff:** ~10 file moves + ~80 import-site rewrites. No behavior change.
+
+#### Phase 6a — complete
+
+All three batches landed on `main`, one commit each, tsc at 0 errors after every commit. Pure relocation — no behavior change, no decomposition (6d), no consumer-barrel migration (6e).
+
+| Commit | Batch | Moves |
+|---|---|---|
+| `2224b88` | media-player (5 files, 3 renames) | `MediaPlayer.tsx`→`media-player/TrackPlayerScreen.tsx`, `AudioPlayer.tsx`→`media-player/AudioControls.tsx`, `BackgroundAudioPicker.tsx`→`media-player/`, `SleepTimerPicker.tsx`→`media-player/`, `contexts/SleepTimerContext.tsx`→`media-player/PlaybackTimerContext.tsx` |
+| `26840f8` | cards/loading/modals (3 files) | `ContentCard.tsx`→`cards/`, `LoadingScreen.tsx`→`loading/`, `ReportModal.tsx`→`modals/` |
+| `a453297` | hooks (1 file) | `hooks/usePlayerBehavior.ts`→`media-player/usePlayerBehavior.ts` |
+
+**End state:**
+- `src/shared/` now exists with 4 buckets: `media-player/` (6 files: TrackPlayerScreen, AudioControls, BackgroundAudioPicker, SleepTimerPicker, PlaybackTimerContext, usePlayerBehavior), `cards/` (ContentCard), `loading/` (LoadingScreen), `modals/` (ReportModal). ~4,810 LOC relocated.
+- **Renames + export renames applied** (confirmed with user before coding): `MediaPlayer`→`TrackPlayerScreen`, `AudioPlayer`→`AudioControls`, and the de-"sleep"-ification of the timer context — `SleepTimerProvider`→`PlaybackTimerProvider`, `useSleepTimer`→`usePlaybackTimer`, `SleepTimerContextType`→`PlaybackTimerContextType` (it's used by every player, not just sleep). `BackgroundAudioPicker`, `SleepTimerPicker`, `ContentCard`, `LoadingScreen`, `ReportModal`, `usePlayerBehavior` kept their names.
+- 11 import-site files rewritten: `app/_layout.tsx` (provider), the five `<TrackPlayerScreen>` route consumers (`app/{meditation,sleep,sleep/meditation,emergency,downloads/player}`), the four tab screens (`app/(tabs)/{home,music,sleep,meditate}`) for ContentCard, `app/music/[id]` for ReportModal, `core/auth/ProtectedRoute` for LoadingScreen, and `features/library/{screens/CollectionItemPlayerScreen,hooks/useCollectionItemPlayer}`. Total: 23 files changed, +107/-111.
+- Git rename-detection held (similarity ≥91%), so history is preserved across every move.
+- TypeScript: **0 errors** throughout. No `src/`-wide stale references to any old path or symbol remain (grep-verified).
+
+**Deliberately left for later sub-phases (per the brief):**
+- `src/components/` still holds the 6c-bound feature components: `AccountPromptModal`, `AccountSwitchConfirmModal`, `AccountSwitchWarning`, `CredentialCollisionModal`, `DownloadButton`, `PaywallModal`, `RecoveryWizard`, `SoundPlayer`, `StatsCard` — none on the 9-file list; untouched.
+- `src/contexts/` is now empty save `__tests__/AuthContext.test.tsx` (a core/auth test, unrelated to 6a). Empty-dir/test cleanup is a later concern.
+- `BackgroundAudioPicker → useSleepSounds` (music) cross-feature coupling: still present, path-rewritten only. Break in 6d.
+- `usePlayerBehavior` god-hook: relocated intact. Decompose in 6d.
+- Consumers still import the data layer through the `firestoreService` barrel (TrackPlayerScreen, usePlayerBehavior, useCollectionItemPlayer). Barrel migration + deletion is 6e.
+
+**Carry-forward for the next session (6b–6e planning):** the four other open decisions from the "Open decisions worth raising before starting Phase 6" list (auth bootstrap routing, `legal` as feature vs shared, `courseCodeParser` ownership, `guestNickname` ownership) are 6c concerns — resolve them when those feature migrations start. 6a confirmed the Phase 1 playbook scales cleanly to `shared/`: `git mv` + quote-aware `sed` for path depth + word-boundary `sed` for symbol renames (watch for substring collisions like `useAudioPlayer` vs `AudioPlayer`).
 
 ### Phase 6b — Build the shared list-screen template
 
