@@ -27,7 +27,7 @@ import {
 } from '../../src/services/firestoreService';
 import { Theme } from '../../src/core/theme';
 import { RatingType, ReportCategory } from '../../src/types';
-import { ReportModal } from '../../src/components/ReportModal';
+import { ReportModal } from '../../src/shared/modals/ReportModal';
 
 type SoundData = FirestoreSleepSound | FirestoreMusicItem;
 

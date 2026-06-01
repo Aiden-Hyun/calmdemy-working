@@ -13,7 +13,7 @@ import { useEmergencyMeditations } from '../../src/hooks/queries/useMeditateQuer
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatedView } from '../../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
-import { ContentCard } from '../../src/components/ContentCard';
+import { ContentCard } from '../../src/shared/cards/ContentCard';
 import { Skeleton } from '../../src/core/ui/Skeleton';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { useStats } from '../../src/hooks/useStats';

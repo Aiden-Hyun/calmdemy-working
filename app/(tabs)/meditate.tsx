@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { AnimatedView } from '../../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
-import { ContentCard } from '../../src/components/ContentCard';
+import { ContentCard } from '../../src/shared/cards/ContentCard';
 import { Skeleton } from '../../src/core/ui/Skeleton';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { useTheme } from '../../src/core/theme/ThemeContext';

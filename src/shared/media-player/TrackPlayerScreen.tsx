@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AudioControls } from './AudioControls';
 import { BackgroundAudioPicker } from './BackgroundAudioPicker';
 import { SleepTimerPicker } from './SleepTimerPicker';
-import { ReportModal } from '../../components/ReportModal';
+import { ReportModal } from '../modals/ReportModal';
 import { RatingType, ReportCategory } from '../../types';
 import { useTheme } from '../../core/theme/ThemeContext';
 import { usePlaybackTimer, formatTimerDisplay } from './PlaybackTimerContext';

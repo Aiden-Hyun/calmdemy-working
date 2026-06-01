@@ -41,9 +41,9 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../core/theme/ThemeContext';
-import { Theme } from '../core/theme';
-import { ReportCategory } from '../types';
+import { useTheme } from '../../core/theme/ThemeContext';
+import { Theme } from '../../core/theme';
+import { ReportCategory } from '../../types';
 
 interface ReportModalProps {
   visible: boolean;
