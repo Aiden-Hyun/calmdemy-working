@@ -471,7 +471,7 @@ Each feature follows the breathing template (Phase 2). Per-feature work:
 
 | Order | Feature | Routes involved | Notable quirks |
 |---|---|---|---|
-| 1 | `legal` | `app/privacy.tsx`, `app/terms.tsx` | Static content, trivial — proves the template |
+| 1 | `legal` ✅ DONE | `app/privacy.tsx`, `app/terms.tsx` | ✅ `724da7a`. Single manifest (route `/privacy`, label 'Privacy & Terms'). Screens → `features/legal/screens/{Privacy,Terms}Screen.tsx`; routes thinned to ~12 LOC. Text kept inline. |
 | 2 | `emergency` | `app/emergency/[id].tsx` + `_layout.tsx` | Single small player, params-based (no fetch) |
 | 3 | `settings` | `app/settings.tsx` | Delete-account flow → `features/auth/hooks/useAccountDeletion.ts` |
 | 4 | `profile` | `app/(tabs)/profile.tsx` | Milestones array + `getNextMilestone` → `features/progress`; stats summary composes from `features/progress` |
