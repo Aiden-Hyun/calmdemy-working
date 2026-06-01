@@ -10,19 +10,19 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../core/theme/ThemeContext';
-import { Theme } from '../core/theme';
+import { useTheme } from '../../core/theme/ThemeContext';
+import { Theme } from '../../core/theme';
 
 /**
  * ============================================================
- * AudioPlayer.tsx — Controlled Audio Playback Component
+ * AudioControls.tsx — Controlled Audio Playback Component
  * ============================================================
  *
  * Architectural Role:
  *   A presentational, fully controlled component that renders a media player UI
  *   with progress tracking, playback controls (play/pause, skip, speed, loop),
  *   and a modal speed picker. This is a classic Controlled Component — the parent
- *   owns all state (isPlaying, position, duration, etc.) and the AudioPlayer
+ *   owns all state (isPlaying, position, duration, etc.) and the AudioControls
  *   merely invokes callbacks (onPlay, onPause, onSeek, onPlaybackRateChange).
  *
  * Design Patterns:
@@ -41,7 +41,7 @@ import { Theme } from '../core/theme';
  *   - Ionicons: Icon glyphs for play/pause, speed, loop states
  *
  * Consumed By:
- *   MediaPlayer.tsx and other screens that need a standalone audio player UI
+ *   TrackPlayerScreen and other screens that need a standalone audio player UI
  *   (not tied to lifecycle/state management).
  *
  * Note on State:
@@ -56,7 +56,7 @@ import { Theme } from '../core/theme';
 const MIN_SPEED = 0.5;
 const MAX_SPEED = 2.0;
 
-interface AudioPlayerProps {
+interface AudioControlsProps {
   isPlaying: boolean;
   isLoading: boolean;
   duration: number;
@@ -83,7 +83,7 @@ interface AudioPlayerProps {
 }
 
 /**
- * AudioPlayer — Renders a controlled audio playback interface with progress,
+ * AudioControls — Renders a controlled audio playback interface with progress,
  * speed control, loop toggle, and skip buttons. All state is owned by the parent;
  * this component is a pure presentational layer that fires callbacks.
  *
@@ -105,7 +105,7 @@ interface AudioPlayerProps {
  * @param showLoopControl - Feature flag to show/hide loop button (default: true)
  * @param showSkipControls - Feature flag to show/hide skip buttons (default: true)
  */
-export function AudioPlayer({
+export function AudioControls({
   isPlaying,
   isLoading,
   duration,
@@ -126,7 +126,7 @@ export function AudioPlayer({
   showSpeedControl = true,
   showLoopControl = true,
   showSkipControls = true,
-}: AudioPlayerProps) {
+}: AudioControlsProps) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [showSpeedPicker, setShowSpeedPicker] = useState(false);

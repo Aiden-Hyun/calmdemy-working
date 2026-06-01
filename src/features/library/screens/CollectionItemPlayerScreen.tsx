@@ -9,18 +9,15 @@
  *
  * Shared mechanics live in `useCollectionItemPlayer`; this file reads the
  * route params (the set differs per type) and supplies the type-specific
- * presentation — the `usePlayerBehavior` title, the MediaPlayer props
+ * presentation — the `usePlayerBehavior` title, the TrackPlayerScreen props
  * (category / instructor / gradient / artwork icon / loading text /
  * metaInfo / parentTitle) and `buildSiblingParams` for prev/next.
- *
- * MediaPlayer stays at src/components/MediaPlayer.tsx for Phase 5 (Phase 6
- * relocates it to shared/media-player/).
  * ============================================================
  */
 
 import React from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { MediaPlayer } from '../../../components/MediaPlayer';
+import { TrackPlayerScreen } from '../../../shared/media-player/TrackPlayerScreen';
 import { PaywallModal } from '../../../components/PaywallModal';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { buildSessionMetaInfo } from '../../../utils/courseCodeParser';
@@ -205,7 +202,7 @@ export function CollectionItemPlayerScreen({
 
   return (
     <>
-      <MediaPlayer
+      <TrackPlayerScreen
         category={categoryLabel}
         title={title || 'Loading...'}
         instructor={instructorName}

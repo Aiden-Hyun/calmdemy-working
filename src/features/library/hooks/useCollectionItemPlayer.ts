@@ -15,14 +15,13 @@
  *     router.replace to the player route; next auto-plays)
  *
  * It also owns the `usePlayerBehavior` wiring (favorites / rating /
- * report / play-pause). Presentation (MediaPlayer props) and the
+ * report / play-pause). Presentation (TrackPlayerScreen props) and the
  * type-specific sibling-param shape stay in the screen, which passes
  * `buildSiblingParams` in — the parent-level fields (albumTitle, artist,
  * narrator, course codes, color…) live in the route params, not the
  * sibling item, so the screen is the natural owner.
  *
- * MediaPlayer itself stays at src/components/MediaPlayer.tsx for Phase 5
- * (Phase 6 relocates it to shared/media-player/).
+ * The player view itself is TrackPlayerScreen in shared/media-player/.
  * ============================================================
  */
 

@@ -16,11 +16,11 @@
  *     2. Inactive: Shows preset duration selection and start button
  *   - Strategy Pattern: PRESET_DURATIONS provides predefined options
  *     to reduce user input burden (vs. free-form time entry)
- *   - Observer Pattern: useSleepTimer subscribes to global timer state
+ *   - Observer Pattern: usePlaybackTimer subscribes to global timer state
  *     via context, re-renders reactively when remaining time changes
  *
  * Key Dependencies:
- *   - useSleepTimer (context hook for timer state and actions)
+ *   - usePlaybackTimer (context hook for timer state and actions)
  *   - formatTimerDisplay (utility for MM:SS formatting)
  *   - useTheme (style injection)
  *
@@ -40,9 +40,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../core/theme/ThemeContext';
-import { useSleepTimer, formatTimerDisplay } from '../contexts/SleepTimerContext';
-import { Theme } from '../core/theme';
+import { useTheme } from '../../core/theme/ThemeContext';
+import { usePlaybackTimer, formatTimerDisplay } from './PlaybackTimerContext';
+import { Theme } from '../../core/theme';
 
 interface SleepTimerPickerProps {
   visible: boolean;
@@ -70,7 +70,7 @@ const PRESET_DURATIONS = [
 /**
  * SleepTimerPicker — Modal for sleep timer selection and management.
  *
- * This component uses the useSleepTimer context hook to synchronize with
+ * This component uses the usePlaybackTimer context hook to synchronize with
  * global timer state. It presents two distinct UIs:
  *
  *   1. When isActive: Shows running timer, extend buttons, and cancel
@@ -78,13 +78,13 @@ const PRESET_DURATIONS = [
  *
  * The selectedMinutes local state tracks which duration the user has tapped
  * in the duration list (before starting). This is separate from the global
- * timer state managed by useSleepTimer.
+ * timer state managed by usePlaybackTimer.
  */
 export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   // --- Global timer state from context: isActive, remainingSeconds ---
-  const { isActive, remainingSeconds, startTimer, cancelTimer, extendTimer } = useSleepTimer();
+  const { isActive, remainingSeconds, startTimer, cancelTimer, extendTimer } = usePlaybackTimer();
   // --- Local state: tracks which preset duration is selected in the UI ---
   const [selectedMinutes, setSelectedMinutes] = useState<number | null>(null);
 
@@ -111,7 +111,7 @@ export function SleepTimerPicker({ visible, onClose }: SleepTimerPickerProps) {
 
   /**
    * Cancels an active timer and closes this modal.
-   * Delegates to useSleepTimer.cancelTimer to update global state.
+   * Delegates to usePlaybackTimer.cancelTimer to update global state.
    */
   const handleCancelTimer = () => {
     cancelTimer();

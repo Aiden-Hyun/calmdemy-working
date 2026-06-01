@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * SleepTimerContext.tsx — Sleep Timer & Audio Fade-Out Manager
+ * PlaybackTimerContext.tsx — Sleep Timer & Audio Fade-Out Manager
  * ============================================================
  *
  * Architectural Role:
@@ -14,7 +14,7 @@
  *     isFadingOut) and control actions via React Context.
  *   - Observer/Callback Pattern: Audio player registers itself via
  *     registerAudioPlayer() so the timer can control its volume/pause.
- *     This allows loose coupling — timer doesn't import MediaPlayer.
+ *     This allows loose coupling — timer doesn't import TrackPlayerScreen.
  *   - State Machine: Timer transitions through states: inactive ->
  *     countdown -> expiry -> fade-out -> inactive.
  *   - Interval Cleanup: useRef for setInterval IDs ensures cleanup
@@ -22,10 +22,10 @@
  *
  * Key Dependencies:
  *   - React hooks: useState, useRef, useCallback, useEffect
- *   - MediaPlayer: Registers audio control methods
+ *   - TrackPlayerScreen: Registers audio control methods
  *
  * Consumed By:
- *   Sleep/meditate screens read timer state for UI. MediaPlayer
+ *   Sleep/meditate screens read timer state for UI. TrackPlayerScreen
  *   component registers itself for volume control during fade-out.
  * ============================================================
  */
@@ -45,7 +45,7 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
  * @prop registerAudioPlayer - Audio component calls this to register volume control
  * @prop unregisterAudioPlayer - Audio component calls on cleanup
  */
-interface SleepTimerContextType {
+interface PlaybackTimerContextType {
   // State
   isActive: boolean;
   remainingSeconds: number;
@@ -57,13 +57,13 @@ interface SleepTimerContextType {
   cancelTimer: () => void;
   extendTimer: (additionalSeconds: number) => void;
   
-  // For fade-out effect - called by MediaPlayer
+  // For fade-out effect - called by TrackPlayerScreen
   registerAudioPlayer: (player: { setVolume: (volume: number) => void; pause: () => void }) => void;
   unregisterAudioPlayer: () => void;
 }
 
 // --- Context Definition ---
-const SleepTimerContext = createContext<SleepTimerContextType | undefined>(undefined);
+const PlaybackTimerContext = createContext<PlaybackTimerContextType | undefined>(undefined);
 
 /**
  * Provider component for sleep timer and fade-out management.
@@ -72,7 +72,7 @@ const SleepTimerContext = createContext<SleepTimerContextType | undefined>(undef
  * expires, smoothly fades audio volume to silence over 10 seconds before
  * pausing playback.
  */
-export function SleepTimerProvider({ children }: { children: React.ReactNode }) {
+export function PlaybackTimerProvider({ children }: { children: React.ReactNode }) {
   // --- State: Timer Lifecycle ---
   const [isActive, setIsActive] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
@@ -252,7 +252,7 @@ export function SleepTimerProvider({ children }: { children: React.ReactNode }) 
   /**
    * Register an audio player for fade-out control.
    *
-   * Called by MediaPlayer or audio component to allow the timer
+   * Called by TrackPlayerScreen or audio component to allow the timer
    * to control volume during fade-out. Implements the Callback/Observer
    * pattern — loose coupling between timer and audio player.
    */
@@ -268,7 +268,7 @@ export function SleepTimerProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <SleepTimerContext.Provider
+    <PlaybackTimerContext.Provider
       value={{
         isActive,
         remainingSeconds,
@@ -282,20 +282,20 @@ export function SleepTimerProvider({ children }: { children: React.ReactNode }) 
       }}
     >
       {children}
-    </SleepTimerContext.Provider>
+    </PlaybackTimerContext.Provider>
   );
 }
 
 /**
  * Hook to access the sleep timer context.
  *
- * Throws if used outside SleepTimerProvider (guard clause).
+ * Throws if used outside PlaybackTimerProvider (guard clause).
  * Screens use this to start/cancel timers and read countdown state.
  */
-export function useSleepTimer() {
-  const context = useContext(SleepTimerContext);
+export function usePlaybackTimer() {
+  const context = useContext(PlaybackTimerContext);
   if (!context) {
-    throw new Error('useSleepTimer must be used within a SleepTimerProvider');
+    throw new Error('usePlaybackTimer must be used within a PlaybackTimerProvider');
   }
   return context;
 }

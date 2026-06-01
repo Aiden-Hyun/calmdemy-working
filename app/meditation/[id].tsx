@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
-import { MediaPlayer } from '../../src/components/MediaPlayer';
+import { TrackPlayerScreen } from '../../src/shared/media-player/TrackPlayerScreen';
 import { useAudioPlayer } from '../../src/core/audio/useAudioPlayer';
 import { usePlayerBehavior } from '../../src/hooks/usePlayerBehavior';
 import { useTheme } from '../../src/core/theme/ThemeContext';
@@ -119,7 +119,7 @@ function MeditationPlayerScreen() {
   const instructorName = meditation?.instructor || 'Guide';
 
   return (
-    <MediaPlayer
+    <TrackPlayerScreen
       category={meditation?.themes?.[0] || 'meditation'}
       title={meditation?.title || 'Loading...'}
       instructor={instructorName}

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { AuthProvider } from '../src/core/auth/AuthContext';
 import { ThemeProvider, useTheme } from '../src/core/theme/ThemeContext';
 import { NetworkProvider } from '../src/core/network/NetworkContext';
-import { SleepTimerProvider } from '../src/contexts/SleepTimerContext';
+import { PlaybackTimerProvider } from '../src/shared/media-player/PlaybackTimerContext';
 import { SubscriptionProvider } from '../src/core/subscription/SubscriptionContext';
 import { QueryProvider } from '../src/core/query/QueryProvider';
 import { useFonts } from '../src/core/theme/useFonts';
@@ -173,11 +173,11 @@ export default function RootLayout() {
         <AuthProvider>
           <SubscriptionProvider>
             <NetworkProvider>
-              <SleepTimerProvider>
+              <PlaybackTimerProvider>
                 <OfflineNavigator>
                   <RootNavigator />
                 </OfflineNavigator>
-              </SleepTimerProvider>
+              </PlaybackTimerProvider>
             </NetworkProvider>
           </SubscriptionProvider>
         </AuthProvider>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ProtectedRoute } from "../../src/core/auth/ProtectedRoute";
-import { MediaPlayer } from "../../src/components/MediaPlayer";
+import { TrackPlayerScreen } from "../../src/shared/media-player/TrackPlayerScreen";
 import { useAudioPlayer } from "../../src/core/audio/useAudioPlayer";
 import { usePlayerBehavior } from "../../src/hooks/usePlayerBehavior";
 import { getAudioUrlFromPath } from "../../src/core/audio/audioFiles";
@@ -97,7 +97,7 @@ function EmergencyPlayerScreen() {
   const gradientColors: [string, string] = [bgColor, adjustColor(bgColor, 20)];
 
   return (
-    <MediaPlayer
+    <TrackPlayerScreen
       category="emergency"
       title={title || "Emergency Relief"}
       instructor={narrator || "Guide"}

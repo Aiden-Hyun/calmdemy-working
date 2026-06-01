@@ -13,32 +13,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AudioPlayer } from './AudioPlayer';
+import { AudioControls } from './AudioControls';
 import { BackgroundAudioPicker } from './BackgroundAudioPicker';
 import { SleepTimerPicker } from './SleepTimerPicker';
-import { ReportModal } from './ReportModal';
-import { RatingType, ReportCategory } from '../types';
-import { useTheme } from '../core/theme/ThemeContext';
-import { useSleepTimer, formatTimerDisplay } from '../contexts/SleepTimerContext';
-import { Theme } from '../core/theme';
-import { useAudioPlayer } from '../core/audio/useAudioPlayer';
-import { useBackgroundAudio } from '../core/audio/useBackgroundAudio';
-import { getAudioUrlFromPath } from '../core/audio/audioFiles';
-import { getSleepSoundById, getNarratorByName, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../services/firestoreService';
-import { useAuth } from '../core/auth/AuthContext';
-import { useNetwork } from '../core/network/NetworkContext';
-import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../services/downloadService';
+import { ReportModal } from '../../components/ReportModal';
+import { RatingType, ReportCategory } from '../../types';
+import { useTheme } from '../../core/theme/ThemeContext';
+import { usePlaybackTimer, formatTimerDisplay } from './PlaybackTimerContext';
+import { Theme } from '../../core/theme';
+import { useAudioPlayer } from '../../core/audio/useAudioPlayer';
+import { useBackgroundAudio } from '../../core/audio/useBackgroundAudio';
+import { getAudioUrlFromPath } from '../../core/audio/audioFiles';
+import { getSleepSoundById, getNarratorByName, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../../services/firestoreService';
+import { useAuth } from '../../core/auth/AuthContext';
+import { useNetwork } from '../../core/network/NetworkContext';
+import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../../services/downloadService';
 
 /**
  * ============================================================
- * MediaPlayer.tsx — Full-Featured Audio Player Screen
+ * TrackPlayerScreen.tsx — Full-Featured Audio Player Screen
  * ============================================================
  *
  * Architectural Role:
  *   A comprehensive media player screen that orchestrates audio playback,
  *   background sound selection, sleep timer scheduling, and progress tracking.
  *   This is a complex Compound Component and State Machine:
- *   - Compound Component: Composes AudioPlayer, BackgroundAudioPicker, SleepTimerPicker,
+ *   - Compound Component: Composes AudioControls, BackgroundAudioPicker, SleepTimerPicker,
  *     and ReportModal as child modals controlled by parent state.
  *   - State Machine: Manages multiple independent concerns (playback, background audio,
  *     sleep timer, downloads, progress tracking), each with their own state and lifecycle.
@@ -64,7 +64,7 @@ import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLo
  * Key Dependencies:
  *   - useAudioPlayer() hook: Audio playback state and controls (from underlying audio engine)
  *   - useBackgroundAudio() hook: Background sleep sound management
- *   - useSleepTimer() hook: Sleep timer state and fade-out scheduling
+ *   - usePlaybackTimer() hook: Sleep timer state and fade-out scheduling
  *   - useAuth() hook: Current user ID for progress tracking
  *   - useNetwork() hook: Offline detection (disables download feature)
  *   - FirestoreService: Progress saving/loading, narrator/sound metadata fetching
@@ -85,12 +85,12 @@ import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLo
 const AUTOPLAY_KEY = 'calmdemy_autoplay_enabled';
 
 /**
- * Props interface for the MediaPlayer component.
+ * Props interface for the TrackPlayerScreen component.
  * This is a large prop interface because the component is a Facade that abstracts
  * many concerns (audio playback, background audio, downloads, progress tracking, etc.).
  * Props are organized into logical groups below.
  */
-export interface MediaPlayerProps {
+export interface TrackPlayerScreenProps {
   // --- Content Metadata ---
   category: string;
   title: string;
@@ -151,22 +151,22 @@ export interface MediaPlayerProps {
 }
 
 /**
- * MediaPlayer — Full-featured audio player screen.
+ * TrackPlayerScreen — Full-featured audio player screen.
  *
  * This component is the main entry point for playing audio content (meditations, courses, sleep stories).
  * It orchestrates multiple sub-systems:
  *   1. Audio playback (via useAudioPlayer hook, delegated to parent)
  *   2. Background sleep sounds (via useBackgroundAudio hook)
- *   3. Sleep timer (via useSleepTimer hook, with fade-out support)
+ *   3. Sleep timer (via usePlaybackTimer hook, with fade-out support)
  *   4. Playback progress tracking (Firestore, auto-save on pause and periodically)
  *   5. Downloads (offline availability, via downloadService)
  *   6. Child modals (background audio picker, sleep timer, report form)
  *   7. Responsive sizing (adapts artwork and fonts to screen width)
  *
  * The component manages a large state tree covering independent concerns.
- * See MediaPlayerProps documentation above for prop organization.
+ * See TrackPlayerScreenProps documentation above for prop organization.
  */
-export function MediaPlayer({
+export function TrackPlayerScreen({
   category,
   title,
   instructor,
@@ -201,7 +201,7 @@ export function MediaPlayer({
   userRating,
   onRate,
   onReport,
-}: MediaPlayerProps) {
+}: TrackPlayerScreenProps) {
   // --- Theme and Layout Setup ---
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
@@ -255,7 +255,7 @@ export function MediaPlayer({
 
   // --- Sleep Timer Integration ---
   // Delegates sleep timer control to SleepTimerContext (manages its own state there)
-  const sleepTimer = useSleepTimer();
+  const sleepTimer = usePlaybackTimer();
 
   // --- Playback Progress Tracking State ---
   // Refs (not state) because these are implementation details that don't trigger re-renders
@@ -864,7 +864,7 @@ export function MediaPlayer({
           </View>
 
           {/* --- Sub-Phase 3c: Audio Player & Controls --- */}
-          {/* Shows the AudioPlayer component once audio duration is known, or loading spinner while buffering */}
+          {/* Shows the AudioControls component once audio duration is known, or loading spinner while buffering */}
           <View style={[styles.playerContainer, { marginBottom: sectionMargin }]}>
             {audioPlayer.isLoading && !audioPlayer.duration ? (
               // Audio is still loading (buffering), show spinner
@@ -874,7 +874,7 @@ export function MediaPlayer({
               </View>
             ) : (
               // Audio is ready, show the player with playback controls
-              <AudioPlayer
+              <AudioControls
                 isPlaying={audioPlayer.isPlaying}
                 isLoading={audioPlayer.isLoading}
                 duration={audioPlayer.duration}

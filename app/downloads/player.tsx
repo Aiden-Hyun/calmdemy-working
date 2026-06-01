@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
-import { MediaPlayer } from '../../src/components/MediaPlayer';
+import { TrackPlayerScreen } from '../../src/shared/media-player/TrackPlayerScreen';
 import { useAudioPlayer } from '../../src/core/audio/useAudioPlayer';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { DownloadedContent, getDownloadedContent } from '../../src/services/downloadService';
@@ -122,7 +122,7 @@ function OfflinePlayerScreen() {
   }
 
   return (
-    <MediaPlayer
+    <TrackPlayerScreen
       category={currentItem.parentTitle || 'Downloaded'}
       title={currentItem.title}
       durationMinutes={currentItem.duration_minutes}
