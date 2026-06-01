@@ -407,7 +407,9 @@ All three batches landed on `main`, one commit each, tsc at 0 errors after every
 
 **Carry-forward for the next session (6b–6e planning):** the four other open decisions from the "Open decisions worth raising before starting Phase 6" list (auth bootstrap routing, `legal` as feature vs shared, `courseCodeParser` ownership, `guestNickname` ownership) are 6c concerns — resolve them when those feature migrations start. 6a confirmed the Phase 1 playbook scales cleanly to `shared/`: `git mv` + quote-aware `sed` for path depth + word-boundary `sed` for symbol renames (watch for substring collisions like `useAudioPlayer` vs `AudioPlayer`).
 
-### Phase 6b — Build the shared list-screen template
+### Phase 6b — Build the shared list-screen template — ✅ COMPLETE
+
+**Status:** ✅ COMPLETE — template built + validated on `app/music/asmr.tsx`, 2 commits, tsc 0 errors after each. See "Phase 6b — complete" below.
 
 The 9 list screens duplicate the same loop (fetch items → resolve audio URLs → track downloaded IDs → render). Build one shared template, then apply it to music/sleep/meditation in their migrations (Phase 6c).
 
@@ -425,6 +427,34 @@ The 9 list screens duplicate the same loop (fetch items → resolve audio URLs �
 **Output:** `src/shared/lists/AudioListScreen.tsx` (parameterized by content-type config + a hook returning items) and a hook `useAudioUrlsForList` (or fold into the screen). Validate by migrating one screen (probably `app/music/asmr.tsx` — simplest) and confirming visual parity.
 
 **Verification:** `tsc --noEmit` clean. User simulator-checks the one migrated screen.
+
+#### Phase 6b — complete
+
+Both commits landed on `main`, tsc at 0 errors after each.
+
+| Commit | What landed |
+|---|---|
+| `7204bce` | `src/shared/lists/AudioListScreen.tsx` (286 LOC) — the template, no consumers |
+| `eec4b14` | `app/music/asmr.tsx` migrated to it (247 → 25 LOC) — the validation case |
+
+**Design decisions (confirmed with user before building — all "recommended"):**
+1. **Full screen shell.** The template owns the whole visual shell the four near-identical music screens duplicate byte-for-byte: `sleepyNight` gradient + header (title/back) + `FlatList` (loading spinner + empty state) + the sound-row card + `DownloadButton` wiring + `PaywallModal` + `/music/[id]` nav. A consuming route is now a ~25-line composition. (This intentionally goes further than the doc's original "screen owns scaffold / template owns list only" sketch — picked deliberately to hit the LOC target on the byte-identical music set; generalize when non-music features adopt it.)
+2. **Built-in sound card**, rendered internally and parameterized by `downloadContentType` + `itemHref`. No `renderItem` prop yet — added in 6c when a feature needs a different row shape.
+3. **Reused `core/audio/useAudioUrls`** (already shipped by `app/music/music.tsx`) instead of building a new `useAudioUrlsForList`. The hook the doc sketched already existed in core.
+
+**Template surface** (`AudioListScreen<T extends AudioListItem>`):
+- Required props: `items: T[]`, `loading: boolean`, `title: string`, `emptyIcon`, `emptyText`.
+- Optional: `downloadContentType` (default `'sound'`), `itemHref` (default `(item) => /music/${item.id}`, typed as expo-router `Href` since `typedRoutes` is on).
+- `AudioListItem` is a structural shape (`id/title/description/icon/color/audioPath` + optional `isFree`) satisfied by both `FirestoreMusicItem` and `FirestoreSleepSound`.
+
+**Parity note for the validated screen:** asmr's one mechanism change is audio-URL resolution moving from its hand-rolled `useEffect` loop to `useAudioUrls` (React Query) — observably identical (same `resolveAudioUrls` loop, same Map, same `DownloadButton` visibility + `refreshKey` semantics), and it's exactly what `music.tsx` already ships. The dead `downloadedIds` read (set-but-never-rendered in all 9 originals) is preserved as a write-only setter so `DownloadButton`'s refresh callback shape is unchanged. **User does the simulator parity pass on the ASMR route.**
+
+**Carry-forward — 8 list screens still to adopt the template in their Phase 6c feature migration:**
+- music feature: `app/music/white-noise.tsx`, `app/music/music.tsx` (already on `useAudioUrls`), `app/music/nature-sounds.tsx` (adds a category-filter chip row — needs a header/filter slot)
+- sleep feature: `app/sleep/bedtime-stories.tsx` (category filter), `app/sleep/sleep-meditations.tsx` (flat)
+- meditation feature: `app/meditations/index.tsx`, `app/meditations/techniques.tsx`, `app/meditations/therapies.tsx` (theme/technique/therapy filters + "all" pivots)
+
+**Template-growth notes for 6c** (don't pre-build — add when the adopting feature needs it): a `renderItem` override for non-sound row shapes (course code badges, story chapter counts); a `filter`/header-slot prop for the category-chip screens (nature-sounds, bedtime-stories, meditations); parameterized gradient/palette + `itemHref` for non-music routes; reconsider whether the `duration_minutes: 30` download metadata constant should be per-item.
 
 ### Phase 6c — Per-feature migrations (13 features, one feature per commit-cluster)
 
