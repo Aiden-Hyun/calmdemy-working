@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../core/auth/AuthContext';
-import { useSubscription } from '../core/subscription/SubscriptionContext';
+import { useAuth } from '../../core/auth/AuthContext';
+import { useSubscription } from '../../core/subscription/SubscriptionContext';
 import {
   isFavorite,
   toggleFavorite,
@@ -11,9 +11,9 @@ import {
   reportContent,
   addToListeningHistory,
   createSession,
-} from '../services/firestoreService';
-import { RatingType, ReportCategory } from '../types';
-import { useAudioPlayer } from '../core/audio/useAudioPlayer';
+} from '../../services/firestoreService';
+import { RatingType, ReportCategory } from '../../types';
+import { useAudioPlayer } from '../../core/audio/useAudioPlayer';
 
 /**
  * ============================================================

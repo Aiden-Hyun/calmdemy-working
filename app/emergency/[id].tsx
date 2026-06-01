@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ProtectedRoute } from "../../src/core/auth/ProtectedRoute";
 import { TrackPlayerScreen } from "../../src/shared/media-player/TrackPlayerScreen";
 import { useAudioPlayer } from "../../src/core/audio/useAudioPlayer";
-import { usePlayerBehavior } from "../../src/hooks/usePlayerBehavior";
+import { usePlayerBehavior } from "../../src/shared/media-player/usePlayerBehavior";
 import { getAudioUrlFromPath } from "../../src/core/audio/audioFiles";
 
 // Helper to lighten a hex color

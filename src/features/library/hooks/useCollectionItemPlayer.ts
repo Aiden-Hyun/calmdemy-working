@@ -33,7 +33,7 @@ import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { getLocalAudioPath } from '../../../services/downloadService';
 import { markContentCompleted } from '../../../services/firestoreService';
-import { usePlayerBehavior } from '../../../hooks/usePlayerBehavior';
+import { usePlayerBehavior } from '../../../shared/media-player/usePlayerBehavior';
 import type { RatingType, ReportCategory } from '../../../types';
 import type { CollectionConfig } from '../types';
 
