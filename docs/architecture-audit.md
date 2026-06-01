@@ -472,7 +472,7 @@ Each feature follows the breathing template (Phase 2). Per-feature work:
 | Order | Feature | Routes involved | Notable quirks |
 |---|---|---|---|
 | 1 | `legal` ✅ DONE | `app/privacy.tsx`, `app/terms.tsx` | ✅ `724da7a`. Single manifest (route `/privacy`, label 'Privacy & Terms'). Screens → `features/legal/screens/{Privacy,Terms}Screen.tsx`; routes thinned to ~12 LOC. Text kept inline. |
-| 2 | `emergency` | `app/emergency/[id].tsx` + `_layout.tsx` | Single small player, params-based (no fetch) |
+| 2 | `emergency` ✅ DONE | `app/emergency/[id].tsx` + `_layout.tsx` | ✅ `9745a13`. Screen → `features/emergency/screens/EmergencyPlayerScreen.tsx` (private `adjustColor` kept inline); route thinned to 18 LOC; `_layout.tsx` untouched. Manifest: 'Emergency Calm' / heart-outline / #E57373, practice, requiresAuth. api/ stays on barrel (6e). |
 | 3 | `settings` | `app/settings.tsx` | Delete-account flow → `features/auth/hooks/useAccountDeletion.ts` |
 | 4 | `profile` | `app/(tabs)/profile.tsx` | Milestones array + `getNextMilestone` → `features/progress`; stats summary composes from `features/progress` |
 | 5 | `progress` | `app/stats.tsx` | Time-range math → `features/progress/utils/timeRange.ts`; `StatsCard` moves here |
@@ -490,6 +490,29 @@ Each feature follows the breathing template (Phase 2). Per-feature work:
 After Phase 6c lands, `src/components/`, `src/hooks/`, `src/services/downloadService.ts`, and `src/types/index.ts` should be empty (or near-empty — `src/types/index.ts` keeps the cross-feature discriminators `SessionType`, `RatingType`, `ReportCategory`, `User`, `UserPreferences` — those move to `shared/types/` as the last step of 6c).
 
 `src/hooks/queries/useHomeQueries.ts` splits during the home migration (step 10): `useTodayQuote` → library, `useListeningHistory` → progress (or library), `useFavorites` → library, `useDownloadedContent` → downloads, `useUserStats` → progress. Per the original audit §6.
+
+#### Phase 6c — legal + emergency complete (2 of 13)
+
+The two smallest features landed this session, validating the per-feature migration template (breathing/Phase 2 shape) before the bigger features. 4 commits, tsc at 0 errors after each, no behavior change. Route URLs unchanged throughout.
+
+| Feature | Migration commit | Doc commit | LOC notes |
+|---|---|---|---|
+| `legal` | `724da7a` | `afdbc5a` | `app/{privacy,terms}.tsx` 280+232 LOC bodies → `features/legal/screens/{Privacy,Terms}Screen.tsx`; routes now ~12 LOC each. |
+| `emergency` | `9745a13` | (this commit) | `app/emergency/[id].tsx` 133 LOC → `features/emergency/screens/EmergencyPlayerScreen.tsx`; route now 18 LOC. |
+
+**Decisions confirmed with the user (all recommended):**
+1. **Legal: single manifest** (`id: 'legal'`, `route: '/privacy'`, `label: 'Privacy & Terms'`) covering both screens, rather than two sibling manifests.
+2. **Emergency identity:** `label: 'Emergency Calm'`, `icon: 'heart-outline'`, `color: '#E57373'`, `category: 'practice'`.
+3. **`requiresSubscription: false`** on both (legal is public with `requiresAuth: false`; emergency gates per-item via `isFree`, with `requiresAuth: true`).
+4. **Legal text kept inline** in the screen files (no data/Markdown extraction — deferred).
+
+**Pattern notes carried forward for the remaining 11 features:**
+- The route-file → feature move is not a clean `git mv` rename in git's eyes: the route path persists (now a thin wrapper) while the bulk content lands at a new path, so git records it as modify + add. Content history is preserved via the blob; `git log --follow <new path>` traces it.
+- `manifest.route` for a param-only feature (emergency has no standalone list/index route) was set to the param path `/emergency/[id]`. Phase 7 (Discover) may want a real entry route or a list screen for it — flagged, not resolved here.
+- `index.ts` re-exports screens + manifest only (matching breathing); `api/` stays internal and its consumers stay on the `firestoreService` barrel until Phase 6e.
+- Both features' `api/` (emergency) and screens import depth followed `features/<name>/{screens,api}/ → ../../../core` / `../../../shared`.
+
+**Remaining 11 features** (settings, profile, progress, downloads, auth, subscription, onboarding, home, meditation, sleep, music) are planned in subsequent sessions per the table order above.
 
 ### Phase 6d — Cross-feature coupling cleanups (do after 6c so feature owners exist)
 
