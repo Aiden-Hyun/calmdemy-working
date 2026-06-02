@@ -175,7 +175,7 @@ export function LoadingScreen({
             style={styles.logoGradient}
           >
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../../assets/icon.png')}
               style={styles.logo}
               resizeMode="contain"
             />
