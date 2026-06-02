@@ -474,7 +474,7 @@ Each feature follows the breathing template (Phase 2). Per-feature work:
 | 1 | `legal` ✅ DONE | `app/privacy.tsx`, `app/terms.tsx` | ✅ `724da7a`. Single manifest (route `/privacy`, label 'Privacy & Terms'). Screens → `features/legal/screens/{Privacy,Terms}Screen.tsx`; routes thinned to ~12 LOC. Text kept inline. |
 | 2 | `emergency` ✅ DONE | `app/emergency/[id].tsx` + `_layout.tsx` | ✅ `9745a13`. Screen → `features/emergency/screens/EmergencyPlayerScreen.tsx` (private `adjustColor` kept inline); route thinned to 18 LOC; `_layout.tsx` untouched. Manifest: 'Emergency Calm' / heart-outline / #E57373, practice, requiresAuth. api/ stays on barrel (6e). |
 | 3 | `settings` | `app/settings.tsx` | Delete-account flow → `features/auth/hooks/useAccountDeletion.ts` |
-| 4 | `profile` | `app/(tabs)/profile.tsx` | Milestones array + `getNextMilestone` → `features/progress`; stats summary composes from `features/progress` |
+| 4 | `profile` ✅ DONE | `app/(tabs)/profile.tsx` | ✅ `6fee604`. Screen → `features/profile/screens/ProfileScreen.tsx`; route thinned to 18 LOC. `milestones`/`getNextMilestone`/`useStats` now imported from `features/progress` (cross-feature via index). 'Your Sanctuary' card kept custom (no StatsCard rewrite, per decision). Done **after** progress (its dependency). |
 | 5 | `progress` ✅ DONE | `app/stats.tsx` | ✅ `b536c2a`. StatsScreen + useStats + StatsCard + milestones(+getNextMilestone, made pure) → `features/progress/`. Partial `useHomeQueries` split: `useUserStats`+`useListeningHistory` → `hooks/queries.ts` (read own api/, not barrel). Time-range math kept inline (not extracted to utils/ this session). Manifest 'Your Sanctuary'/stats-chart/#C4A77D. |
 | 6 | `downloads` | `app/downloads/{index,player}.tsx` | `downloadService.ts` → `features/downloads/api/`; `DownloadButton` moves here; offline player has its own quirks |
 | 7 | `auth` | `app/login.tsx`, `app/account-security.tsx` | 5 auth-modal components (`AccountPromptModal`, `AccountSwitchWarning`, `CredentialCollisionModal`, plus `AccountSwitchConfirmModal` consolidation per locked decision); inline Google SVG → `features/auth/assets/`; bootstrap routing in `app/index.tsx` extracts to `features/auth/bootstrap/useStartupRoute.ts` |
@@ -513,6 +513,37 @@ The two smallest features landed this session, validating the per-feature migrat
 - Both features' `api/` (emergency) and screens import depth followed `features/<name>/{screens,api}/ → ../../../core` / `../../../shared`.
 
 **Remaining 11 features** (settings, profile, progress, downloads, auth, subscription, onboarding, home, meditation, sleep, music) are planned in subsequent sessions per the table order above.
+
+#### Phase 6c — progress + profile complete (4 of 13)
+
+Paired deliberately to validate the **cross-feature consumption pattern** (feature B imports feature A's public `index.ts`) on a small, well-understood coupling before the bigger features (home, settings) rely on it. progress migrated first because profile depends on it. 4 commits, tsc 0 errors after each, no behavior change.
+
+| Feature | Migration commit | Doc commit | LOC notes |
+|---|---|---|---|
+| `progress` | `b536c2a` | `21769f0` | `app/stats.tsx` 694 → 17-LOC wrapper. Module now holds `screens/StatsScreen`, `hooks/{useStats,queries}`, `components/StatsCard`, `data/milestones`, `api/` (Phase 3), manifest, index. |
+| `profile` | `6fee604` | (this commit) | `app/(tabs)/profile.tsx` 680 → 18-LOC wrapper; `screens/ProfileScreen` consumes progress's public API. |
+
+**Decisions confirmed with the user (all recommended):**
+1. progress identity: `label: 'Your Sanctuary'`, `icon: 'stats-chart-outline'`, `color: '#C4A77D'`, `route: '/stats'`, `category: 'progress'`.
+2. profile identity: `label: 'Profile'`, `icon: 'person-circle-outline'`, `color: '#7DAFB4'`, `route: '/(tabs)/profile'`, `category: 'account'`.
+3. profile's 'Your Sanctuary' summary card kept its bespoke 3-stat layout — **not** rewritten to use `StatsCard` (zero visual-regression risk; cross-feature consumption is already proven via `milestones`/`getNextMilestone`/`useStats`).
+4. stats time-range chart math kept inline in `StatsScreen` (not extracted to `utils/timeRange.ts`); `milestones` + `getNextMilestone` (made pure) live in `features/progress/data/milestones.ts`.
+
+**Cross-feature consumption pattern (the point of this pair):**
+- `features/profile` imports `{ useStats, milestones, getNextMilestone } from '../../progress'` — through the public `index.ts`, never a deep path. This is the feature→feature pattern (allowed via public surface) that home/settings/etc. will use.
+- `features/progress/index.ts` deliberately exposes more than screens+manifest: `StatsCard`, `useStats`, `useListeningHistory`, `milestones`, `getNextMilestone`, `Milestone`. `useUserStats` stays **internal** (only `useStats` wraps it).
+
+**`useHomeQueries.ts` partial split (per constraint #4):**
+- `useUserStats` + `useListeningHistory` moved to `features/progress/hooks/queries.ts`, now reading the feature's **own** `api/` (`sessions`, `listeningHistory`) instead of the `firestoreService` barrel — first instance of a 6c consumer migrating off the barrel.
+- The other 3 hooks (`useTodayQuote`, `useFavorites`, `useDownloadedContent`) stay in `useHomeQueries.ts`. **Do not delete that file** — it's drained and removed only when all five have moved out (library + downloads + home migrations).
+- Moving the two hooks forced **import redirects** (not migrations) in `app/(tabs)/home.tsx` (`useStats` + `useListeningHistory` now from `features/progress`) and `app/(tabs)/profile.tsx` (`useStats`). Necessary because the definitions moved; the consuming screens are otherwise untouched.
+
+**Pattern notes carried forward:**
+- A feature can own data hooks that an as-yet-unmigrated screen (home) consumes — expose them on the feature index and redirect the consumer's import. This keeps tsc green without dragging the consumer's full migration forward.
+- profile's `route: '/(tabs)/profile'` is registry metadata only — nothing navigates to it programmatically (the tab bar owns it). Phase 7 may revisit the tab-route form.
+- The audit's original "feature → shared → core, never feature → feature" invariant is refined by this session: **feature → feature is allowed when it goes through the target's public `index.ts`** (the brief's explicit cross-feature consumption pattern). Phase 8's ESLint rule must permit index-only feature imports, not ban all feature→feature edges.
+
+**Remaining 9 features** (settings, downloads, auth, subscription, onboarding, home, meditation, sleep, music) planned in subsequent sessions per the table order.
 
 ### Phase 6d — Cross-feature coupling cleanups (do after 6c so feature owners exist)
 
