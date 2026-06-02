@@ -25,7 +25,7 @@
  */
 
 import { useCallback } from 'react';
-import { useUserStats } from './queries/useHomeQueries';
+import { useUserStats } from './queries';
 
 /**
  * ViewModel hook for user meditation and activity statistics.

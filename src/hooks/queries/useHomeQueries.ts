@@ -37,9 +37,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../core/auth/AuthContext';
 import {
   getTodayQuote,
-  getListeningHistory,
   getFavoritesWithDetails,
-  getUserStats,
 } from '../../services/firestoreService';
 import { getDownloadedContent } from '../../services/downloadService';
 
@@ -60,31 +58,6 @@ export function useTodayQuote() {
     // in the background. This minimizes server load since the same quote is shown
     // to all users for the entire day.
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
-  });
-}
-
-/**
- * Hook for fetching the user's listening history.
- *
- * This query is user-partitioned by including user?.uid in the cache key,
- * so each user has a separate cache entry for their history. The `enabled`
- * guard clause ensures we skip the fetch until the user is authenticated,
- * preventing 403 errors and unnecessary network requests.
- *
- * @param limit - Maximum number of history entries to fetch (default: 10)
- * @returns A React Query result containing recent listened-to meditations
- */
-export function useListeningHistory(limit = 10) {
-  const { user } = useAuth();
-  return useQuery({
-    // Cache key partitioned by user ID and limit — changing either will invalidate
-    // the cached data, triggering a fresh fetch.
-    queryKey: ['listeningHistory', user?.uid, limit],
-    queryFn: () => getListeningHistory(user!.uid, limit),
-    // Guard clause: only fetch when user is authenticated. Before login, this query
-    // remains inactive (enabled: false), so the component doesn't try to fetch
-    // protected user data without credentials.
-    enabled: !!user?.uid,
   });
 }
 
@@ -122,24 +95,5 @@ export function useDownloadedContent() {
     // require user login to access. This allows offline users to still play
     // previously downloaded meditations.
     queryFn: getDownloadedContent,
-  });
-}
-
-/**
- * Hook for fetching the user's meditation and listening statistics.
- *
- * This query is user-partitioned by uid. It aggregates stats like total minutes
- * meditated, current streak, and other behavioral metrics. The `enabled` guard
- * ensures we only fetch after authentication.
- *
- * @returns A React Query result containing user statistics (minutes, streak, etc.)
- */
-export function useUserStats() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['userStats', user?.uid],
-    queryFn: () => getUserStats(user!.uid),
-    // Guard clause: defer fetching until authenticated
-    enabled: !!user?.uid,
   });
 }

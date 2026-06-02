@@ -13,7 +13,7 @@ import { PaywallModal } from '../../src/components/PaywallModal';
 import { useAuth } from '../../src/core/auth/AuthContext';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { useSubscription } from '../../src/core/subscription/SubscriptionContext';
-import { useStats } from '../../src/hooks/useStats';
+import { useStats } from '../../src/features/progress';
 import { Theme } from '../../src/core/theme';
 import { generateGuestNickname } from '../../src/utils/guestNickname';
 
