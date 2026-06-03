@@ -27,8 +27,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../core/theme/ThemeContext';
-import { Theme } from '../core/theme';
+import { useTheme } from '../../../core/theme/ThemeContext';
+import { Theme } from '../../../core/theme';
 
 interface SoundPlayerProps {
   isPlaying: boolean;
