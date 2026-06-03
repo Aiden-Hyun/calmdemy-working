@@ -19,7 +19,7 @@ import {
   useSubscription,
   PurchasesPackage,
 } from "../core/subscription/SubscriptionContext";
-import { AccountPromptModal } from "./AccountPromptModal";
+import { AccountPromptModal } from "../features/auth";
 import { RecoveryWizard } from "./RecoveryWizard";
 import { Theme } from "../core/theme";
 

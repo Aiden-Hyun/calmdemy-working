@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { useTheme, ThemeMode } from '../../../core/theme/ThemeContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
+import { useAccountDeletion } from '../../auth';
 
 const themeModes: { id: ThemeMode; label: string; icon: string }[] = [
   { id: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -15,76 +16,13 @@ const themeModes: { id: ThemeMode; label: string; icon: string }[] = [
 
 export function SettingsScreen() {
   const router = useRouter();
-  const { user, logout, deleteAccount, isAnonymous } = useAuth();
+  const { user, logout, isAnonymous } = useAuth();
   const { theme, themeMode, setThemeMode } = useTheme();
   const { isPremium } = useSubscription();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const { isDeleting, handleDeleteAccount } = useAccountDeletion();
 
   const styles = useMemo(() => createStyles(theme), [theme]);
-
-  // Determine auth provider
-  const providerData = user?.providerData || [];
-  const isEmailProvider = providerData.some(p => p.providerId === 'password');
-  const isGoogleProvider = providerData.some(p => p.providerId === 'google.com');
-  const isAppleProvider = providerData.some(p => p.providerId === 'apple.com');
-
-  // NOTE: The delete-account flow stays inline here for now. When the auth
-  // feature module lands (Phase 6c, auth), this extracts to
-  // features/auth/hooks/useAccountDeletion.ts and settings consumes it.
-  const handleDeleteAccount = () => {
-    if (isEmailProvider) {
-      // Email users need to enter password
-      Alert.prompt(
-        'Delete Account',
-        'This action is permanent and cannot be undone. All your data will be deleted.\n\nEnter your password to confirm:',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async (password) => {
-              if (!password) {
-                Alert.alert('Error', 'Password is required');
-                return;
-              }
-              await performDeleteAccount(password);
-            },
-          },
-        ],
-        'secure-text'
-      );
-    } else {
-      // Google/Apple users will be prompted to re-authenticate
-      Alert.alert(
-        'Delete Account',
-        `This action is permanent and cannot be undone. All your data will be deleted.\n\nYou will be asked to sign in with ${isGoogleProvider ? 'Google' : isAppleProvider ? 'Apple' : 'your account'} to confirm.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: () => performDeleteAccount(),
-          },
-        ]
-      );
-    }
-  };
-
-  const performDeleteAccount = async (password?: string) => {
-    setIsDeleting(true);
-    try {
-      await deleteAccount(password);
-      // User will be automatically signed out and redirected
-    } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error.message || 'Failed to delete account. Please try again.'
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -1,40 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+/**
+ * / (index) route — launch splash + startup routing.
+ *
+ * The routing decision (onboarding | home | login) lives in the auth feature's
+ * useStartupRoute hook; this file only renders the branded splash while that
+ * hook resolves and navigates.
+ */
+
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../src/core/auth/AuthContext';
 import { lightColors } from '../src/core/theme';
-import { ONBOARDING_KEY } from '../src/core/storage/keys';
+import { useStartupRoute } from '../src/features/auth';
 
 export default function Index() {
-  const { user, loading: authLoading } = useAuth();
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
-  // Guard: only fire a single navigation replace. With <Redirect>, React can
-  // re-render this screen while auth/subscription providers settle, which in
-  // turn re-issues the navigation and re-mounts the target screen — resetting
-  // state (e.g. onboarding step) mid-interaction. An imperative replace inside
-  // an effect + ref guard sidesteps that.
-  const navigatedRef = useRef(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(ONBOARDING_KEY).then((value) => {
-      setOnboardingDone(value === 'true');
-    });
-  }, []);
-
-  useEffect(() => {
-    if (navigatedRef.current) return;
-    if (authLoading || onboardingDone === null) return;
-
-    navigatedRef.current = true;
-    if (!onboardingDone) {
-      router.replace('/onboarding' as any);
-    } else if (user) {
-      router.replace('/(tabs)/home');
-    } else {
-      router.replace('/login');
-    }
-  }, [authLoading, onboardingDone, user]);
+  useStartupRoute();
 
   return (
     <View style={styles.container}>
