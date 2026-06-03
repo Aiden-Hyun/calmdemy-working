@@ -34,7 +34,7 @@ import {
   getBedtimeStories,
   getSleepMeditations,
   getSeries,
-} from '../../services/firestoreService';
+} from '../../../services/firestoreService';
 
 /**
  * Hook for fetching bedtime stories (narrated sleep content).
