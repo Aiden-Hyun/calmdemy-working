@@ -839,8 +839,9 @@ settings (a quick single-screen win) then downloads (the bigger lift — service
 | 7 | `auth` ✅ | `31c5b13` | 2 screens + 4 modals + googleIcon asset + useStartupRoute + useAccountDeletion. AccountSwitch consolidation → 6d (props differ). Done as one commit (tight coupling). |
 | 8 | `subscription` ✅ | `acd4037` | PaywallModal + RecoveryWizard + 15-site sweep. Couplings path-only (6d inverts). Documented shared→feature edge from AudioListScreen (PaywallModal can't go to shared/). |
 | 9 | `onboarding` ✅ | `1b8dd73` | Screen + feature catalogues → data/. manifest enabled: false. |
+| 10 | `meditation` ✅ | `2616fad` | 5 screens + hooks relocated as-is. Template/category/type work deferred. |
 
-**10 of 13 → 13 of 13:** appended as each lands.
+**11 of 13 → 13 of 13:** appended as each lands.
 
 ### Phase 6c — completion criteria
 
