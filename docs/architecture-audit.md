@@ -476,7 +476,7 @@ Each feature follows the breathing template (Phase 2). Per-feature work:
 | 3 | `settings` ✅ DONE | `app/settings.tsx` | ✅ `f5e5211`. Screen → `features/settings/screens/SettingsScreen.tsx`; route thinned to 18 LOC. Delete-account flow kept inline (TODO: extract to `features/auth/hooks/useAccountDeletion.ts` when auth lands). 'Settings'/settings-outline/#8B8685. |
 | 4 | `profile` ✅ DONE | `app/(tabs)/profile.tsx` | ✅ `6fee604`. Screen → `features/profile/screens/ProfileScreen.tsx`; route thinned to 18 LOC. `milestones`/`getNextMilestone`/`useStats` now imported from `features/progress` (cross-feature via index). 'Your Sanctuary' card kept custom (no StatsCard rewrite, per decision). Done **after** progress (its dependency). |
 | 5 | `progress` ✅ DONE | `app/stats.tsx` | ✅ `b536c2a`. StatsScreen + useStats + StatsCard + milestones(+getNextMilestone, made pure) → `features/progress/`. Partial `useHomeQueries` split: `useUserStats`+`useListeningHistory` → `hooks/queries.ts` (read own api/, not barrel). Time-range math kept inline (not extracted to utils/ this session). Manifest 'Your Sanctuary'/stats-chart/#C4A77D. |
-| 6 | `downloads` | `app/downloads/{index,player}.tsx` | `downloadService.ts` → `features/downloads/api/`; `DownloadButton` moves here; offline player has its own quirks |
+| 6 | `downloads` ✅ DONE | `app/downloads/{index,player}.tsx` | ✅ `e2eb515`. Screens → `DownloadsScreen`/`OfflinePlayerScreen` (routes 13/17 LOC). `downloadService` → `features/downloads/api/` **+ barrel kept at `src/services/downloadService.ts`** (shared/core consumers). `DownloadButton` → **`shared/downloads/`** (not the feature — consumed by `shared/lists/AudioListScreen`); 10 import sites swept. `useDownloadedContent` → `features/downloads/hooks/queries.ts`. requiresAuth false. |
 | 7 | `auth` | `app/login.tsx`, `app/account-security.tsx` | 5 auth-modal components (`AccountPromptModal`, `AccountSwitchWarning`, `CredentialCollisionModal`, plus `AccountSwitchConfirmModal` consolidation per locked decision); inline Google SVG → `features/auth/assets/`; bootstrap routing in `app/index.tsx` extracts to `features/auth/bootstrap/useStartupRoute.ts` |
 | 8 | `subscription` | (no routes; modal-based) | `PaywallModal`, `RecoveryWizard` move here. Phase 6d breaks the `PaywallModal → AccountPromptModal` (subscription → auth) coupling. |
 | 9 | `onboarding` | `app/onboarding.tsx` (869 LOC) | Hardcoded free/premium feature catalogues → `data/`; `@calmdemy_onboarding` AsyncStorage key already centralised in `core/storage/keys`. |
@@ -544,6 +544,30 @@ Paired deliberately to validate the **cross-feature consumption pattern** (featu
 - The audit's original "feature → shared → core, never feature → feature" invariant is refined by this session: **feature → feature is allowed when it goes through the target's public `index.ts`** (the brief's explicit cross-feature consumption pattern). Phase 8's ESLint rule must permit index-only feature imports, not ban all feature→feature edges.
 
 **Remaining 9 features** (settings, downloads, auth, subscription, onboarding, home, meditation, sleep, music) planned in subsequent sessions per the table order.
+
+#### Phase 6c — settings + downloads complete (6 of 13)
+
+settings (a quick single-screen win) then downloads (the bigger lift — service relocation, a high-import-surface component, two screens, a queries split). 4 commits, tsc 0 errors after each, no behavior change.
+
+| Feature | Migration commit | Doc commit | LOC notes |
+|---|---|---|---|
+| `settings` | `f5e5211` | `964ba70` | `app/settings.tsx` 453 → 18-LOC wrapper. Delete-account flow kept inline (TODO: → `features/auth/hooks/useAccountDeletion.ts` when auth lands). |
+| `downloads` | `e2eb515` | (this commit) | `app/downloads/{index,player}.tsx` → `DownloadsScreen`/`OfflinePlayerScreen` (13/17 LOC). `downloadService` + barrel; `DownloadButton` → `shared/downloads/`; `useDownloadedContent` split out. |
+
+**Decisions confirmed with the user (all recommended):**
+1. settings identity: `'Settings'` / `settings-outline` / `#8B8685`, route `/settings`, category account, requiresAuth.
+2. downloads identity: `'Downloads'` / `download-outline` / `#8B9F82`, route `/downloads`, category library, **requiresAuth false** (the list route has no `ProtectedRoute` — offline use; the player route keeps its own).
+3. **Download homing (the significant one):** `downloadService` impl → `features/downloads/api/`, but a thin re-export **barrel stays at `src/services/downloadService.ts`**; `DownloadButton` → `shared/downloads/` (not the feature). Chosen over the brief-literal "everything into the feature" because `downloadService` and `DownloadButton` are consumed by `shared/` modules (`AudioListScreen`, `TrackPlayerScreen`) and `core/auth` (`AuthContext`), and `features → shared → core` forbids the reverse edges.
+
+**Why the barrel + shared/ placement (carry-forward reasoning):**
+- `downloadService`'s 17 consumers include `shared/lists`, `shared/media-player`, `core/auth`, and 7 not-yet-migrated music/sleep/meditation list screens. Migrating all of them onto `features/downloads` would invert the dependency direction. The barrel keeps the literal import path neutral (`services/…`), so there are **zero** shared→feature / core→feature edges. The documented `core/auth → downloads` backward-dep concern **dissolves** — `AuthContext` keeps importing `deleteAllDownloads` from the barrel, unchanged.
+- `DownloadButton` is a reusable control (like `ContentCard` → `shared/cards`). It's rendered by `shared/lists/AudioListScreen`, so placing it in `features/downloads/components` would be a shared→feature edge. It lives in `shared/downloads/` and imports the service via the barrel.
+- **Verification #3 relaxed:** `grep services/downloadService` is intentionally non-empty (the barrel + its consumers persist), mirroring the firestoreService barrel. Deleting it requires first promoting the low-level helpers (`getDownloadedContentIds`, `isDownloaded`, `getLocalAudioPath`, etc.) to **core/** — a future decision (the truly correct long-term home, since shared/ depends on them). Flag for Phase 6d/6e.
+- The downloads feature's **own** screens/hook read `api/downloadService` directly; everyone else reads the barrel.
+
+**`useHomeQueries.ts` drain progress:** `useDownloadedContent` removed (→ downloads). The file now holds **2** hooks (`useTodayQuote`, `useFavorites`) — both drain in the library/home migrations. Still not deletable.
+
+**Remaining 7 features** (auth, subscription, onboarding, home, meditation, sleep, music) planned in subsequent sessions per the table order.
 
 ### Phase 6d — Cross-feature coupling cleanups (do after 6c so feature owners exist)
 
