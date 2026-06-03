@@ -40,7 +40,7 @@ import {
   getMeditations,
   getMeditationsByTheme,
   getMeditationsByTechnique,
-} from '../../services/firestoreService';
+} from '../../../services/firestoreService';
 
 /**
  * Hook for fetching high-priority emergency/quick meditations.

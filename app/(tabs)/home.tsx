@@ -9,7 +9,7 @@ import { useTheme } from '../../src/core/theme/ThemeContext';
 import { useSubscription } from '../../src/core/subscription/SubscriptionContext';
 import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { useTodayQuote, useFavorites } from '../../src/hooks/queries/useHomeQueries';
-import { useEmergencyMeditations } from '../../src/hooks/queries/useMeditateQueries';
+import { useEmergencyMeditations } from '../../src/features/meditation';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatedView } from '../../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
