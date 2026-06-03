@@ -477,7 +477,7 @@ Each feature follows the breathing template (Phase 2). Per-feature work:
 | 4 | `profile` ✅ DONE | `app/(tabs)/profile.tsx` | ✅ `6fee604`. Screen → `features/profile/screens/ProfileScreen.tsx`; route thinned to 18 LOC. `milestones`/`getNextMilestone`/`useStats` now imported from `features/progress` (cross-feature via index). 'Your Sanctuary' card kept custom (no StatsCard rewrite, per decision). Done **after** progress (its dependency). |
 | 5 | `progress` ✅ DONE | `app/stats.tsx` | ✅ `b536c2a`. StatsScreen + useStats + StatsCard + milestones(+getNextMilestone, made pure) → `features/progress/`. Partial `useHomeQueries` split: `useUserStats`+`useListeningHistory` → `hooks/queries.ts` (read own api/, not barrel). Time-range math kept inline (not extracted to utils/ this session). Manifest 'Your Sanctuary'/stats-chart/#C4A77D. |
 | 6 | `downloads` ✅ DONE | `app/downloads/{index,player}.tsx` | ✅ `e2eb515`. Screens → `DownloadsScreen`/`OfflinePlayerScreen` (routes 13/17 LOC). `downloadService` → `features/downloads/api/` **+ barrel kept at `src/services/downloadService.ts`** (shared/core consumers). `DownloadButton` → **`shared/downloads/`** (not the feature — consumed by `shared/lists/AudioListScreen`); 10 import sites swept. `useDownloadedContent` → `features/downloads/hooks/queries.ts`. requiresAuth false. |
-| 7 | `auth` | `app/login.tsx`, `app/account-security.tsx` | 5 auth-modal components (`AccountPromptModal`, `AccountSwitchWarning`, `CredentialCollisionModal`, plus `AccountSwitchConfirmModal` consolidation per locked decision); inline Google SVG → `features/auth/assets/`; bootstrap routing in `app/index.tsx` extracts to `features/auth/bootstrap/useStartupRoute.ts` |
+| 7 | `auth` ✅ DONE | `app/login.tsx`, `app/account-security.tsx` | ✅ `31c5b13`. 2 screens + 4 modals → `features/auth/`; Google SVG → `assets/googleIcon.ts`; bootstrap → `bootstrap/useStartupRoute.ts`; delete-account → `hooks/useAccountDeletion.ts` (settings consumes it). PaywallModal import path updated. **AccountSwitch consolidation deferred to 6d** (props differ — not a swap; both moved as-is). |
 | 8 | `subscription` | (no routes; modal-based) | `PaywallModal`, `RecoveryWizard` move here. Phase 6d breaks the `PaywallModal → AccountPromptModal` (subscription → auth) coupling. |
 | 9 | `onboarding` | `app/onboarding.tsx` (869 LOC) | Hardcoded free/premium feature catalogues → `data/`; `@calmdemy_onboarding` AsyncStorage key already centralised in `core/storage/keys`. |
 | 10 | `home` | `app/(tabs)/home.tsx` (752 LOC after Phase 5) | Most cross-feature-coupled screen. Composes from many features via the registry-style pattern. `generateGuestNickname` already in `src/utils/`. |
@@ -831,6 +831,14 @@ settings (a quick single-screen win) then downloads (the bigger lift — service
 - `Mark home complete in audit doc + Phase 6c — complete`
 
 ---
+
+##### Phase 6c — features 7-13 running tally
+
+| # | Feature | Migration commit | Notes |
+|---|---|---|---|
+| 7 | `auth` ✅ | `31c5b13` | 2 screens + 4 modals + googleIcon asset + useStartupRoute + useAccountDeletion. AccountSwitch consolidation → 6d (props differ). Done as one commit (tight coupling). |
+
+**8 of 13 → 13 of 13:** appended as each lands.
 
 ### Phase 6c — completion criteria
 
