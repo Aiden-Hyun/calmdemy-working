@@ -842,8 +842,9 @@ settings (a quick single-screen win) then downloads (the bigger lift — service
 | 10 | `meditation` ✅ | `2616fad` | 5 screens + hooks relocated as-is. Template/category/type work deferred. |
 | 11 | `sleep` ✅ | `bc3c211` | 5 screens + useSleepQueries relocated as-is. |
 | 12 | `music` ✅ | `0844012` | 6 screens + SoundPlayer + useMusicQueries(+barrel). src/components/ now empty. |
+| 13 | `home` ✅ | `8bd0861`+`644a31f` | HomeScreen + drained library queries + deleted useHomeQueries. |
 
-**13 of 13:** home next.
+**13 of 13 — Phase 6c COMPLETE.**
 
 ### Phase 6c — completion criteria
 
@@ -856,6 +857,30 @@ When all 7 above are done, the audit doc should have a "Phase 6c — complete (1
 - 7 of 7 new manifests live under `features/<name>/manifest.ts`; Phase 7 wires them into `src/registry.ts`
 
 Push at completion (or earlier if the session is paused part-way).
+
+#### Phase 6c — complete (13 of 13)
+
+All 13 features migrated. `src/` now holds `core/`, `shared/`, `features/` (15 modules: the 13 + breathing/library from Phases 2/5), `registry.ts`, `test-setup.ts`, plus the transitional leftovers below. tsc at 0 errors after every commit.
+
+**Migration commits (this session, features 7–13):**
+`31c5b13` auth · `acd4037` subscription · `1b8dd73` onboarding · `2616fad` meditation · `bc3c211` sleep · `0844012` music · `8bd0861`+`644a31f` home (+ per-feature doc commits).
+
+**Completion criteria — status:**
+- ✅ `src/components/` empty of components (only `__tests__/ProtectedRoute.test.tsx`, a core-auth test, remains — move to `core/auth/__tests__` in a later tidy).
+- ✅ `src/hooks/` near-empty: only `queries/useMusicQueries.ts` (a transitional **barrel** re-exporting `features/music/hooks/queries` for the shared BackgroundAudioPicker consumer; removed when 6d inverts that coupling). `useHomeQueries.ts` deleted; `useStats`/`useMeditation`/`useMeditate/Sleep/MusicQueries` all moved.
+- ✅ `src/services/` keeps `firestoreService.ts` (28 consumers) + `downloadService.ts` (14 consumers) — both barrels, deleted in Phase 6e.
+- ⚠️ `src/types/index.ts` still holds `GuidedMeditation`/`MeditationTechnique`/`BedtimeStory` etc. in addition to the cross-feature discriminators. The per-feature type moves were **deferred** (entangled with `MeditationTheme`/`MeditationCategory`); a focused follow-up trims `src/types` and the discriminators move to `shared/types/`.
+- ✅ 15 manifests under `features/<name>/manifest.ts`; Phase 7 wires them into `registry.ts`.
+
+**Deferred to follow-ups / Phase 6d (flagged during 6c, not done here):**
+- AudioListScreen **template application** to the meditation/sleep/music list screens + the **filter-slot** template-growth + **category-array reconciliation** + `getCategoryIcon` consolidation (the screens were relocated as-is).
+- Per-feature **type extraction** from `src/types/index.ts`.
+- `SoundPlayer → LoopingSoundScreen` rename; `music/[id]` `getSoundById` + `usePlayerBehavior` adoption.
+- `AccountSwitchConfirmModal`/`AccountSwitchWarning` **consolidation** (props differ — a real merge).
+- **Documented shared→feature edge**: `shared/lists/AudioListScreen → features/subscription` (PaywallModal). And the barrel-masked couplings: shared/core → `services/{firestoreService,downloadService}`, shared BackgroundAudioPicker → `hooks/queries/useMusicQueries`. All are 6d/6e items.
+- `useEmergencyMeditations` lives in `features/meditation` queries (relocated as-is); really belongs to emergency.
+
+**Phase 6c is COMPLETE.** Next: 6d (coupling cleanups — owners now exist) and 6e (delete the two service barrels once their consumers migrate). Both need fresh planning.
 
 ### Phase 6d — Cross-feature coupling cleanups (do after 6c so feature owners exist)
 
