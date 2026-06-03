@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ProtectedRoute } from "../../src/core/auth/ProtectedRoute";
 import { AnimatedView } from "../../src/core/ui/AnimatedView";
 import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
-import { DownloadButton } from "../../src/components/DownloadButton";
+import { DownloadButton } from "../../src/shared/downloads/DownloadButton";
 import { useTheme } from "../../src/core/theme/ThemeContext";
 import { FirestoreSleepSound } from "../../src/services/firestoreService";
 import { useSleepSounds } from '../../src/hooks/queries/useMusicQueries';

@@ -29,7 +29,7 @@ import { AnimatedView } from '../../../core/ui/AnimatedView';
 import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
-import { DownloadButton } from '../../../components/DownloadButton';
+import { DownloadButton } from '../../../shared/downloads/DownloadButton';
 import { PaywallModal } from '../../../components/PaywallModal';
 import { buildSessionMetaInfo } from '../../../utils/courseCodeParser';
 import type {

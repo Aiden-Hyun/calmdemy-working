@@ -14,7 +14,7 @@ import { ProtectedRoute } from "../../src/core/auth/ProtectedRoute";
 import { AnimatedView } from "../../src/core/ui/AnimatedView";
 import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
 import { SkeletonListItem } from "../../src/core/ui/Skeleton";
-import { DownloadButton } from "../../src/components/DownloadButton";
+import { DownloadButton } from "../../src/shared/downloads/DownloadButton";
 import { useMeditationsByTheme } from "../../src/hooks/queries/useMeditateQueries";
 import { getAudioUrlFromPath } from "../../src/core/audio/audioFiles";
 import { getDownloadedContentIds } from "../../src/services/downloadService";

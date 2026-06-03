@@ -39,7 +39,6 @@ import {
   getTodayQuote,
   getFavoritesWithDetails,
 } from '../../services/firestoreService';
-import { getDownloadedContent } from '../../services/downloadService';
 
 /**
  * Hook for fetching the daily featured quote.
@@ -76,24 +75,5 @@ export function useFavorites() {
     queryFn: () => getFavoritesWithDetails(user!.uid),
     // Guard clause: defer fetching until authenticated
     enabled: !!user?.uid,
-  });
-}
-
-/**
- * Hook for fetching the user's locally downloaded content (device-local state).
- *
- * Unlike the other hooks, this query has no user partition because downloaded
- * content is stored locally on the device — not synced to Firestore. The cache
- * key is global, so all code paths read the same downloaded content state.
- *
- * @returns A React Query result containing the list of downloaded meditations
- */
-export function useDownloadedContent() {
-  return useQuery({
-    queryKey: ['downloadedContent'],
-    // No authentication guard: downloaded content is device-local and doesn't
-    // require user login to access. This allows offline users to still play
-    // previously downloaded meditations.
-    queryFn: getDownloadedContent,
   });
 }

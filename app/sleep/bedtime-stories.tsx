@@ -14,7 +14,7 @@ import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { AnimatedView } from '../../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SkeletonListItem } from '../../src/core/ui/Skeleton';
-import { DownloadButton } from '../../src/components/DownloadButton';
+import { DownloadButton } from '../../src/shared/downloads/DownloadButton';
 import { useBedtimeStories } from '../../src/hooks/queries/useSleepQueries';
 import { getCategoryIcon } from '../../src/features/library';
 import { getAudioUrl } from '../../src/core/audio/audioFiles';

@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { SoundPlayer } from '../../src/components/SoundPlayer';
-import { DownloadButton } from '../../src/components/DownloadButton';
+import { DownloadButton } from '../../src/shared/downloads/DownloadButton';
 import { useAudioPlayer } from '../../src/core/audio/useAudioPlayer';
 import { useTheme } from '../../src/core/theme/ThemeContext';
 import { useAuth } from '../../src/core/auth/AuthContext';
