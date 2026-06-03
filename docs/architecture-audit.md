@@ -841,8 +841,9 @@ settings (a quick single-screen win) then downloads (the bigger lift — service
 | 9 | `onboarding` ✅ | `1b8dd73` | Screen + feature catalogues → data/. manifest enabled: false. |
 | 10 | `meditation` ✅ | `2616fad` | 5 screens + hooks relocated as-is. Template/category/type work deferred. |
 | 11 | `sleep` ✅ | `bc3c211` | 5 screens + useSleepQueries relocated as-is. |
+| 12 | `music` ✅ | `0844012` | 6 screens + SoundPlayer + useMusicQueries(+barrel). src/components/ now empty. |
 
-**12 of 13 → 13 of 13:** appended as each lands.
+**13 of 13:** home next.
 
 ### Phase 6c — completion criteria
 
