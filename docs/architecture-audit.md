@@ -567,7 +567,282 @@ settings (a quick single-screen win) then downloads (the bigger lift — service
 
 **`useHomeQueries.ts` drain progress:** `useDownloadedContent` removed (→ downloads). The file now holds **2** hooks (`useTodayQuote`, `useFavorites`) — both drain in the library/home migrations. Still not deletable.
 
-**Remaining 7 features** (auth, subscription, onboarding, home, meditation, sleep, music) planned in subsequent sessions per the table order.
+**Remaining 7 features** (auth, subscription, onboarding, home, meditation, sleep, music) planned per the table order. Per-feature specs below.
+
+#### Phase 6c — features 7-13 plan (canonical specs for the remaining migrations)
+
+**Status:** 6 of 13 done. **Order matters** because some features unblock others:
+
+1. **auth** — unblocks settings' delete-account TODO and subscription's coupling
+2. **subscription** — depends on auth being in place (so `PaywallModal` can import `AccountPromptModal` via auth's public index)
+3. **onboarding** — uses subscription's paywall internally
+4. **meditation** — applies `AudioListScreen` template to 2 of its list screens
+5. **sleep** — applies `AudioListScreen` template to 2 of its list screens
+6. **music** — applies `AudioListScreen` template to remaining 3 sub-screens, completes `SoundPlayer` move
+7. **home** — last (it consumes data from every other feature)
+
+**Discipline for the continuing session:**
+- One commit per feature for the migration; optional second commit per feature for the doc update (same pattern as the previous 6 sub-sessions)
+- TypeScript at 0 errors after every commit (forcing function)
+- Don't push until all 7 land (or user explicitly says push)
+- Don't drift into Phase 6d (couplings) or 6e (barrel deletion) — those happen after the 13-feature surface is in place
+- Update this doc's Phase 6c table to mark each feature ✅ DONE with commit hashes as you go
+
+---
+
+##### 7. auth (BIG — multiple files, surgical extractions)
+
+**Files in flight:**
+| Current | Target |
+|---|---|
+| `app/login.tsx` (~766 LOC) | `features/auth/screens/LoginScreen.tsx` |
+| `app/account-security.tsx` (~780 LOC) | `features/auth/screens/AccountSecurityScreen.tsx` |
+| `app/index.tsx` bootstrap routing (~50 LOC of the file) | `features/auth/bootstrap/useStartupRoute.ts` (extract as a hook) |
+| `src/components/AccountPromptModal.tsx` | `features/auth/components/AccountPromptModal.tsx` |
+| `src/components/AccountSwitchConfirmModal.tsx` | **DELETE** (consolidate with `AccountSwitchWarning` — see decision below) |
+| `src/components/AccountSwitchWarning.tsx` | `features/auth/components/AccountSwitchWarning.tsx` (the survivor) |
+| `src/components/CredentialCollisionModal.tsx` | `features/auth/components/CredentialCollisionModal.tsx` |
+| Inline Google SVG in `login.tsx` (~16 lines of SVG XML) | `features/auth/assets/googleIcon.ts` (exported XML string) |
+| Delete-account flow inlined in `features/settings/screens/SettingsScreen.tsx` | `features/auth/hooks/useAccountDeletion.ts` (extract; settings imports via auth's public index) |
+
+**Public API (`features/auth/index.ts`):**
+- `LoginScreen` (consumed by `/login` route)
+- `AccountSecurityScreen` (consumed by `/account-security` route)
+- `AccountPromptModal` (consumed by `PaywallModal` in `src/components/` until subscription migrates next)
+- `useAccountDeletion` (consumed by settings)
+- `useStartupRoute` (consumed by `/index` route)
+- `manifest`
+
+**Manifest stub** (confirm with user):
+- `id: 'auth'`, `label: 'Account'`, `icon: 'person-circle-outline'`, `color: '#7DAFB4'`, `route: '/login'` (primary entry), `category: 'account'`, `requiresAuth: false` (it IS the auth flow), `requiresSubscription: false`, `searchKeywords: ['sign in', 'login', 'account', 'apple', 'google', 'email', 'password']`
+
+**Decisions to surface:**
+1. **AccountSwitchConfirmModal vs AccountSwitchWarning** — pick the survivor. `AccountSwitchWarning` is used by `AccountPromptModal` (link flow); `AccountSwitchConfirmModal` is used by `app/login.tsx` (final-confirm in collision handler). Both warn about losing data on account switch. Recommend keeping `AccountSwitchWarning` (the simpler one) and pointing login's call site at it; verify the prop shapes match or adapt.
+2. **`useAccountDeletion` extraction now** — extract it during this migration (settings now consumes via `import { useAccountDeletion } from '../../auth'`). Removes the TODO in settings. Recommended.
+3. **`PaywallModal`'s `AccountPromptModal` import** — `PaywallModal` lives in `src/components/` until subscription migrates next (step 8). Just update its one-line import path from `'./AccountPromptModal'` to `'../features/auth'`. The full coupling break (callback-style) is Phase 6d, not now.
+4. **Google SVG asset shape** — `features/auth/assets/googleIcon.ts` exports the XML string as a named constant (e.g. `export const googleIconSvg = '<svg>...</svg>'`). The screen still uses `SvgXml` from `react-native-svg`. Don't try to convert to a React component — extra work, no payoff in this phase.
+
+**Gotcha:** `app/index.tsx`'s bootstrap currently checks the onboarding `AsyncStorage` flag + auth state and routes to `/onboarding | /(tabs)/home | /login`. Extract this as `useStartupRoute()` returning `{ done: boolean }` or just navigating internally via the router. Keep the imperative `router.replace` + `navigatedRef` guard — important not to break the no-rerender invariant. The route file becomes ~25 LOC.
+
+**Commit cadence suggestion** (auth is big, split it):
+- `Migrate auth modals to features/auth/components/`
+- `Consolidate AccountSwitch modals (keep AccountSwitchWarning)`
+- `Migrate auth screens to features/auth/screens/`
+- `Extract useStartupRoute and thin app/index.tsx`
+- `Extract useAccountDeletion from settings to features/auth/hooks/`
+- `Mark auth complete in audit doc`
+
+---
+
+##### 8. subscription (medium-big — 2 modals + no top-level route)
+
+**Files in flight:**
+| Current | Target |
+|---|---|
+| `src/components/PaywallModal.tsx` (~825 LOC) | `features/subscription/components/PaywallModal.tsx` |
+| `src/components/RecoveryWizard.tsx` (~867 LOC) | `features/subscription/components/RecoveryWizard.tsx` |
+| `PaywallModal` import sites across `app/*` (~12-15 screens) | sed sweep |
+
+**Public API (`features/subscription/index.ts`):**
+- `PaywallModal`
+- `RecoveryWizard`
+- `manifest`
+
+**Manifest stub** (confirm with user):
+- `id: 'subscription'`, `label: 'Premium'`, `icon: 'sparkles-outline'` or `'star-outline'`, `color: '#C4A77D'`, **`route: '/settings'`** (the screen where users manage subscription — feature has no dedicated entry route), `category: 'account'`, `requiresAuth: false`, `requiresSubscription: false` (the feature *is* subscription gating, doesn't gate itself), `searchKeywords: ['premium', 'subscription', 'upgrade', 'paywall', 'restore', 'refund']`
+
+**Decisions to surface:**
+1. **`PaywallModal → AccountPromptModal` coupling** — `PaywallModal` opens `AccountPromptModal` after purchase to prompt anonymous users to link an account. For Phase 6c, **just update the import path** (`from '../features/auth'`). The full callback-style coupling break is **Phase 6d**. Don't do it now.
+2. **`RecoveryWizard → useAuth signIn methods`** — same: keep the existing direct calls, **just update the import path**. Phase 6d inverts via injected callbacks.
+3. **Manifest route** — `/settings` is pragmatic since that's where subscription is managed. Alternative: omit route (manifest contract would need to allow optional route). Recommend `/settings` for now.
+
+**Gotcha:** Subscription state itself lives in `core/subscription/SubscriptionContext.tsx` (moved in Phase 1). That stays in `core/` — only the UI surface (the modals) moves here. The context-feature split is intentional.
+
+**Commit cadence:**
+- `Migrate subscription components to features/subscription/`
+- `Mark subscription complete in audit doc`
+
+---
+
+##### 9. onboarding (large single screen)
+
+**Files in flight:**
+| Current | Target |
+|---|---|
+| `app/onboarding.tsx` (~869 LOC) | `features/onboarding/screens/OnboardingScreen.tsx` |
+| Hardcoded `freeFeatures` + `premiumFeatures` arrays + UI step components inline | `features/onboarding/data/featureCatalogues.ts` |
+| `formatTrial`, `formatPerMonth` utility functions inline | `features/onboarding/utils/pricing.ts` (or keep inline — judgment call) |
+
+**Public API (`features/onboarding/index.ts`):**
+- `OnboardingScreen` (consumed by `/onboarding` route)
+- `manifest`
+
+**Manifest stub:**
+- `id: 'onboarding'`, `label: 'Welcome'`, `icon: 'sparkles-outline'`, `color: '#B4A7C7'`, `route: '/onboarding'`, `category: 'account'`, `requiresAuth: false`, `requiresSubscription: false`, `searchKeywords: ['welcome', 'onboarding', 'tour', 'getting started']`. Onboarding probably doesn't surface in Discover (`enabled: false`) — it runs once on first launch.
+
+**Decisions to surface:**
+1. **`enabled: false` for Discover** — should onboarding show in the Discover tab? Probably not (first-launch-only flow). Recommend `enabled: false`.
+2. **Step components** (`WelcomeStep`, `FeatureListStep`, etc.) — these are file-local helper components. Keep them inline in `OnboardingScreen.tsx` or extract to `features/onboarding/components/`? Recommend keeping inline (they're not reused).
+3. **Feature catalogues to data file** — clean win. Recommended.
+
+**Gotcha:** Onboarding imports `PurchasesPackage` directly from `react-native-purchases` (fixed in the Phase 0a TS pass). That stays unchanged — it's an external type, not a feature dep.
+
+**Commit cadence:**
+- `Migrate onboarding feature to features/onboarding/`
+- `Mark onboarding complete in audit doc`
+
+---
+
+##### 10. meditation (large — 5 routes + hooks + data)
+
+**Files in flight:**
+| Current | Target |
+|---|---|
+| `app/(tabs)/meditate.tsx` (~525 LOC) | `features/meditation/screens/MeditateHomeScreen.tsx` |
+| `app/meditation/[id].tsx` (~191 LOC) | `features/meditation/screens/MeditationPlayerScreen.tsx` |
+| `app/meditations/index.tsx` (~498 LOC) | `features/meditation/screens/AllMeditationsScreen.tsx` (apply `AudioListScreen` template) |
+| `app/meditations/techniques.tsx` (~487 LOC) | `features/meditation/screens/TechniquesScreen.tsx` (apply `AudioListScreen` template) |
+| `app/meditations/therapies.tsx` (~516 LOC) | `features/meditation/screens/TherapiesScreen.tsx` (KEEP custom — it filters courses by code prefix, doesn't fit the audio-list shape) |
+| `src/hooks/useMeditation.ts` | `features/meditation/hooks/useMeditation.ts` |
+| `src/hooks/queries/useMeditateQueries.ts` | `features/meditation/hooks/queries.ts` |
+| `themeCategories` / `therapyCategories` / `techniqueCategories` (duplicated in `meditate.tsx` + `meditations/*.tsx`) | `features/meditation/data/categories.ts` (canonical 6-entry lists; browser screens prepend their own "all" pivot + extras locally — see Chunk 3 deferral notes) |
+
+**Public API (`features/meditation/index.ts`):**
+- `MeditateHomeScreen`, `MeditationPlayerScreen`, `AllMeditationsScreen`, `TechniquesScreen`, `TherapiesScreen`
+- `useMeditation`, `useGuidedMeditations`, `useCourses`, `useMeditationsByTheme`, `useMeditationsByTechnique` (the queries hook re-exports)
+- `manifest`
+
+**Manifest stub:**
+- `id: 'meditation'`, `label: 'Meditate'`, `icon: 'leaf-outline'`, `color: '#8B9F82'`, `route: '/(tabs)/meditate'`, `category: 'library'`, `requiresAuth: true`, `requiresSubscription: false`, `searchKeywords: ['meditation', 'mindfulness', 'cbt', 'act', 'dbt', 'mbct', 'breathing', 'body scan', 'visualization', 'loving kindness', 'grounding']`
+
+**Decisions to surface:**
+1. **Category data reconciliation** — tab version (6 entries, no "all") vs browser version (7-8 entries with "all" + extras like loving-kindness/progressive-relaxation, plus `description` field for techniques). Recommend: canonical 6-entry lists with all fields (`description` included for techniques); browser screens prepend `{ id: 'all', ... }` locally.
+2. **`therapies.tsx` template application** — *don't*. It filters courses by code prefix (CBT/ACT/DBT/MBCT/IFS/Somatic), not the same shape as the audio-list pattern. Move it as a custom screen.
+3. **`getCategoryIcon` deferred from Chunk 3** — meditation has param-taking versions in tab + browser screens. Reconcile and put a single function in `features/meditation/utils/categoryIcons.ts` (NOT `features/library/contentIcons.ts` — those are library-level content-type icons; this is meditation-specific theme icons). Or fold into `data/categories.ts` if the icon is on each category entry already.
+4. **`GuidedMeditation` + `MeditationTechnique` types** (currently in `src/types/index.ts`) — move to `features/meditation/types.ts`.
+
+**Commit cadence (split the screens):**
+- `Migrate meditation hooks + data + types to features/meditation/`
+- `Migrate meditate tab screen and meditation player screen`
+- `Apply AudioListScreen template to meditations browser screens (index + techniques)`
+- `Migrate therapies screen (custom — no template)`
+- `Mark meditation complete in audit doc`
+
+---
+
+##### 11. sleep (large — 5 routes + hooks)
+
+**Files in flight:**
+| Current | Target |
+|---|---|
+| `app/(tabs)/sleep.tsx` (~369 LOC) | `features/sleep/screens/SleepHomeScreen.tsx` |
+| `app/sleep/[id].tsx` (~195 LOC) | `features/sleep/screens/BedtimeStoryPlayerScreen.tsx` |
+| `app/sleep/meditation/[id].tsx` (~174 LOC) | `features/sleep/screens/SleepMeditationPlayerScreen.tsx` |
+| `app/sleep/bedtime-stories.tsx` (~432 LOC) | `features/sleep/screens/BedtimeStoriesScreen.tsx` (apply `AudioListScreen` template) |
+| `app/sleep/sleep-meditations.tsx` (~294 LOC) | `features/sleep/screens/SleepMeditationsScreen.tsx` (apply `AudioListScreen` template) |
+| `src/hooks/queries/useSleepQueries.ts` | `features/sleep/hooks/queries.ts` |
+
+**Public API (`features/sleep/index.ts`):**
+- `SleepHomeScreen`, `BedtimeStoryPlayerScreen`, `SleepMeditationPlayerScreen`, `BedtimeStoriesScreen`, `SleepMeditationsScreen`
+- `useBedtimeStories`, `useSleepMeditations`, `useSeries` (queries re-exports)
+- `manifest`
+
+**Manifest stub:**
+- `id: 'sleep'`, `label: 'Sleep'`, `icon: 'moon-outline'`, `color: '#7B8FA1'`, `route: '/(tabs)/sleep'`, `category: 'library'`, `requiresAuth: true`, `requiresSubscription: false`, `searchKeywords: ['sleep', 'bedtime', 'stories', 'rest', 'night', 'meditation', 'series']`
+
+**Decisions to surface:**
+1. **`BedtimeStory` type + sleep-specific `category` enum** — move from `src/types/index.ts` to `features/sleep/types.ts`.
+2. **`bedtime-stories.tsx` has category filter chips** (rain/water/etc.) — `AudioListScreen` template should support a filter slot, OR the screen renders its own filter header above an `AudioListScreen` instance. Pick one; the template-growth notes in 6b's carry-forward already flag this.
+3. **Category icon function** — same pattern as meditation: move to `features/sleep/utils/categoryIcons.ts` or fold into a categories data file.
+
+**Commit cadence:**
+- `Migrate sleep hooks + types to features/sleep/`
+- `Migrate sleep tab and single-item player screens`
+- `Apply AudioListScreen template to bedtime-stories + sleep-meditations`
+- `Mark sleep complete in audit doc`
+
+---
+
+##### 12. music (large — 4 list screens + `SoundPlayer` + single-item player rewrite)
+
+**Files in flight:**
+| Current | Target |
+|---|---|
+| `app/(tabs)/music.tsx` (~377 LOC) | `features/music/screens/MusicHomeScreen.tsx` |
+| `app/music/[id].tsx` (~458 LOC) | `features/music/screens/SoundPlayerScreen.tsx` (uses the local `SoundPlayer` component) |
+| `app/music/music.tsx` (~238 LOC) | `features/music/screens/MusicListScreen.tsx` (apply `AudioListScreen` template) |
+| `app/music/white-noise.tsx` (~247 LOC) | `features/music/screens/WhiteNoiseListScreen.tsx` (template) |
+| `app/music/nature-sounds.tsx` (~302 LOC) | `features/music/screens/NatureSoundsListScreen.tsx` (template; has category filter like bedtime-stories) |
+| `app/music/asmr.tsx` (25 LOC — already migrated in 6b) | Move the 6b-migrated wrapper's body to `features/music/screens/AsmrListScreen.tsx`; route file becomes a thin wrapper around that |
+| `src/components/SoundPlayer.tsx` | `features/music/components/SoundPlayer.tsx` (per Phase 0b naming decision: `LoopingSoundScreen` — but rename is optional, locked decisions allow either) |
+| `src/hooks/queries/useMusicQueries.ts` | `features/music/hooks/queries.ts` |
+
+**Public API (`features/music/index.ts`):**
+- Screens above
+- Queries re-exports
+- `manifest`
+
+**Manifest stub:**
+- `id: 'music'`, `label: 'Music'`, `icon: 'musical-notes-outline'`, `color: '#A8B4C4'`, `route: '/(tabs)/music'`, `category: 'library'`, `requiresAuth: true`, `requiresSubscription: false`, `searchKeywords: ['music', 'sounds', 'ambient', 'asmr', 'white noise', 'nature', 'rain', 'ocean', 'forest']`
+
+**Decisions to surface:**
+1. **`music/[id].tsx` rewrite** — current screen fetches all 4 sources (sleep sounds, white noise, music, ASMR) and JS-filters to find the item; uses local rating/report flow instead of `usePlayerBehavior`. Audit recommends a `getSoundById` Firestore helper + adopting `usePlayerBehavior`. **Recommendation: move as-is in 6c, defer the rewrite** — adding `getSoundById` is a Phase 3-style data layer change, and `usePlayerBehavior` is the god-hook scheduled for Phase 6d decomposition. Move clean; refactor in 6d.
+2. **`SoundPlayer` rename to `LoopingSoundScreen`** — locked decision. Apply during the move (export rename), or defer to a follow-up commit.
+3. **`asmr.tsx` rewrite** — already migrated in 6b but lives at the route layer. Move the migrated body into `features/music/screens/` so all music screens share a home.
+4. **Music sleep timer** — `music/[id].tsx` uses its own local timer (not the `PlaybackTimerContext`). Per Chunk 1 audit, this is parallel to the shared timer. Leave alone in 6c; Phase 6d's `usePlayerBehavior` decomposition is a good time to unify.
+
+**Commit cadence:**
+- `Migrate music hooks + types to features/music/`
+- `Migrate music tab + single-item player + SoundPlayer component`
+- `Move 6b-migrated asmr screen into features/music/screens/`
+- `Apply AudioListScreen template to music.tsx + white-noise.tsx + nature-sounds.tsx`
+- `Mark music complete in audit doc`
+
+---
+
+##### 13. home (LAST — most cross-feature-coupled)
+
+**Files in flight:**
+| Current | Target |
+|---|---|
+| `app/(tabs)/home.tsx` (~752 LOC after Phase 5's `navigateToContent` extraction) | `features/home/screens/HomeScreen.tsx` |
+| `useTodayQuote` + `useFavorites` in `src/hooks/queries/useHomeQueries.ts` | **`features/library/hooks/queries.ts`** (NOT home — these are content queries; library owns them. Same pattern as `useUserStats`/`useListeningHistory` → progress.) |
+| `src/hooks/queries/useHomeQueries.ts` (will be empty after the drain) | **DELETE** |
+
+**Public API (`features/home/index.ts`):**
+- `HomeScreen` (consumed by `/(tabs)/home` route)
+- `manifest`
+
+**Manifest stub:**
+- `id: 'home'`, `label: 'Home'`, `icon: 'home-outline'`, `color: '#7DAFB4'`, `route: '/(tabs)/home'`, `category: 'library'` (it surfaces library content) or you could argue a custom `'home'` category — recommend `library`, doesn't justify its own bucket, `requiresAuth: true`, `requiresSubscription: false`, `searchKeywords: ['home', 'today', 'recently played', 'favorites', 'quote']`
+
+**Decisions to surface:**
+1. **Where do `useTodayQuote` + `useFavorites` go?** — Library, per audit's §3 inventory mapping (`getTodayQuote` and `getFavoritesWithDetails` already live in `features/library/api/` after Phase 3). Add them to `features/library/hooks/queries.ts` and re-export from `features/library/index.ts`. Home consumes via `import { useTodayQuote, useFavorites } from '../../library'`.
+2. **Once both hooks drain, delete `src/hooks/queries/useHomeQueries.ts`.** Confirm grep returns no other consumers.
+3. **`useEmergencyMeditations` import in home** — still routed through `useMeditateQueries`? Should already be in `features/emergency/api/` per Phase 3. Confirm and update the import if needed.
+4. **Home's `navigateToContent` consumer** — already imports from `features/library/navigation.ts` since Phase 5. Just an import-path verify, no migration work.
+
+**Gotcha:** Home is the most-imported feature on the way down (it composes data from many features) but the *least* importable by others. After this migration, no other feature should ever import from `features/home/`. If you find one, it's a smell — flag it.
+
+**Commit cadence:**
+- `Drain useTodayQuote + useFavorites from useHomeQueries to features/library/hooks/`
+- `Delete empty src/hooks/queries/useHomeQueries.ts`
+- `Migrate home feature to features/home/`
+- `Mark home complete in audit doc + Phase 6c — complete`
+
+---
+
+### Phase 6c — completion criteria
+
+When all 7 above are done, the audit doc should have a "Phase 6c — complete (13 of 13)" sub-section, and:
+
+- `src/components/` should be empty (all 7 holdouts migrated)
+- `src/hooks/` should be empty or near-empty (queries folder gone, `useMeditation` moved)
+- `src/services/` keeps `firestoreService.ts` + `downloadService.ts` (both barrels — deleted in Phase 6e)
+- `src/types/index.ts` keeps only cross-feature discriminators (`SessionType`, `RatingType`, `ReportCategory`, `User`, `UserPreferences`) — these later move to `shared/types/`
+- 7 of 7 new manifests live under `features/<name>/manifest.ts`; Phase 7 wires them into `src/registry.ts`
+
+Push at completion (or earlier if the session is paused part-way).
 
 ### Phase 6d — Cross-feature coupling cleanups (do after 6c so feature owners exist)
 
