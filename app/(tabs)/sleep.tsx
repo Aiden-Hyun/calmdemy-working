@@ -9,7 +9,7 @@ import { AnimatedView } from "../../src/core/ui/AnimatedView";
 import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
 import { ContentCard } from "../../src/shared/cards/ContentCard";
 import { Skeleton } from "../../src/core/ui/Skeleton";
-import { PaywallModal } from "../../src/components/PaywallModal";
+import { PaywallModal } from "../../src/features/subscription";
 import { 
   FirestoreSleepMeditation,
   FirestoreSeries

@@ -15,7 +15,7 @@ import { useAudioUrls } from '../../src/core/audio/useAudioUrlQueries';
 import { getDownloadedContentIds } from "../../src/services/downloadService";
 import { Theme } from "../../src/core/theme";
 import { useSubscription } from "../../src/core/subscription/SubscriptionContext";
-import { PaywallModal } from "../../src/components/PaywallModal";
+import { PaywallModal } from "../../src/features/subscription";
 
 function MusicListScreen() {
   const router = useRouter();

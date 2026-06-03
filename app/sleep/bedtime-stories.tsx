@@ -23,7 +23,7 @@ import { useTheme } from '../../src/core/theme/ThemeContext';
 import { Theme } from '../../src/core/theme';
 import { BedtimeStory } from '../../src/types';
 import { useSubscription } from '../../src/core/subscription/SubscriptionContext';
-import { PaywallModal } from '../../src/components/PaywallModal';
+import { PaywallModal } from '../../src/features/subscription';
 
 const categories = [
   { id: 'all', label: 'All', icon: 'grid-outline' as const },

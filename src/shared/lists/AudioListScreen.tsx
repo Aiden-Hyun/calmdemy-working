@@ -45,7 +45,7 @@ import { Theme } from '../../core/theme';
 import { useSubscription } from '../../core/subscription/SubscriptionContext';
 import { useAudioUrls } from '../../core/audio/useAudioUrlQueries';
 import { DownloadButton } from '../downloads/DownloadButton';
-import { PaywallModal } from '../../components/PaywallModal';
+import { PaywallModal } from '../../features/subscription';
 import { getDownloadedContentIds } from '../../services/downloadService';
 
 /**

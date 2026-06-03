@@ -22,7 +22,7 @@ import { getAudioUrlFromPath } from '../../src/core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../src/services/downloadService';
 import { GuidedMeditation, MeditationTechnique } from '../../src/types';
 import { useSubscription } from '../../src/core/subscription/SubscriptionContext';
-import { PaywallModal } from '../../src/components/PaywallModal';
+import { PaywallModal } from '../../src/features/subscription';
 
 // Technique categories defined as constants (not fetched from Firebase)
 const techniqueCategories: {

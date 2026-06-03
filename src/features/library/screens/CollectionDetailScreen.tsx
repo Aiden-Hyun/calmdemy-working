@@ -30,7 +30,7 @@ import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
 import { DownloadButton } from '../../../shared/downloads/DownloadButton';
-import { PaywallModal } from '../../../components/PaywallModal';
+import { PaywallModal } from '../../subscription';
 import { buildSessionMetaInfo } from '../../../utils/courseCodeParser';
 import type {
   FirestoreAlbum,

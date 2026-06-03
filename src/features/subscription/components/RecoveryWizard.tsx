@@ -14,10 +14,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../core/theme/ThemeContext";
-import { useAuth } from "../core/auth/AuthContext";
-import { useSubscription } from "../core/subscription/SubscriptionContext";
-import { Theme } from "../core/theme";
+import { useTheme } from "../../../core/theme/ThemeContext";
+import { useAuth } from "../../../core/auth/AuthContext";
+import { useSubscription } from "../../../core/subscription/SubscriptionContext";
+import { Theme } from "../../../core/theme";
 
 /**
  * ============================================================

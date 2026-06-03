@@ -18,7 +18,7 @@
 import React from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { TrackPlayerScreen } from '../../../shared/media-player/TrackPlayerScreen';
-import { PaywallModal } from '../../../components/PaywallModal';
+import { PaywallModal } from '../../subscription';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { buildSessionMetaInfo } from '../../../utils/courseCodeParser';
 import { COLLECTION_CONFIGS } from '../data/contentTypes';

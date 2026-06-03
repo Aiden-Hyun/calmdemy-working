@@ -8,7 +8,7 @@ import { AnimatedView } from "../../src/core/ui/AnimatedView";
 import { AnimatedPressable } from "../../src/core/ui/AnimatedPressable";
 import { ContentCard } from "../../src/shared/cards/ContentCard";
 import { Skeleton } from "../../src/core/ui/Skeleton";
-import { PaywallModal } from "../../src/components/PaywallModal";
+import { PaywallModal } from "../../src/features/subscription";
 import { useTheme } from "../../src/core/theme/ThemeContext";
 import { useSubscription } from "../../src/core/subscription/SubscriptionContext";
 import { useSleepSounds, useWhiteNoise, useMusic, useAsmr, useAlbums } from '../../src/hooks/queries/useMusicQueries';

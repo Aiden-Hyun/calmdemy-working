@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AnimatedView } from '../../../core/ui/AnimatedView';
 import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
 import { Skeleton } from '../../../core/ui/Skeleton';
-import { PaywallModal } from '../../../components/PaywallModal';
+import { PaywallModal } from '../../subscription';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';

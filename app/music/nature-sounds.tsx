@@ -15,7 +15,7 @@ import { getAudioUrlFromPath } from "../../src/core/audio/audioFiles";
 import { getDownloadedContentIds } from "../../src/services/downloadService";
 import { Theme } from "../../src/core/theme";
 import { useSubscription } from "../../src/core/subscription/SubscriptionContext";
-import { PaywallModal } from "../../src/components/PaywallModal";
+import { PaywallModal } from "../../src/features/subscription";
 
 type SleepSoundCategory = 'rain' | 'water' | 'fire' | 'wind' | 'nature' | 'ambient';
 
