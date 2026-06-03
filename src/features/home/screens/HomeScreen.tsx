@@ -4,30 +4,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../../src/core/auth/AuthContext';
-import { useTheme } from '../../src/core/theme/ThemeContext';
-import { useSubscription } from '../../src/core/subscription/SubscriptionContext';
-import { ProtectedRoute } from '../../src/core/auth/ProtectedRoute';
-import { useTodayQuote, useFavorites } from '../../src/hooks/queries/useHomeQueries';
-import { useEmergencyMeditations } from '../../src/features/meditation';
+import { useAuth } from '../../../core/auth/AuthContext';
+import { useTheme } from '../../../core/theme/ThemeContext';
+import { useSubscription } from '../../../core/subscription/SubscriptionContext';
+import { useTodayQuote, useFavorites } from '../../library';
+import { useEmergencyMeditations } from '../../meditation';
 import { useQueryClient } from '@tanstack/react-query';
-import { AnimatedView } from '../../src/core/ui/AnimatedView';
-import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
-import { ContentCard } from '../../src/shared/cards/ContentCard';
-import { Skeleton } from '../../src/core/ui/Skeleton';
-import { PaywallModal } from '../../src/features/subscription';
-import { useStats, useListeningHistory } from '../../src/features/progress';
-import { parseSessionCode } from '../../src/utils/courseCodeParser';
+import { AnimatedView } from '../../../core/ui/AnimatedView';
+import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
+import { ContentCard } from '../../../shared/cards/ContentCard';
+import { Skeleton } from '../../../core/ui/Skeleton';
+import { PaywallModal } from '../../subscription';
+import { useStats, useListeningHistory } from '../../progress';
+import { parseSessionCode } from '../../../utils/courseCodeParser';
 import {
   ResolvedContent,
   FirestoreEmergencyMeditation,
-} from '../../src/services/firestoreService';
-import { navigateToContent as libNavigateToContent } from '../../src/features/library';
-import { Theme } from '../../src/core/theme';
-import { ListeningHistoryItem } from '../../src/types';
-import { generateGuestNickname } from '../../src/utils/guestNickname';
+} from '../../../services/firestoreService';
+import { navigateToContent as libNavigateToContent } from '../../library';
+import { Theme } from '../../../core/theme';
+import { ListeningHistoryItem } from '../../../types';
+import { generateGuestNickname } from '../../../utils/guestNickname';
 
-function HomeScreen() {
+export function HomeScreen() {
   const { user, isAnonymous } = useAuth();
   const { theme, isDark } = useTheme();
   const router = useRouter();
@@ -743,10 +742,3 @@ const createStyles = (theme: Theme, isDark: boolean) =>
   },
 });
 
-export default function Home() {
-  return (
-    <ProtectedRoute>
-      <HomeScreen />
-    </ProtectedRoute>
-  );
-}

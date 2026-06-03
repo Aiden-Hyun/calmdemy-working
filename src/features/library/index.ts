@@ -23,3 +23,4 @@ export { CollectionItemPlayerScreen } from './screens/CollectionItemPlayerScreen
 export { navigateToContent } from './navigation';
 export type { NavigateToContentContext } from './navigation';
 export { getCategoryIcon } from './contentIcons';
+export { useTodayQuote, useFavorites } from './hooks/queries';
