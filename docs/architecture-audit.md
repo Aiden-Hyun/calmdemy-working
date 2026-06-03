@@ -479,7 +479,7 @@ Each feature follows the breathing template (Phase 2). Per-feature work:
 | 6 | `downloads` ✅ DONE | `app/downloads/{index,player}.tsx` | ✅ `e2eb515`. Screens → `DownloadsScreen`/`OfflinePlayerScreen` (routes 13/17 LOC). `downloadService` → `features/downloads/api/` **+ barrel kept at `src/services/downloadService.ts`** (shared/core consumers). `DownloadButton` → **`shared/downloads/`** (not the feature — consumed by `shared/lists/AudioListScreen`); 10 import sites swept. `useDownloadedContent` → `features/downloads/hooks/queries.ts`. requiresAuth false. |
 | 7 | `auth` ✅ DONE | `app/login.tsx`, `app/account-security.tsx` | ✅ `31c5b13`. 2 screens + 4 modals → `features/auth/`; Google SVG → `assets/googleIcon.ts`; bootstrap → `bootstrap/useStartupRoute.ts`; delete-account → `hooks/useAccountDeletion.ts` (settings consumes it). PaywallModal import path updated. **AccountSwitch consolidation deferred to 6d** (props differ — not a swap; both moved as-is). |
 | 8 | `subscription` ✅ DONE | (no routes; modal-based) | ✅ `acd4037`. `PaywallModal` + `RecoveryWizard` → `features/subscription/components/`; 15 import sites swept. Couplings path-updated only (6d inverts). **Documented shared→feature edge**: `shared/lists/AudioListScreen` → `features/subscription` (PaywallModal can't go to shared/ — depends on auth). State stays in `core/subscription/`. |
-| 9 | `onboarding` | `app/onboarding.tsx` (869 LOC) | Hardcoded free/premium feature catalogues → `data/`; `@calmdemy_onboarding` AsyncStorage key already centralised in `core/storage/keys`. |
+| 9 | `onboarding` ✅ DONE | `app/onboarding.tsx` (869 LOC) | ✅ `1b8dd73`. Screen → `features/onboarding/screens/`; route 10 LOC. `freeFeatures`/`premiumFeatures`/`FeatureItem` → `data/featureCatalogues.ts`. Step components + pricing utils kept inline. manifest `enabled: false`. |
 | 10 | `home` | `app/(tabs)/home.tsx` (752 LOC after Phase 5) | Most cross-feature-coupled screen. Composes from many features via the registry-style pattern. `generateGuestNickname` already in `src/utils/`. |
 | 11 | `meditation` | `app/(tabs)/meditate.tsx`, `app/meditation/[id].tsx`, `app/meditations/{index,techniques,therapies}.tsx` | Themecategories/therapyCategories/techniqueCategories arrays — Chunk 3 deferred dedupe here. Use the 6b list-screen template for index/techniques/therapies. `useMeditation` and `useMeditateQueries` move here. |
 | 12 | `sleep` | `app/(tabs)/sleep.tsx`, `app/sleep/[id].tsx`, `app/sleep/meditation/[id].tsx`, `app/sleep/bedtime-stories.tsx`, `app/sleep/sleep-meditations.tsx` | The remaining inline `getCategoryIcon` (sleep-meditation detail) consolidates with `library/contentIcons`. Use the 6b list-screen template. `useSleepQueries` moves here. |
@@ -838,8 +838,9 @@ settings (a quick single-screen win) then downloads (the bigger lift — service
 |---|---|---|---|
 | 7 | `auth` ✅ | `31c5b13` | 2 screens + 4 modals + googleIcon asset + useStartupRoute + useAccountDeletion. AccountSwitch consolidation → 6d (props differ). Done as one commit (tight coupling). |
 | 8 | `subscription` ✅ | `acd4037` | PaywallModal + RecoveryWizard + 15-site sweep. Couplings path-only (6d inverts). Documented shared→feature edge from AudioListScreen (PaywallModal can't go to shared/). |
+| 9 | `onboarding` ✅ | `1b8dd73` | Screen + feature catalogues → data/. manifest enabled: false. |
 
-**9 of 13 → 13 of 13:** appended as each lands.
+**10 of 13 → 13 of 13:** appended as each lands.
 
 ### Phase 6c — completion criteria
 
