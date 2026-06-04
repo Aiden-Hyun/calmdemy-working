@@ -919,6 +919,19 @@ Goal: break the subscription→auth direct imports and clean up the smallest 6d 
 
 Commit cadence: 4 commits (one per item). TS clean after each.
 
+###### 6d-1 — complete
+
+Done in one session, smallest-risk-first (item 4 → 3 → 1; item 2 was a no-op). `tsc --noEmit` clean after every commit. Locked decisions recorded inline below.
+
+| Item | Status | Commit | Resolution as built |
+|---|---|---|---|
+| `OfflineNavigator` route constants (item 4) | ✅ DONE | `62ec2cf` | New `core/nav/routes.ts` registry mirroring `core/storage/keys.ts`. `ROUTE_DOWNLOADS`/`ROUTE_HOME` as per-identifier `as const` literals (locked decision 5) — usable both as expo-router `Href` and in `===` pathname checks. The `/downloads/` sub-route prefix derives from `ROUTE_DOWNLOADS` via template literal (one source of truth). |
+| `AccountSwitch` consolidation (item 3) | ✅ DONE | `da6c25b` | Kept `AccountSwitchWarning` (2 of 3 call sites already used it → fewest edits — locked decision 3), `git rm`'d `AccountSwitchConfirmModal`. Warning gains optional `email?`/`providerType?`: when present (LoginScreen credential-collision flow) it renders the personalized "Sign in to {account}?" copy + subscription-won't-transfer caveat; when omitted (AccountPromptModal, AccountSecurityScreen) it keeps the generic data-loss warning. Only LoginScreen needed editing (`onConfirm/onCancel` → `onConfirmSwitch/onClose`). Behavior note: the survivor auto-closes after `onConfirmSwitch` resolves, so a *failed* switch now returns to the collision modal instead of leaving the dialog open — edge-case-only; success paths unchanged. |
+| `RecoveryWizard → auth signIn` (item 2) | ✅ NO-OP | — | **The flagged coupling never existed.** `RecoveryWizard` imports `useAuth` from `core/auth/AuthContext`, not `features/auth` — verified: its only non-library imports are `core/theme`, `core/auth`, `core/subscription`. Consuming core hooks is allowed under `features → shared → core`. The 6d-1 row above (and the original 6d table) framed this as a subscription→auth back-edge to invert; that was **overcautious** — it conflated `core/auth` (the context) with `features/auth` (the feature). No code change made (locked decision 2). Open-decision 2 (callback injection shape) is therefore moot. |
+| `PaywallModal → AccountPromptModal` (item 1) | ✅ DONE | `685850b` | Callback inversion (locked decision 1, void shape — open-decision 1): `PaywallModal` drops the `features/auth` import + `showAccountPrompt` state + render, and instead fires an optional `onAccountLinkPrompt?: () => void` after an anonymous purchase. Subscription no longer depends on auth. All 15 PaywallModal render sites wired: each of 14 host feature screens owns its own `AccountPromptModal` (3-part pattern: state + callback + sibling modal). `shared/lists/AudioListScreen` can't import auth (shared ⊅ features), so it threads the callback through to PaywallModal; `AsmrListScreen` (its sole consumer) owns the modal. 17 files, +153/−35. |
+
+**Net coupling result:** subscription→auth direct imports eliminated (item 1); the RecoveryWizard "coupling" was a false flag (item 2); auth's two near-duplicate switch modals collapsed to one (item 3); `core/nav` route literals centralized (item 4). The documented shared→feature edge (`AudioListScreen → features/subscription` for PaywallModal) **persists by design** — PaywallModal depends on core/auth and core/subscription, so it can't move to `shared/`; the inversion just makes the auth-prompt decision the host screen's, not PaywallModal's.
+
 ##### 6d-2 — Ambient-sound + player-timer couplings (medium)
 
 Goal: eliminate the two shared→feature back-edges around audio. ~1 session.
