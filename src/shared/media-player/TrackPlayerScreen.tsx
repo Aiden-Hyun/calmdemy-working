@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -21,14 +21,13 @@ import { useTheme } from '../../core/theme/ThemeContext';
 import { usePlaybackTimer, formatTimerDisplay } from './PlaybackTimerContext';
 import { Theme } from '../../core/theme';
 import { useAudioPlayer } from '../../core/audio/useAudioPlayer';
-import { savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../../services/firestoreService';
-import { useAuth } from '../../core/auth/AuthContext';
 import { useNetwork } from '../../core/network/NetworkContext';
 import { useAutoPlay } from './hooks/useAutoPlay';
 import { useBackgroundSoundController } from './hooks/useBackgroundSoundController';
 import { useSleepTimerFade } from './hooks/useSleepTimerFade';
 import { useNarratorPhoto } from './hooks/useNarratorPhoto';
 import { useTrackDownload } from './hooks/useTrackDownload';
+import { usePlaybackProgressSync } from './hooks/usePlaybackProgressSync';
 
 /**
  * ============================================================
@@ -36,49 +35,31 @@ import { useTrackDownload } from './hooks/useTrackDownload';
  * ============================================================
  *
  * Architectural Role:
- *   A comprehensive media player screen that orchestrates audio playback,
- *   background sound selection, sleep timer scheduling, and progress tracking.
- *   This is a complex Compound Component and State Machine:
+ *   A comprehensive media player screen that composes audio playback, background
+ *   sound selection, sleep timer scheduling, downloads, and progress tracking.
+ *   As of Phase 6d-3 the non-view orchestration lives in dedicated hooks under
+ *   ./hooks/; this file is the presentational shell that calls them and renders
+ *   the UI:
  *   - Compound Component: Composes AudioControls, BackgroundAudioPicker, SleepTimerPicker,
  *     and ReportModal as child modals controlled by parent state.
- *   - State Machine: Manages multiple independent concerns (playback, background audio,
- *     sleep timer, downloads, progress tracking), each with their own state and lifecycle.
- *   - Facade Pattern: Abstracts the complexity of audio player setup (managing useAudioPlayer,
- *     useBackgroundAudio hooks, Firestore progress saves, download management).
+ *   - Orchestration hooks: useAutoPlay, useNarratorPhoto, useTrackDownload,
+ *     useBackgroundSoundController, useSleepTimerFade, usePlaybackProgressSync —
+ *     each owns one concern's state/effects; the screen just wires them together.
  *
  * Design Patterns:
- *   - Repository Pattern: All Firestore operations (progress tracking, saving/loading)
- *     are abstracted behind firestoreService functions. The component never directly
- *     queries Firestore; it calls service functions.
- *   - Observer Pattern: Multiple listeners in useEffect hooks:
- *     1. Audio player state (isPlaying, progress, duration)
- *     2. Background audio state (isEnabled, selectedSoundId)
- *     3. Sleep timer state (isActive, isFadingOut)
- *     4. Window dimensions (for responsive sizing)
- *   - Auto-Play State Machine: Tracks whether auto-play was already triggered
- *     (hasTriggeredAutoPlay ref) to prevent double-firing when progress updates.
- *   - Playback Progress Tracking: Uses debouncing (saves every 10 seconds or on pause)
- *     and cleanup (clears progress on completion) for efficient Firestore operations.
  *   - Responsive Design: Adjusts artwork size, font sizes, and padding based on
  *     screen width breakpoints (small, medium, large).
+ *   - The remaining local state is purely view-level: child-modal visibility and
+ *     window-dimension breakpoints. All async/lifecycle logic moved into ./hooks/.
  *
  * Key Dependencies:
- *   - useAudioPlayer() hook: Audio playback state and controls (from underlying audio engine)
- *   - useBackgroundAudio() hook: Background sleep sound management
- *   - usePlaybackTimer() hook: Sleep timer state and fade-out scheduling
- *   - useAuth() hook: Current user ID for progress tracking
- *   - useNetwork() hook: Offline detection (disables download feature)
- *   - FirestoreService: Progress saving/loading, narrator/sound metadata fetching
- *   - DownloadService: Download status checks and audio downloads
+ *   - useAudioPlayer() hook (from the consuming screen): playback state/controls
+ *   - usePlaybackTimer() hook: sleep timer state + fade-out scheduling (for UI)
+ *   - useNetwork() hook: offline detection (disables the download button)
+ *   - ./hooks/*: the six orchestration hooks listed above
  *
  * Consumed By:
  *   Any screen that wants to play audio (meditations, courses, sleep stories, etc.)
- *
- * Note on Lifecycle Management:
- *   The component manages multiple async operations (fetching narrator photo, loading
- *   saved sounds, restoring playback position) using refs to track completion (hasRestoredPosition,
- *   lastSaveTime). This prevents duplicate operations and race conditions when content
- *   ID changes during playback (e.g., skipping to next track).
  * ============================================================
  */
 
@@ -202,7 +183,6 @@ export function TrackPlayerScreen({
 }: TrackPlayerScreenProps) {
   // --- Theme and Layout Setup ---
   const { theme, isDark } = useTheme();
-  const { user } = useAuth();
   const { isOffline } = useNetwork();
   const { width: screenWidth } = useWindowDimensions();
 
@@ -266,11 +246,6 @@ export function TrackPlayerScreen({
   // backgroundAudio is available); this reference is for the header/indicator UI.
   const sleepTimer = usePlaybackTimer();
 
-  // --- Playback Progress Tracking State ---
-  // Refs (not state) because these are implementation details that don't trigger re-renders
-  const lastSaveTime = useRef(0); // Timestamp of last Firestore save (for debouncing)
-  const hasRestoredPosition = useRef(false); // Flag to prevent restoring position multiple times
-
   // --- Background Sound Controller ---
   // Owns the independent ambient-sound engine, the selectable sound list, the
   // selected sound's metadata, and the load/auto-play/cleanup effects + the
@@ -289,122 +264,10 @@ export function TrackPlayerScreen({
   // (mirror volume, pause both players when the fade completes).
   useSleepTimerFade({ audioPlayer, backgroundAudio, sleepTimer });
 
-  /**
-   * --- LIFECYCLE EFFECT 11: Restore Playback Position on Mount ---
-   * When content loads, fetch the saved playback position from Firestore
-   * and seek to it. This allows users to resume where they left off.
-   *
-   * Guards against duplicate restoration (hasRestoredPosition ref)
-   * and autoplay-triggered navigation (skipRestore prop).
-   * Also waits for audio to load (audioPlayer.duration > 0) before seeking.
-   *
-   * Only restores if position > 5 seconds (don't restore for nearly-finished content).
-   */
-  useEffect(() => {
-    async function restorePosition() {
-      if (!user?.uid || !contentId || hasRestoredPosition.current) return;
-
-      // Skip restoring if this is an autoplay navigation (user is skipping to next track)
-      if (skipRestore) {
-        hasRestoredPosition.current = true;
-        return;
-      }
-
-      const progress = await getPlaybackProgress(user.uid, contentId);
-      if (progress && progress.position_seconds > 5) {
-        // Wait for audio to be ready before seeking (Polling pattern)
-        const checkAndSeek = () => {
-          if (audioPlayer.duration > 0) {
-            // Audio is ready, seek to saved position
-            audioPlayer.seekTo(progress.position_seconds);
-            hasRestoredPosition.current = true;
-          } else {
-            // Retry after a short delay if audio not ready (retry pattern)
-            setTimeout(checkAndSeek, 100);
-          }
-        };
-        checkAndSeek();
-      } else {
-        hasRestoredPosition.current = true;
-      }
-    }
-    restorePosition();
-  }, [user?.uid, contentId, audioPlayer.duration, skipRestore]);
-
-  /**
-   * --- LIFECYCLE EFFECT 12: Reset Progress Tracking Refs ---
-   * When content changes (contentId changes), reset the progress tracking flags.
-   * This ensures the next content starts fresh (no position restoration bug, no stale saves).
-   */
-  useEffect(() => {
-    hasRestoredPosition.current = false;
-    lastSaveTime.current = 0;
-  }, [contentId]);
-
-  /**
-   * --- LIFECYCLE EFFECT 13: Save Playback Progress (Debounced) ---
-   * Periodically saves the current playback position to Firestore so the user
-   * can resume later. This implements a debouncing strategy to avoid excessive
-   * Firestore writes:
-   *   - Save on pause: Immediately capture the user's pause point
-   *   - Save every 10 seconds: During playback, save at most every 10 seconds
-   *
-   * Only saves if position > 5 seconds (skip brief positions).
-   * Uses lastSaveTime ref to track when the last save occurred.
-   */
-  useEffect(() => {
-    if (!user?.uid || !contentId || !contentType) return;
-    if (audioPlayer.position < 5 || audioPlayer.duration === 0) return;
-
-    const now = Date.now();
-    const shouldSave =
-      (!audioPlayer.isPlaying && audioPlayer.position > 5) || // Save on pause
-      (now - lastSaveTime.current >= 10000); // Save every 10 seconds
-
-    if (shouldSave) {
-      lastSaveTime.current = now;
-      savePlaybackProgress(
-        user.uid,
-        contentId,
-        contentType,
-        audioPlayer.position,
-        audioPlayer.duration
-      );
-    }
-  }, [user?.uid, contentId, contentType, audioPlayer.position, audioPlayer.isPlaying, audioPlayer.duration]);
-
-  /**
-   * --- LIFECYCLE EFFECT 14: Clear Progress on Completion ---
-   * When the user completes audio (progress >= 95%), delete the saved
-   * progress from Firestore. This prevents the app from trying to resume
-   * at the end of completed content on next playback.
-   */
-  useEffect(() => {
-    if (!user?.uid || !contentId) return;
-    if (audioPlayer.progress >= 0.95 && audioPlayer.duration > 0) {
-      clearPlaybackProgress(user.uid, contentId);
-    }
-  }, [user?.uid, contentId, audioPlayer.progress, audioPlayer.duration]);
-
-  /**
-   * --- LIFECYCLE EFFECT 15: Save Position on Unmount (Cleanup) ---
-   * When the component unmounts (user navigates away), save the current position.
-   * This ensures that even if the user doesn't pause, we capture their progress.
-   * Only saves if position > 5 seconds (skip brief positions).
-   */
-  useEffect(() => {
-    return () => {
-      if (user?.uid && contentId && contentType && audioPlayer.position > 5 && audioPlayer.duration > 0) {
-        savePlaybackProgress(
-          user.uid,
-          contentId,
-          contentType,
-          audioPlayer.position,
-          audioPlayer.duration
-        );
-      }
-    };
-  }, [user?.uid, contentId, contentType, audioPlayer.position, audioPlayer.duration]);
+  // --- Playback Progress Sync ---
+  // Restore on mount, debounce-save during playback, clear on completion, and
+  // save on unmount — all Firestore position bookkeeping for resume support.
+  usePlaybackProgressSync({ contentId, contentType, audioPlayer, skipRestore });
 
   /**
    * --- Render Phase: Loading State ---
