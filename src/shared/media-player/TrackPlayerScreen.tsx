@@ -21,13 +21,11 @@ import { useTheme } from '../../core/theme/ThemeContext';
 import { usePlaybackTimer, formatTimerDisplay } from './PlaybackTimerContext';
 import { Theme } from '../../core/theme';
 import { useAudioPlayer } from '../../core/audio/useAudioPlayer';
-import { useBackgroundAudio } from '../../core/audio/useBackgroundAudio';
-import { getAudioUrlFromPath } from '../../core/audio/audioFiles';
-import { getSleepSoundById, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../../services/firestoreService';
+import { savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../../services/firestoreService';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useNetwork } from '../../core/network/NetworkContext';
-import { useSleepSounds } from '../../features/music';
 import { useAutoPlay } from './hooks/useAutoPlay';
+import { useBackgroundSoundController } from './hooks/useBackgroundSoundController';
 import { useNarratorPhoto } from './hooks/useNarratorPhoto';
 import { useTrackDownload } from './hooks/useTrackDownload';
 
@@ -227,10 +225,6 @@ export function TrackPlayerScreen({
   const [showSleepTimerPicker, setShowSleepTimerPicker] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
 
-  // --- Background Sound State ---
-  // Caches the current background sound's Firestore data (title, icon, color, etc.)
-  const [currentBackgroundSound, setCurrentBackgroundSound] = useState<FirestoreSleepSound | null>(null);
-
   // --- Narrator Photo ---
   // Resolves the instructor's photo URL (fetched from Firestore if not provided).
   const narratorPhotoUrl = useNarratorPhoto(instructor, instructorPhotoUrl);
@@ -276,81 +270,18 @@ export function TrackPlayerScreen({
   const lastSaveTime = useRef(0); // Timestamp of last Firestore save (for debouncing)
   const hasRestoredPosition = useRef(false); // Flag to prevent restoring position multiple times
 
-  // --- Background Audio Hook ---
-  // Manages independent background sleep sound playback (runs alongside main audio)
-  const backgroundAudio = useBackgroundAudio();
-
-  // --- Ambient Sound List ---
-  // Fetched here (the screen that composes BackgroundAudioPicker) and passed
-  // down as a prop, so the picker stays presentational and shared/ keeps its
-  // feature dependency at the public-API boundary (features/music index).
-  const { data: ambientSounds = [], isLoading: ambientSoundsLoading } = useSleepSounds();
-
-  /**
-   * --- LIFECYCLE EFFECT 4: Fetch Background Sound Metadata ---
-   * When user selects a background sound (selectedSoundId changes),
-   * fetch its metadata (title, icon, color, etc.) from Firestore
-   * so we can display it in the UI (e.g., "Rainy" indicator above player).
-   */
-  useEffect(() => {
-    async function fetchCurrentSound() {
-      if (backgroundAudio.selectedSoundId) {
-        const sound = await getSleepSoundById(backgroundAudio.selectedSoundId);
-        setCurrentBackgroundSound(sound);
-      } else {
-        setCurrentBackgroundSound(null);
-      }
-    }
-    fetchCurrentSound();
-  }, [backgroundAudio.selectedSoundId]);
-
-  /**
-   * --- LIFECYCLE EFFECT 5: Load Background Sound Audio ---
-   * When the background audio hook initializes and a sound is selected,
-   * fetch its audio URL from the local/remote file system and load it
-   * into the audio engine. This prepares it for playback.
-   */
-  useEffect(() => {
-    async function loadSavedSoundAudio() {
-      if (enableBackgroundAudio && backgroundAudio.isInitialized && backgroundAudio.selectedSoundId) {
-        const sound = await getSleepSoundById(backgroundAudio.selectedSoundId);
-        if (sound) {
-          const url = await getAudioUrlFromPath(sound.audioPath);
-          if (url) {
-            backgroundAudio.loadAudio(url, backgroundAudio.selectedSoundId);
-          }
-        }
-      }
-    }
-    loadSavedSoundAudio();
-  }, [backgroundAudio.isInitialized, backgroundAudio.selectedSoundId, enableBackgroundAudio]);
-
-  /**
-   * --- LIFECYCLE EFFECT 6: Auto-Play Background Audio ---
-   * When background audio is loaded and user has enabled it,
-   * automatically start playback. This runs independently of main audio
-   * playback (background audio can play while main audio is paused, or vice versa).
-   */
-  useEffect(() => {
-    if (!enableBackgroundAudio) return;
-
-    // Play background audio automatically when it's loaded and enabled
-    // This runs independently of the main content audio (Observer pattern)
-    if (backgroundAudio.isEnabled && backgroundAudio.selectedSoundId && backgroundAudio.hasAudioLoaded) {
-      backgroundAudio.play();
-    }
-  }, [backgroundAudio.isEnabled, backgroundAudio.hasAudioLoaded, backgroundAudio.selectedSoundId, enableBackgroundAudio]);
-
-  /**
-   * --- LIFECYCLE EFFECT 7: Cleanup Background Audio on Unmount ---
-   * Release the background audio resource when the component unmounts.
-   * Prevents memory leaks and ensures clean shutdown of audio playback.
-   */
-  useEffect(() => {
-    return () => {
-      backgroundAudio.cleanup();
-    };
-  }, []);
+  // --- Background Sound Controller ---
+  // Owns the independent ambient-sound engine, the selectable sound list, the
+  // selected sound's metadata, and the load/auto-play/cleanup effects + the
+  // selection handler. Also localizes the player's one feature dependency
+  // (useSleepSounds, via features/music's public API).
+  const {
+    backgroundAudio,
+    currentBackgroundSound,
+    ambientSounds,
+    ambientSoundsLoading,
+    handleSelectSound,
+  } = useBackgroundSoundController({ enableBackgroundAudio, audioPlayer });
 
   /**
    * --- LIFECYCLE EFFECT 8a: Apply the sleep timer's published fade volume ---
@@ -500,34 +431,6 @@ export function TrackPlayerScreen({
       }
     };
   }, [user?.uid, contentId, contentType, audioPlayer.position, audioPlayer.duration]);
-
-  /**
-   * Handles background sound selection from the BackgroundAudioPicker modal.
-   * Updates the background audio state and loads the audio URL.
-   * If main audio is currently playing, automatically start background audio too.
-   *
-   * This implements the Facade pattern: abstracts the multi-step process of
-   * selecting, loading, and playing a background sound.
-   */
-  const handleSelectSound = async (soundId: string | null, audioPath: string | null) => {
-    if (soundId && audioPath) {
-      // Select the sound and load its audio
-      backgroundAudio.selectSound(soundId);
-      const url = await getAudioUrlFromPath(audioPath);
-      if (url) {
-        backgroundAudio.loadAudio(url, soundId);
-        // Convenience UX: if main audio is already playing, start background audio too
-        if (audioPlayer.isPlaying) {
-          setTimeout(() => {
-            backgroundAudio.play();
-          }, 200);
-        }
-      }
-    } else {
-      // Deselect sound (user tapped "Off" button)
-      backgroundAudio.selectSound(null);
-    }
-  };
 
   /**
    * --- Render Phase: Loading State ---
