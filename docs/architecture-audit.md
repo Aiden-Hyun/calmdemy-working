@@ -947,6 +947,17 @@ Goal: eliminate the two shared→feature back-edges around audio. ~1 session.
 
 Commit cadence: 2-3 commits.
 
+###### 6d-2 — complete
+
+Both shared→feature audio back-edges eliminated in 3 code commits. `tsc --noEmit` clean after every commit. Locked decisions recorded inline below.
+
+| Item | Status | Commit | Resolution as built |
+|---|---|---|---|
+| `BackgroundAudioPicker → useSleepSounds` (item 1) | ✅ DONE | `3f0c037` + `166b3f5` | Decision (a), prop injection: the picker drops `useSleepSounds` + the `src/hooks/queries/useMusicQueries.ts` barrel import and instead takes `sounds: FirestoreSleepSound[]` + `soundsLoading: boolean` props — now purely presentational. `TrackPlayerScreen` (the sole composer) owns the `useSleepSounds()` fetch and threads both props in. Barrel `git rm`'d; `src/hooks/queries/` and `src/hooks/` emptied off disk. The `FirestoreSleepSound` *type* import from the service barrel stays (6e-neutral). Net: picker no longer reaches into music; the remaining `TrackPlayerScreen → features/music` edge is a host-screen import through music's public `index.ts` — **persists by design** per the 6d-1 pattern (shared can't own the fetch; the composer declares what it offers). |
+| `PlaybackTimerContext → registerAudioPlayer` side-channel (item 2) | ✅ DONE | `a5b7357` | Decision 2A, publish-and-observe: removed `registerAudioPlayer`/`unregisterAudioPlayer` from the context surface, deleted `audioPlayerRef` + `originalVolumeRef`. The context now publishes `fadeVolume` (1 normally; ramps 1→0 over the 10s/100-step fade) and **never touches the player**. `TrackPlayerScreen` observes it: effect 8a mirrors `fadeVolume` onto `player.volume`, effect 8b pauses + finalizes via the existing `cancelTimer()` when `fadeVolume===0`. Race-free because `performFadeOut` *holds* the terminal state (isFadingOut true, fadeVolume 0) until the observer finalizes, rather than self-resetting. Behavior preserved — no user-facing main-volume control existed, so mirroring `: 1` when not fading is a no-op. Net −28 LOC in the context. |
+
+**Net coupling result:** both audio shared→feature back-edges are gone at the leaf level — `BackgroundAudioPicker` and `PlaybackTimerContext` are now feature-agnostic (a presentational picker and a state-publishing timer). The one surviving edge (`TrackPlayerScreen → features/music`) sits at the composing host screen and flows through music's public `index.ts`, mirroring the 6d-1 PaywallModal resolution. Open-decision 2 (rename `PlaybackTimerContext`) deferred as optional polish — the published surface is now `isActive`, `remainingSeconds`, `selectedDuration`, `isFadingOut`, `fadeVolume`, `startTimer`, `cancelTimer`, `extendTimer`.
+
 ##### 6d-3 — Player + MediaPlayer decomposition (the big architectural lift)
 
 Goal: decompose the two god-shapes that block clean per-feature ownership of playback concerns. ~2 sessions.
