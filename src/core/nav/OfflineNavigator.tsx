@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useRouter, usePathname, useRootNavigationState } from 'expo-router';
 import { useNetwork } from '../network/NetworkContext';
+import { ROUTE_DOWNLOADS, ROUTE_HOME } from './routes';
 
 interface OfflineNavigatorProps {
   children: React.ReactNode;
@@ -39,7 +40,7 @@ export function OfflineNavigator({ children }: OfflineNavigatorProps) {
   const rootNavigationState = useRootNavigationState();
   const { isOffline, isLoading } = useNetwork();
   const previousPathRef = useRef<string | null>(null);
-  const isOnDownloadsPage = pathname === '/downloads' || pathname.startsWith('/downloads/');
+  const isOnDownloadsPage = pathname === ROUTE_DOWNLOADS || pathname.startsWith(`${ROUTE_DOWNLOADS}/`);
   const hasNavigatedToOffline = useRef(false);
 
   // --- Navigation Ready Check ---
@@ -61,7 +62,7 @@ export function OfflineNavigator({ children }: OfflineNavigatorProps) {
     if (isOffline && !isOnDownloadsPage) {
       previousPathRef.current = pathname;
       hasNavigatedToOffline.current = true;
-      router.replace('/downloads');
+      router.replace(ROUTE_DOWNLOADS);
     }
     // --- Connection Restored ---
     // We regained connectivity, we previously navigated due to offline,
@@ -70,10 +71,10 @@ export function OfflineNavigator({ children }: OfflineNavigatorProps) {
     // default to the home tab.
     else if (!isOffline && hasNavigatedToOffline.current && isOnDownloadsPage) {
       hasNavigatedToOffline.current = false;
-      if (previousPathRef.current && previousPathRef.current !== '/downloads') {
+      if (previousPathRef.current && previousPathRef.current !== ROUTE_DOWNLOADS) {
         router.replace(previousPathRef.current as any);
       } else {
-        router.replace('/(tabs)/home');
+        router.replace(ROUTE_HOME);
       }
       previousPathRef.current = null;
     }
