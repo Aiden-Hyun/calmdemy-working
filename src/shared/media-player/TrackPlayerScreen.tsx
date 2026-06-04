@@ -257,6 +257,8 @@ export function TrackPlayerScreen({
   // --- Sleep Timer Integration ---
   // Delegates sleep timer control to SleepTimerContext (manages its own state there)
   const sleepTimer = usePlaybackTimer();
+  // Guard so the fade-out completion handler pauses exactly once per fade.
+  const hasFadePausedRef = useRef(false);
 
   // --- Playback Progress Tracking State ---
   // Refs (not state) because these are implementation details that don't trigger re-renders
@@ -459,33 +461,36 @@ export function TrackPlayerScreen({
   }, []);
 
   /**
-   * --- LIFECYCLE EFFECT 8: Register Audio Player with Sleep Timer ---
-   * Establishes the bridge between the sleep timer and the audio player.
-   * When sleep timer is active, it fades out volume and pauses playback.
-   * This is the Observer pattern: the sleep timer is the observer,
-   * and the audio player is the observed subject. The timer calls these
-   * callbacks to synchronize volume and pause state.
+   * --- LIFECYCLE EFFECT 8a: Apply the sleep timer's published fade volume ---
+   * The timer no longer reaches into the player; instead it publishes
+   * `fadeVolume` (1 normally, ramping 1 -> 0 during fade-out). This screen
+   * owns the audio, so it mirrors that multiplier onto the main player and
+   * restores full volume whenever a fade isn't in progress. (Inversion of
+   * Control: the player reads the context; the context knows nothing of it.)
    */
   useEffect(() => {
-    sleepTimer.registerAudioPlayer({
-      // Callback: Sleep timer fades volume on the audio player
-      setVolume: (volume: number) => {
-        if (audioPlayer.player) {
-          audioPlayer.player.volume = volume;
-        }
-      },
-      // Callback: Sleep timer pauses both main and background audio
-      pause: () => {
-        audioPlayer.pause();
-        // Also pause background audio (they fade out together)
-        backgroundAudio.pause();
-      },
-    });
+    if (audioPlayer.player) {
+      audioPlayer.player.volume = sleepTimer.isFadingOut ? sleepTimer.fadeVolume : 1;
+    }
+  }, [sleepTimer.isFadingOut, sleepTimer.fadeVolume, audioPlayer.player]);
 
-    return () => {
-      sleepTimer.unregisterAudioPlayer();
-    };
-  }, [audioPlayer.player, sleepTimer]);
+  /**
+   * --- LIFECYCLE EFFECT 8b: Pause when the fade-out completes ---
+   * When the published fade reaches 0, the audio is silent: pause both the
+   * main and background players (they stop together), then call cancelTimer()
+   * to finalize — which clears the timer and restores fadeVolume to 1 for the
+   * next session. The ref guard ensures we pause exactly once per fade.
+   */
+  useEffect(() => {
+    if (sleepTimer.isFadingOut && sleepTimer.fadeVolume === 0 && !hasFadePausedRef.current) {
+      hasFadePausedRef.current = true;
+      audioPlayer.pause();
+      backgroundAudio.pause();
+      sleepTimer.cancelTimer();
+    } else if (!sleepTimer.isFadingOut) {
+      hasFadePausedRef.current = false;
+    }
+  }, [sleepTimer.isFadingOut, sleepTimer.fadeVolume]);
 
   /**
    * --- LIFECYCLE EFFECT 9: Reset Auto-Play Trigger Flag ---

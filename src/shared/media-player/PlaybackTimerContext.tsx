@@ -11,22 +11,27 @@
  *
  * Design Patterns:
  *   - Provider Pattern: Exposes timer state (isActive, remainingSeconds,
- *     isFadingOut) and control actions via React Context.
- *   - Observer/Callback Pattern: Audio player registers itself via
- *     registerAudioPlayer() so the timer can control its volume/pause.
- *     This allows loose coupling — timer doesn't import TrackPlayerScreen.
+ *     isFadingOut) and a published fadeVolume (1 -> 0 during fade-out) via
+ *     React Context. The context owns the fade *clock and curve* but never
+ *     touches the audio player — it only publishes state.
+ *   - Inversion of Control: The player no longer registers callbacks for the
+ *     timer to call. Instead, the screen that mounts the player observes
+ *     fadeVolume/isFadingOut and applies the volume + pause itself. This keeps
+ *     the dependency one-directional (the player reads the context; the
+ *     context knows nothing about the player).
  *   - State Machine: Timer transitions through states: inactive ->
- *     countdown -> expiry -> fade-out -> inactive.
+ *     countdown -> expiry -> fade-out -> inactive. The terminal fade state
+ *     (isFadingOut + fadeVolume 0) is held until the observer finalizes it
+ *     via cancelTimer().
  *   - Interval Cleanup: useRef for setInterval IDs ensures cleanup
  *     on unmount (prevents memory leaks).
  *
  * Key Dependencies:
  *   - React hooks: useState, useRef, useCallback, useEffect
- *   - TrackPlayerScreen: Registers audio control methods
  *
  * Consumed By:
  *   Sleep/meditate screens read timer state for UI. TrackPlayerScreen
- *   component registers itself for volume control during fade-out.
+ *   observes fadeVolume/isFadingOut to fade and pause its own audio.
  * ============================================================
  */
 
@@ -39,11 +44,11 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
  * @prop remainingSeconds - Seconds until timer fires
  * @prop selectedDuration - Original duration in seconds (for UI display)
  * @prop isFadingOut - Timer expired, audio is fading out
+ * @prop fadeVolume - Published volume multiplier (1 normally; ramps 1 -> 0
+ *   during fade-out). The observing player mirrors this onto its audio.
  * @prop startTimer - Start a new timer
- * @prop cancelTimer - Cancel active timer
+ * @prop cancelTimer - Cancel active timer (also finalizes a completed fade)
  * @prop extendTimer - Add time to active timer
- * @prop registerAudioPlayer - Audio component calls this to register volume control
- * @prop unregisterAudioPlayer - Audio component calls on cleanup
  */
 interface PlaybackTimerContextType {
   // State
@@ -51,15 +56,12 @@ interface PlaybackTimerContextType {
   remainingSeconds: number;
   selectedDuration: number | null; // in seconds
   isFadingOut: boolean;
-  
+  fadeVolume: number; // 1 normally; ramps 1 -> 0 while isFadingOut
+
   // Actions
   startTimer: (durationSeconds: number) => void;
   cancelTimer: () => void;
   extendTimer: (additionalSeconds: number) => void;
-  
-  // For fade-out effect - called by TrackPlayerScreen
-  registerAudioPlayer: (player: { setVolume: (volume: number) => void; pause: () => void }) => void;
-  unregisterAudioPlayer: () => void;
 }
 
 // --- Context Definition ---
@@ -78,14 +80,15 @@ export function PlaybackTimerProvider({ children }: { children: React.ReactNode 
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  // Published volume multiplier the observing player mirrors onto its audio.
+  // 1 during normal playback; ramps 1 -> 0 over the fade-out window.
+  const [fadeVolume, setFadeVolume] = useState(1);
 
   // --- Refs: Interval Management ---
   // Stored in refs so we can clear them in cleanup and on cancel.
   // Not in state because we don't need to trigger re-renders when intervals change.
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioPlayerRef = useRef<{ setVolume: (volume: number) => void; pause: () => void } | null>(null);
-  const originalVolumeRef = useRef(1.0);
 
   /**
    * Cleanup effect: clear intervals on unmount.
@@ -106,60 +109,42 @@ export function PlaybackTimerProvider({ children }: { children: React.ReactNode 
   }, []);
 
   /**
-   * Fade out audio volume over 10 seconds, then pause playback.
+   * Begin the fade-out: publish a volume multiplier that ramps to silence
+   * over 10 seconds, then hold the terminal state for the player to finalize.
    *
-   * This implements a smooth volume fade-out (not a hard stop) using
-   * linear interpolation: volume = 1 - (step / totalSteps).
-   * Runs 100 steps at 100ms intervals = 10 seconds total.
-   * After fade completes, restores original volume for next playback
-   * and pauses the audio.
+   * Implements a smooth fade (not a hard stop) via linear interpolation:
+   * fadeVolume = 1 - (step / totalSteps), 100 steps at 100ms = 10 seconds.
+   * The context only publishes state — the observing player mirrors fadeVolume
+   * onto its audio, pauses when it reaches 0, and calls cancelTimer() to reset.
    */
   const performFadeOut = useCallback(() => {
-    if (!audioPlayerRef.current) {
-      // No audio player registered, just stop the timer
-      setIsActive(false);
-      setRemainingSeconds(0);
-      setSelectedDuration(null);
-      return;
-    }
-
     setIsFadingOut(true);
 
     // --- Fade-out Interpolation ---
-    // Volume fades linearly from 1.0 to 0 over 10 seconds (100 steps at 100ms each).
-    // Formula: newVolume = 1 - (currentStep / totalSteps)
-    // This creates a smooth, exponential-like fade that sounds natural.
+    // Publish a volume multiplier that ramps linearly from 1.0 to 0 over
+    // 10 seconds (100 steps at 100ms each): fadeVolume = 1 - (step / steps).
+    // The observing player mirrors fadeVolume onto its audio; the context
+    // itself never touches the player.
     const fadeSteps = 100;
     const fadeInterval = 100; // milliseconds between steps
     let currentStep = 0;
 
     fadeIntervalRef.current = setInterval(() => {
       currentStep++;
-      const newVolume = Math.max(0, 1 - (currentStep / fadeSteps));
-
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.setVolume(newVolume);
-      }
+      setFadeVolume(Math.max(0, 1 - (currentStep / fadeSteps)));
 
       if (currentStep >= fadeSteps) {
-        // --- Fade Complete: Cleanup ---
-        // Clear the fade interval to prevent further updates.
+        // --- Fade Complete ---
+        // Stop ramping and hold the terminal state (isFadingOut true,
+        // fadeVolume 0). The observing player detects fadeVolume === 0,
+        // pauses its audio, and calls cancelTimer() to finalize — which
+        // restores fadeVolume to 1 and clears the timer. Holding the state
+        // here keeps the inversion race-free: the player always observes
+        // fadeVolume === 0 before the reset happens.
         if (fadeIntervalRef.current) {
           clearInterval(fadeIntervalRef.current);
           fadeIntervalRef.current = null;
         }
-
-        if (audioPlayerRef.current) {
-          // Stop playback and restore volume for the next session
-          audioPlayerRef.current.pause();
-          audioPlayerRef.current.setVolume(originalVolumeRef.current);
-        }
-
-        // Reset timer state
-        setIsFadingOut(false);
-        setIsActive(false);
-        setRemainingSeconds(0);
-        setSelectedDuration(null);
       }
     }, fadeInterval);
   }, []);
@@ -187,6 +172,7 @@ export function PlaybackTimerProvider({ children }: { children: React.ReactNode 
     setRemainingSeconds(durationSeconds);
     setIsActive(true);
     setIsFadingOut(false);
+    setFadeVolume(1); // start from full published volume, regardless of prior fade
 
     // --- Countdown Interval ---
     // Decrement every 1 second. When remainingSeconds hits 0, trigger fade-out.
@@ -223,16 +209,16 @@ export function PlaybackTimerProvider({ children }: { children: React.ReactNode 
     }
 
     // --- Graceful State Recovery ---
-    // If fade-out was in progress, restore volume to original before clearing.
-    if (isFadingOut && audioPlayerRef.current) {
-      audioPlayerRef.current.setVolume(originalVolumeRef.current);
-    }
+    // Restore the published volume to full. The observing player mirrors this,
+    // so a fade that was in progress (or just completed) returns the audio to
+    // full volume for the next session.
+    setFadeVolume(1);
 
     setIsActive(false);
     setRemainingSeconds(0);
     setSelectedDuration(null);
     setIsFadingOut(false);
-  }, [isFadingOut]);
+  }, []);
 
   /**
    * Extend the active timer by additional seconds.
@@ -249,24 +235,6 @@ export function PlaybackTimerProvider({ children }: { children: React.ReactNode 
     }
   }, [isActive]);
 
-  /**
-   * Register an audio player for fade-out control.
-   *
-   * Called by TrackPlayerScreen or audio component to allow the timer
-   * to control volume during fade-out. Implements the Callback/Observer
-   * pattern — loose coupling between timer and audio player.
-   */
-  const registerAudioPlayer = useCallback((player: { setVolume: (volume: number) => void; pause: () => void }) => {
-    audioPlayerRef.current = player;
-  }, []);
-
-  /**
-   * Unregister the audio player (cleanup on unmount).
-   */
-  const unregisterAudioPlayer = useCallback(() => {
-    audioPlayerRef.current = null;
-  }, []);
-
   return (
     <PlaybackTimerContext.Provider
       value={{
@@ -274,11 +242,10 @@ export function PlaybackTimerProvider({ children }: { children: React.ReactNode 
         remainingSeconds,
         selectedDuration,
         isFadingOut,
+        fadeVolume,
         startTimer,
         cancelTimer,
         extendTimer,
-        registerAudioPlayer,
-        unregisterAudioPlayer,
       }}
     >
       {children}
