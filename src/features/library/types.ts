@@ -16,8 +16,18 @@
  * NOT abstracted into this config. The config stays lean — it only
  * captures data access, labels, and routing. See the audit doc's
  * "Open decisions" for the rationale.
+ *
+ * Content-layer records (DailyQuote / UserFavorite / UserStats /
+ * ContentRating / ContentReport) were relocated here from the shared
+ * src/types/index.ts in 6d-4 — they are the user-content records the
+ * library api reads and writes. ContentRating / ContentReport reference
+ * the RatingType / ReportCategory discriminators, which stay in src/types
+ * (they are also consumed by the shared media-player layer, so they cannot
+ * move into a feature); imported here as type-only shared dependencies.
  * ============================================================
  */
+
+import type { RatingType, ReportCategory } from '../../types';
 
 /** Parent collection kinds (the thing a detail screen shows). */
 export type CollectionContentType = 'album' | 'series' | 'course';
@@ -82,4 +92,94 @@ export interface CollectionConfig<TParent, TChild> {
     child: TChild,
     index: number
   ) => Record<string, string>;
+}
+
+// ============================================================
+// Content-layer records (relocated from src/types/index.ts in 6d-4)
+// ============================================================
+
+/**
+ * Daily inspirational quote.
+ *
+ * Shown on the home screen. Stored in /dailyQuotes.
+ * The "date" field determines which quote displays on which day.
+ */
+export interface DailyQuote {
+  id: string;
+  text: string;
+  author: string;
+  date: string;
+}
+
+/**
+ * User favorite: marks a content item as favorited.
+ *
+ * Polymorphic: a single favorite can reference any SessionType.
+ * Stored in /users/{uid}/favorites/{id}.
+ * The UI queries this to show heart/bookmark status on content items.
+ */
+export interface UserFavorite {
+  id: string;
+  user_id: string;
+  content_id: string;
+  content_type:
+    | "meditation"
+    | "nature_sound"
+    | "bedtime_story"
+    | "breathing_exercise"
+    | "series_chapter"
+    | "album_track"
+    | "emergency"
+    | "course_session";
+  favorited_at: string;
+}
+
+/**
+ * User statistics: aggregated meditation metrics.
+ *
+ * Stored in /users/{uid}/stats. Computed from listening history
+ * or updated by backend Cloud Functions. Includes streaks,
+ * weekly/monthly/yearly breakdowns, and mood trending.
+ */
+export interface UserStats {
+  total_sessions: number;
+  total_minutes: number;
+  current_streak: number;
+  longest_streak: number;
+  favorite_time_of_day?: string;
+  most_used_category?: string; // was MeditationCategory; widened in 6d-4 when that type moved to features/meditation (avoids a shared->feature import)
+  weekly_minutes: number[];
+  monthly_minutes: number[];
+  yearly_minutes: number[];
+  mood_improvement: number;
+}
+
+/**
+ * Detailed content rating entry.
+ *
+ * Polymorphic: can rate any content type.
+ * Enables feedback loops for content quality and personalization.
+ */
+export interface ContentRating {
+  id: string;
+  user_id: string;
+  content_id: string;
+  content_type: string;
+  rating: RatingType;
+  rated_at: string;
+}
+
+/**
+ * Content report entry.
+ *
+ * Polymorphic: user can report any content type with a reason category.
+ * Admins/mods query this collection to triage and action complaints.
+ */
+export interface ContentReport {
+  id: string;
+  user_id: string;
+  content_id: string;
+  content_type: string;
+  category: ReportCategory;
+  reported_at: string;
 }

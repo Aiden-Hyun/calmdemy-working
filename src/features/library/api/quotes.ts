@@ -9,7 +9,7 @@
 
 import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-import { DailyQuote } from "../../../types";
+import { DailyQuote } from "../types";
 
 const quotesCollection = collection(db, "daily_quotes");
 

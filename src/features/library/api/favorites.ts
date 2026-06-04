@@ -21,7 +21,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-import { UserFavorite } from "../../../types";
+import { UserFavorite } from "../types";
 
 const favoritesCollection = collection(db, "user_favorites");
 
