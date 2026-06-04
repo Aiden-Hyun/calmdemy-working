@@ -26,10 +26,10 @@ import { getAudioUrlFromPath } from '../../core/audio/audioFiles';
 import { getSleepSoundById, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../../services/firestoreService';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useNetwork } from '../../core/network/NetworkContext';
-import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../../services/downloadService';
 import { useSleepSounds } from '../../features/music';
 import { useAutoPlay } from './hooks/useAutoPlay';
 import { useNarratorPhoto } from './hooks/useNarratorPhoto';
+import { useTrackDownload } from './hooks/useTrackDownload';
 
 /**
  * ============================================================
@@ -244,16 +244,26 @@ export function TrackPlayerScreen({
     audioPlayer,
   });
 
-  // --- Download Feature State ---
-  // Tracks whether this content is downloaded, downloading, and download progress percentage
-  const [isDownloadedState, setIsDownloadedState] = useState(false);
-  const [isDownloadingState, setIsDownloadingState] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-
-  // --- Local Thumbnail (Offline) ---
-  // Resolved local file path for the cached thumbnail image. Preferred over
-  // the remote artworkThumbnailUrl when available so artwork displays offline.
-  const [localThumbnail, setLocalThumbnail] = useState<string | null>(null);
+  // --- Download Feature (offline state + handler) ---
+  // localThumbnail is the resolved local cached thumbnail, preferred over the
+  // remote artworkThumbnailUrl when available so artwork displays offline.
+  const {
+    isDownloaded: isDownloadedState,
+    isDownloading: isDownloadingState,
+    downloadProgress,
+    localThumbnail,
+    handleDownload,
+  } = useTrackDownload({
+    contentId,
+    contentType,
+    audioUrl,
+    title,
+    durationMinutes,
+    thumbnailUrl: artworkThumbnailUrl,
+    parentId,
+    parentTitle,
+    audioPath,
+  });
 
   // --- Sleep Timer Integration ---
   // Delegates sleep timer control to SleepTimerContext (manages its own state there)
@@ -265,71 +275,6 @@ export function TrackPlayerScreen({
   // Refs (not state) because these are implementation details that don't trigger re-renders
   const lastSaveTime = useRef(0); // Timestamp of last Firestore save (for debouncing)
   const hasRestoredPosition = useRef(false); // Flag to prevent restoring position multiple times
-
-  /**
-   * --- LIFECYCLE EFFECT 2: Check Download Status ---
-   * When contentId changes (new content loaded), check if it's already downloaded.
-   * This determines whether to show the "Saved" button or the "Download" button.
-   * Runs on mount and whenever contentId changes.
-   */
-  useEffect(() => {
-    async function checkDownloadStatus() {
-      if (!contentId) return;
-      const downloaded = await isDownloaded(contentId);
-      setIsDownloadedState(downloaded);
-      setIsDownloadingState(checkIsDownloading(contentId));
-      // Resolve cached thumbnail for offline artwork display
-      if (downloaded) {
-        const thumbPath = await getLocalThumbnailPath(contentId);
-        setLocalThumbnail(thumbPath);
-      } else {
-        setLocalThumbnail(null);
-      }
-    }
-    checkDownloadStatus();
-  }, [contentId]);
-
-  /**
-   * Initiates an audio download for offline playback.
-   * Guards against invalid states (already downloading, already downloaded).
-   * Shows download progress as a percentage, then updates state when complete.
-   *
-   * Download metadata includes content title, duration, and parent ID
-   * (for organizing downloads by course/series).
-   */
-  const handleDownload = async () => {
-    // Guard clauses: fail silently if any required data is missing or already in progress
-    if (!contentId || !contentType || !audioUrl || isDownloadingState || isDownloadedState) return;
-
-    setIsDownloadingState(true);
-    setDownloadProgress(0);
-
-    const success = await downloadAudio(
-      contentId,
-      contentType,
-      audioUrl,
-      {
-        title,
-        duration_minutes: durationMinutes,
-        thumbnailUrl: artworkThumbnailUrl,
-        parentId,
-        parentTitle,
-        audioPath,
-      },
-      (progress) => setDownloadProgress(progress)
-    );
-
-    setIsDownloadingState(false);
-    setDownloadProgress(0);
-    if (success) {
-      setIsDownloadedState(true);
-      // Resolve the freshly-cached thumbnail so artwork updates immediately
-      if (contentId) {
-        const thumbPath = await getLocalThumbnailPath(contentId);
-        setLocalThumbnail(thumbPath);
-      }
-    }
-  };
 
   // --- Background Audio Hook ---
   // Manages independent background sleep sound playback (runs alongside main audio)
