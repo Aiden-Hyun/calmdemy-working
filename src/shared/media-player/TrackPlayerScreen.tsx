@@ -23,12 +23,13 @@ import { Theme } from '../../core/theme';
 import { useAudioPlayer } from '../../core/audio/useAudioPlayer';
 import { useBackgroundAudio } from '../../core/audio/useBackgroundAudio';
 import { getAudioUrlFromPath } from '../../core/audio/audioFiles';
-import { getSleepSoundById, getNarratorByName, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../../services/firestoreService';
+import { getSleepSoundById, FirestoreSleepSound, savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from '../../services/firestoreService';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useNetwork } from '../../core/network/NetworkContext';
 import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../../services/downloadService';
 import { useSleepSounds } from '../../features/music';
 import { useAutoPlay } from './hooks/useAutoPlay';
+import { useNarratorPhoto } from './hooks/useNarratorPhoto';
 
 /**
  * ============================================================
@@ -230,9 +231,9 @@ export function TrackPlayerScreen({
   // Caches the current background sound's Firestore data (title, icon, color, etc.)
   const [currentBackgroundSound, setCurrentBackgroundSound] = useState<FirestoreSleepSound | null>(null);
 
-  // --- Narrator Photo State ---
-  // Caches the instructor's photo URL (fetched from Firestore if not provided)
-  const [narratorPhotoUrl, setNarratorPhotoUrl] = useState<string | null>(instructorPhotoUrl || null);
+  // --- Narrator Photo ---
+  // Resolves the instructor's photo URL (fetched from Firestore if not provided).
+  const narratorPhotoUrl = useNarratorPhoto(instructor, instructorPhotoUrl);
 
   // --- Auto-Play Feature ---
   // Preference + next-track-on-completion observer (orchestration hook).
@@ -339,25 +340,6 @@ export function TrackPlayerScreen({
   // down as a prop, so the picker stays presentational and shared/ keeps its
   // feature dependency at the public-API boundary (features/music index).
   const { data: ambientSounds = [], isLoading: ambientSoundsLoading } = useSleepSounds();
-
-  /**
-   * --- LIFECYCLE EFFECT 3: Fetch Narrator Photo ---
-   * If the instructor name is provided but photo URL isn't, fetch the photo
-   * from Firestore. This allows instructors to be displayed with their photos
-   * even if the screen doesn't pre-load the photo URL.
-   * Runs when instructor or instructorPhotoUrl changes.
-   */
-  useEffect(() => {
-    async function fetchNarratorPhoto() {
-      if (instructor && !instructorPhotoUrl) {
-        const narrator = await getNarratorByName(instructor);
-        if (narrator?.photoUrl) {
-          setNarratorPhotoUrl(narrator.photoUrl);
-        }
-      }
-    }
-    fetchNarratorPhoto();
-  }, [instructor, instructorPhotoUrl]);
 
   /**
    * --- LIFECYCLE EFFECT 4: Fetch Background Sound Metadata ---
