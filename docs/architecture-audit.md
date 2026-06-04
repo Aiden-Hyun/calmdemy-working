@@ -990,6 +990,27 @@ These items don't have to wait for 6d to finish. They can land any time post-6c.
 
 **Recommended order to do 6d:** 6d-1 → 6d-2 → 6d-4 (types + emergency + tests + rename — opportunistic) → 6d-3 (the big decomposition). 6d-3 last because it's the architectural payoff that benefits from everything else being clean first.
 
+###### 6d-4 — complete
+
+6c carry-forward tidy landed in 7 commits. `tsc --noEmit` clean after every commit. The two larger structural items (AudioListScreen template application, `music/[id]` rewrite) were assessed and **deferred** — see below.
+
+| Item | Status | Commit | Resolution as built |
+|---|---|---|---|
+| Test files relocation | ✅ DONE | `9eb4aa7` | `ProtectedRoute.test.tsx` + `AuthContext.test.tsx` moved to `src/core/auth/__tests__/`; stale pre-migration import/mock paths in ProtectedRoute repointed to the real `../ProtectedRoute` / `../AuthContext`. (Tests still unrunnable in this env — `jsdom` missing — verified via `tsc` + import resolution.) |
+| `SoundPlayer → LoopingSoundScreen` rename | ✅ DONE | `a8a307c` | Component export + props interface + JSDoc renamed in `features/music/components/`; the one consumer (`SoundPlayerScreen`) updated. Screen keeps its own name; rename is music-internal. |
+| `useEmergencyMeditations` relocation | ✅ DONE | `7fa5ffb` | Moved from `features/meditation/hooks/queries.ts` to `features/emergency/hooks/queries.ts`, re-exported from emergency's public index, home's import repointed. Kept the firestoreService barrel import (barrel migration is 6e). |
+| Per-feature type extraction — meditation | ✅ DONE | `358243d` | `GuidedMeditation`/`MeditationTheme`/`MeditationTechnique`/`MeditationCategory` → `features/meditation/types.ts`; 5 internal consumers repointed. **Deviation A:** `UserStats.most_used_category` widened `MeditationCategory → string` so the still-shared `UserStats` need not import a feature type (shared ✗→ feature). Field is dead; precision loss harmless. |
+| Per-feature type extraction — sleep | ✅ DONE | `66a4b24` | `NatureSound`/`BedtimeStory`/`SleepStory` → `features/sleep/types.ts`; 4 `BedtimeStory` consumers repointed. `NatureSound`/`SleepStory` have no type consumers (relocated as-is). |
+| Per-feature type extraction — progress | ✅ DONE | `2ae33fc` | `MeditationSession` + `ListeningHistoryItem` → `features/progress/types.ts`. **Deviation B:** the 6d-4 spec placed `ListeningHistoryItem` in *library*, but progress owns its api+hook and Home (its only cross-feature consumer) already depends on progress — library ownership would add a `progress → library` edge for zero library consumers. Routed to progress instead; keeps the graph acyclic. Cross-feature type imports (`meditation→progress`, `home→progress`) use `import type` through the public index. `MeditationSession` still references shared `SessionType` (features→shared, allowed). |
+| Per-feature type extraction — library | ✅ DONE | `b0f6d6b` | `DailyQuote`/`UserFavorite`/`UserStats`/`ContentRating`/`ContentReport` → `features/library/types.ts`. `RatingType`/`ReportCategory` **kept in `src/types`** (per spec) because the shared media-player layer consumes them and shared ✗→ feature; `ContentRating`/`ContentReport` reference them via `import type` from src/types. `src/types/index.ts` is now just `User`/`UserPreferences`/`SessionType`/`RatingType`/`ReportCategory` — the eventual `shared/types/`. |
+| AudioListScreen template application (8 list screens) | ⏸️ DEFERRED | — | Large structural refactor across 8 list screens; the spec says to "coordinate with 6d-2" and to fold `getCategoryIcon` into it. Better as its own focused batch than tacked onto the 6d-4 tidy. Does not block 6d-3. |
+| `getCategoryIcon` consolidation per-feature | ⏸️ DEFERRED | — | The spec explicitly says "hand-fold into the AudioListScreen template application above," so it moves with that deferred batch. Current state: one impl in `features/library/contentIcons.ts` (re-exported via library index), consumed cross-feature by music + sleep, plus a separate local arg-less helper in `BedtimeStoryPlayerScreen`. Consolidation needs a deliberate own/shared decision — not a tail-end change. |
+| `music/[id]` rewrite | ⏸️ DEFERRED | — | Depends on the `usePlayerBehavior` decomposition in 6d-3; spec says do it after 6d-3 lands. Untouched. |
+
+**Two deviations flagged for ratification (Deviation A: `UserStats.most_used_category` → `string`; Deviation B: `ListeningHistoryItem` → progress, not library).** Both were taken to keep the feature dependency graph acyclic and are trivially reversible; recorded here per the 6d-1 "make + document, ratify at gate" pattern.
+
+**Net result:** `src/types/index.ts` shrank from a 13-type shared registry to the 5 cross-cutting discriminators. Each feature now owns its domain types under `features/<x>/types.ts`. The only new cross-feature edge is `meditation → progress` (real, via `MeditationSession`); all other type imports are either feature-internal, feature→shared (allowed), or ride pre-existing edges (`home → progress`). The three deferred items are the structural list-screen work, left for a dedicated batch.
+
 ### Phase 6e — Delete `firestoreService.ts` barrel
 
 When every consumer has migrated to feature-local imports (during their 6c migration), the barrel has no remaining importers. Confirm with `grep -r "from.*services/firestoreService"` returning empty, then `git rm src/services/firestoreService.ts`. Final cleanup.
