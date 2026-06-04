@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * useMusicQueries.ts — Ambient Audio Content Queries (Read-Through Cache)
+ * features/music/hooks/queries.ts — Ambient Audio Content Queries (Read-Through Cache)
  * ============================================================
  *
  * Architectural Role:
@@ -25,7 +25,9 @@
  *   - Each content type has a separate cache entry, allowing independent refresh.
  *
  * Consumed By:
- *   MusicScreen, SleepScreen, BackgroundAudioSelectors, and related ViewModels.
+ *   The music feature's own screens, and — through features/music's public
+ *   index — TrackPlayerScreen, which injects useSleepSounds into the shared
+ *   BackgroundAudioPicker.
  * ============================================================
  */
 
