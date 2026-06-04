@@ -20,7 +20,7 @@ import { useTheme } from "../../../core/theme/ThemeContext";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { AnimatedView } from "../../../core/ui/AnimatedView";
 import { CredentialCollisionModal } from "../components/CredentialCollisionModal";
-import { AccountSwitchConfirmModal } from "../components/AccountSwitchConfirmModal";
+import { AccountSwitchWarning } from "../components/AccountSwitchWarning";
 import { router, useLocalSearchParams } from "expo-router";
 import { Theme } from "../../../core/theme";
 
@@ -482,12 +482,12 @@ export function LoginScreen() {
 
       {/* Account switch confirmation modal */}
       {collisionError && showSwitchConfirm && (
-        <AccountSwitchConfirmModal
+        <AccountSwitchWarning
           visible={showSwitchConfirm}
           email={collisionError.email}
           providerType={collisionError.providerType}
-          onConfirm={handleConfirmSwitch}
-          onCancel={handleCancelSwitch}
+          onConfirmSwitch={handleConfirmSwitch}
+          onClose={handleCancelSwitch}
         />
       )}
     </KeyboardAvoidingView>

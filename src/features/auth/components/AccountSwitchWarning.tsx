@@ -4,9 +4,10 @@
  * ============================================================
  *
  * Architectural Role:
- *   Warns the user before executing an account switch that originated from
- *   a credential collision. This is the second confirmation layer in the
- *   multi-step authentication state machine. It emphasizes data loss risk.
+ *   The single confirmation gate before executing an account switch. It
+ *   emphasizes data-loss risk and, when handed an email/providerType, names
+ *   the destination account. The sole survivor of the AccountSwitch* pair
+ *   (the former AccountSwitchConfirmModal was folded in via optional props).
  *
  * Design Patterns:
  *   - Modal Pattern: Transient confirmation dialog
@@ -21,7 +22,10 @@
  *   - useSafeAreaInsets (notch-aware layout)
  *
  * Consumed By:
- *   AccountPromptModal as the second step of account switching
+ *   - AccountPromptModal — generic switch during the account-link flow
+ *   - AccountSecurityScreen — generic switch between linked providers
+ *   - LoginScreen — targeted switch from a credential collision (passes
+ *     email + providerType for personalized copy)
  * ============================================================
  */
 
@@ -43,31 +47,64 @@ interface AccountSwitchWarningProps {
   visible: boolean;
   onClose: () => void;
   onConfirmSwitch: () => Promise<void>;
+  /**
+   * When provided, the modal personalizes its copy to the destination
+   * account (the login credential-collision flow). When omitted, it shows
+   * the generic data-loss warning (the account-link and security flows).
+   */
+  email?: string | null;
+  providerType?: "google.com" | "apple.com" | "password";
 }
 
 /**
- * AccountSwitchWarning — Secondary confirmation before account switch.
+ * Adapter: Maps Firebase provider ID to a human-readable display name.
+ */
+const getProviderDisplayName = (
+  providerType: "google.com" | "apple.com" | "password"
+): string => {
+  switch (providerType) {
+    case "google.com":
+      return "Google";
+    case "apple.com":
+      return "Apple";
+    case "password":
+      return "email";
+    default:
+      return "account";
+  }
+};
+
+/**
+ * AccountSwitchWarning — Confirmation gate before switching the active account.
  *
- * This warning modal is shown as a confirmation gate when a user has
- * a credential collision and chooses to sign into the other account.
- * It warns them about data loss and requires explicit confirmation
- * before executing the actual account switch operation.
+ * Serves two flows with one component:
+ *   - Generic (no email/providerType): warns about data loss before the
+ *     account-link (AccountPromptModal) and account-security switch flows.
+ *   - Targeted (email/providerType provided): the login credential-collision
+ *     flow, where the copy names the destination account and warns that the
+ *     guest subscription won't transfer.
  *
- * This is part of a defensive confirmation chain:
- *   1. CredentialCollisionModal: "This email is registered elsewhere"
- *   2. AccountSwitchWarning (this): "Confirm you understand the consequences"
- *   3. Actual switch: signInWithPendingCredential in AccountPromptModal
+ * In both flows the parent owns the actual switch (signInWithPendingCredential
+ * or a provider switch fn); this modal only gates it behind explicit confirmation.
  */
 export function AccountSwitchWarning({
   visible,
   onClose,
   onConfirmSwitch,
+  email,
+  providerType,
 }: AccountSwitchWarningProps) {
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   // --- Loading state during account switch execution ---
   const [isLoading, setIsLoading] = useState(false);
+
+  // --- Personalized (collision) vs generic (link/security) presentation ---
+  const isTargeted = providerType != null;
+  const providerName = providerType ? getProviderDisplayName(providerType) : null;
+  const displayAccount =
+    email || (providerName ? `this ${providerName} account` : null);
 
   /**
    * Handles the confirmation: executes the account switch and closes modal.
@@ -94,43 +131,54 @@ export function AccountSwitchWarning({
     >
       <View style={styles.overlay}>
         <View style={[styles.container, { paddingBottom: insets.bottom + 24 }]}>
-          {/* Warning Icon: Alert symbol */}
+          {/* Icon: swap symbol for the targeted collision flow, warning otherwise */}
           <View style={styles.iconContainer}>
             <Ionicons
-              name="warning-outline"
+              name={isTargeted ? "swap-horizontal-outline" : "warning-outline"}
               size={32}
               color={theme.colors.warning}
             />
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Switch Accounts?</Text>
-
-          {/*
-            --- Description: Highlights data loss risk ---
-            This is crucial information: switching accounts means losing
-            access to the current account's data (favorites, history, etc.)
-            unless they're synced or backed up. This prevents accidental loss.
-          */}
-          <Text style={styles.description}>
-            If you switch accounts, you may not see data from your current
-            account unless it's backed up or synced.
+          <Text style={styles.title}>
+            {isTargeted ? "Switch Account?" : "Switch Accounts?"}
           </Text>
 
           {/*
-            --- Information Note: Specifics about what transfers ---
-            Clarifies that favorites, history, and preferences are tied to
-            the specific account and won't follow the user to the new account.
+            --- Description ---
+            Targeted: names the destination account so the user knows exactly
+            which account they're signing into.
+            Generic: highlights data-loss risk when switching accounts.
+          */}
+          {isTargeted ? (
+            <Text style={styles.description}>
+              Sign in to{" "}
+              <Text style={styles.emailHighlight}>{displayAccount}</Text>?
+            </Text>
+          ) : (
+            <Text style={styles.description}>
+              If you switch accounts, you may not see data from your current
+              account unless it's backed up or synced.
+            </Text>
+          )}
+
+          {/*
+            --- Warning note ---
+            Targeted: the destructive caveat — current guest account is
+            replaced and the subscription won't transfer.
+            Generic: clarifies favorites/history/preferences follow the account.
           */}
           <View style={styles.warningNote}>
             <Ionicons
-              name="information-circle-outline"
+              name={isTargeted ? "warning-outline" : "information-circle-outline"}
               size={18}
-              color={theme.colors.textMuted}
+              color={isTargeted ? theme.colors.warning : theme.colors.textMuted}
             />
             <Text style={styles.warningNoteText}>
-              Your favorites, history, and preferences will be associated with
-              the new account.
+              {isTargeted
+                ? "This will replace your current guest account. Your subscription will remain on the guest account and won't transfer."
+                : "Your favorites, history, and preferences will be associated with the new account."}
             </Text>
           </View>
 
@@ -221,6 +269,10 @@ const createStyles = (theme: Theme, isDark: boolean) =>
       textAlign: "center",
       lineHeight: 22,
       marginBottom: 16,
+    },
+    emailHighlight: {
+      fontFamily: theme.fonts.ui.semiBold,
+      color: theme.colors.text,
     },
     warningNote: {
       flexDirection: "row",

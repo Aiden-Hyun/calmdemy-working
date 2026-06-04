@@ -15,10 +15,10 @@
  * - useAccountDeletion — delete-account flow, consumed by settings
  * - manifest — consumed by src/registry.ts (Phase 7)
  *
- * The other modals (AccountSwitchWarning, AccountSwitchConfirmModal,
- * CredentialCollisionModal) are internal — consumed only by auth's own
- * screens and AccountPromptModal. The AccountSwitch* consolidation is
- * deferred to Phase 6d (the two have different props/UX, not a clean swap).
+ * The other modals (AccountSwitchWarning, CredentialCollisionModal) are
+ * internal — consumed only by auth's own screens and AccountPromptModal.
+ * AccountSwitchWarning is the single account-switch confirmation; the former
+ * AccountSwitchConfirmModal was folded into it via optional email/providerType.
  * ============================================================
  */
 
