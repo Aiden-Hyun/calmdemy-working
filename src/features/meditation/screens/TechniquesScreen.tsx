@@ -22,6 +22,7 @@ import { getDownloadedContentIds } from '../../../services/downloadService';
 import { GuidedMeditation, MeditationTechnique } from '../../../types';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../subscription';
+import { AccountPromptModal } from '../../auth';
 
 // Technique categories defined as constants (not fetched from Firebase)
 const techniqueCategories: {
@@ -97,6 +98,7 @@ export function TechniquesScreen() {
   const [selectedTechnique, setSelectedTechnique] = useState<string>(params.technique || 'all');
   const { data: meditations = [], isLoading: loading } = useMeditationsByTechnique(selectedTechnique);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map());
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
@@ -308,6 +310,11 @@ export function TechniquesScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </SafeAreaView>
   );

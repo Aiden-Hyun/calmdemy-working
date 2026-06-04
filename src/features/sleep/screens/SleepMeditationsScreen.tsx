@@ -21,6 +21,7 @@ import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../../services/downloadService';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../subscription';
+import { AccountPromptModal } from '../../auth';
 
 export function SleepMeditationsScreen() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export function SleepMeditationsScreen() {
   const { isPremium: hasSubscription } = useSubscription();
   const { data: meditations = [], isLoading: loading } = useSleepMeditations();
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map());
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
@@ -169,6 +171,11 @@ export function SleepMeditationsScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </View>
   );

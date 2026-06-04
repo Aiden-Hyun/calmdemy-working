@@ -15,6 +15,7 @@ import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
 import { ContentCard } from '../../../shared/cards/ContentCard';
 import { Skeleton } from '../../../core/ui/Skeleton';
 import { PaywallModal } from '../../subscription';
+import { AccountPromptModal } from '../../auth';
 import { useStats, useListeningHistory } from '../../progress';
 import { parseSessionCode } from '../../../utils/courseCodeParser';
 import {
@@ -43,6 +44,7 @@ export function HomeScreen() {
   // Refreshing state for pull-to-refresh
   const [refreshing, setRefreshing] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
 
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   
@@ -450,6 +452,11 @@ export function HomeScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </SafeAreaView>
   );

@@ -22,6 +22,7 @@ import { Theme } from "../../../core/theme";
 import { GuidedMeditation } from "../../../types";
 import { useSubscription } from "../../../core/subscription/SubscriptionContext";
 import { PaywallModal } from "../../subscription";
+import { AccountPromptModal } from "../../auth";
 
 const themeCategories = [
   { id: "all", label: "All", icon: "grid-outline" as const, color: "#6B7280" },
@@ -79,6 +80,7 @@ export function AllMeditationsScreen() {
   );
   const { data: meditations = [], isLoading: loading } = useMeditationsByTheme(selectedCategory);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map());
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
@@ -326,6 +328,11 @@ export function AllMeditationsScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </SafeAreaView>
   );

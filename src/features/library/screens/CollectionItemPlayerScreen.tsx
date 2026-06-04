@@ -15,10 +15,11 @@
  * ============================================================
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { TrackPlayerScreen } from '../../../shared/media-player/TrackPlayerScreen';
 import { PaywallModal } from '../../subscription';
+import { AccountPromptModal } from '../../auth';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { buildSessionMetaInfo } from '../../../utils/courseCodeParser';
 import { COLLECTION_CONFIGS } from '../data/contentTypes';
@@ -200,6 +201,8 @@ export function CollectionItemPlayerScreen({
     buildSiblingParams,
   });
 
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
+
   return (
     <>
       <TrackPlayerScreen
@@ -232,7 +235,15 @@ export function CollectionItemPlayerScreen({
         onRate={onRate}
         onReport={onReport}
       />
-      <PaywallModal visible={showPaywall} onClose={closePaywall} />
+      <PaywallModal
+        visible={showPaywall}
+        onClose={closePaywall}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
+      />
     </>
   );
 }

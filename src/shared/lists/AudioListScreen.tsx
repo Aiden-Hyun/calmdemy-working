@@ -77,6 +77,8 @@ export interface AudioListScreenProps<T extends AudioListItem> {
   downloadContentType?: string;
   /** Per-item destination. Defaults to the `/music/[id]` player route. */
   itemHref?: (item: T) => Href;
+  /** Optional: surface the host's account-link prompt after an anonymous purchase. */
+  onAccountLinkPrompt?: () => void;
 }
 
 export function AudioListScreen<T extends AudioListItem>({
@@ -87,6 +89,7 @@ export function AudioListScreen<T extends AudioListItem>({
   emptyText,
   downloadContentType = 'sound',
   itemHref = (item) => `/music/${item.id}` as Href,
+  onAccountLinkPrompt,
 }: AudioListScreenProps<T>) {
   const router = useRouter();
   const { theme } = useTheme();
@@ -194,7 +197,7 @@ export function AudioListScreen<T extends AudioListItem>({
         </SafeAreaView>
       </LinearGradient>
 
-      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} onAccountLinkPrompt={onAccountLinkPrompt} />
     </View>
   );
 }

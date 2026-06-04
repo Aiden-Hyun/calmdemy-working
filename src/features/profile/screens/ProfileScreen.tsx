@@ -9,6 +9,7 @@ import { AnimatedView } from '../../../core/ui/AnimatedView';
 import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
 import { Skeleton } from '../../../core/ui/Skeleton';
 import { PaywallModal } from '../../subscription';
+import { AccountPromptModal } from '../../auth';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
@@ -23,6 +24,7 @@ export function ProfileScreen() {
   const { stats, loading } = useStats();
   const { isPremium, restorePurchases } = useSubscription();
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
 
   const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   const avatarGradient = theme.gradients.sage as [string, string];
@@ -342,6 +344,11 @@ export function ProfileScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </SafeAreaView>
   );

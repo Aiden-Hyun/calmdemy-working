@@ -23,6 +23,7 @@ import { Theme } from '../../../core/theme';
 import { BedtimeStory } from '../../../types';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../subscription';
+import { AccountPromptModal } from '../../auth';
 
 const categories = [
   { id: 'all', label: 'All', icon: 'grid-outline' as const },
@@ -40,6 +41,7 @@ export function BedtimeStoriesScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { data: stories = [], isLoading: loading } = useBedtimeStories();
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map());
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
@@ -242,6 +244,11 @@ export function BedtimeStoriesScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </View>
   );

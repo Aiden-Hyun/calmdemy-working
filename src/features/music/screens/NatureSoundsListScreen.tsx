@@ -15,6 +15,7 @@ import { getDownloadedContentIds } from "../../../services/downloadService";
 import { Theme } from "../../../core/theme";
 import { useSubscription } from "../../../core/subscription/SubscriptionContext";
 import { PaywallModal } from "../../subscription";
+import { AccountPromptModal } from "../../auth";
 
 type SleepSoundCategory = 'rain' | 'water' | 'fire' | 'wind' | 'nature' | 'ambient';
 
@@ -37,6 +38,7 @@ export function NatureSoundsListScreen() {
   const [selectedCategory, setSelectedCategory] = useState<SleepSoundCategory | 'all'>('all');
   const { data: sounds = [], isLoading: loading } = useSleepSounds();
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map());
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
@@ -189,6 +191,11 @@ export function NatureSoundsListScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </View>
   );

@@ -19,7 +19,6 @@ import {
   useSubscription,
   PurchasesPackage,
 } from "../../../core/subscription/SubscriptionContext";
-import { AccountPromptModal } from "../../auth";
 import { RecoveryWizard } from "./RecoveryWizard";
 import { Theme } from "../../../core/theme";
 
@@ -30,8 +29,9 @@ import { Theme } from "../../../core/theme";
  *
  * Architectural Role:
  *   A modal that presents subscription options and handles purchase/recovery flows.
- *   This is a Compound Component: it orchestrates multiple sub-modals (AccountPromptModal,
- *   RecoveryWizard) based on user actions. It implements a State Machine with
+ *   This is a Compound Component: it orchestrates the RecoveryWizard sub-modal
+ *   based on user actions, and delegates the post-purchase account-link prompt
+ *   to the host screen via onAccountLinkPrompt. It implements a State Machine with
  *   conditional UI rendering for different scenarios:
  *   1. Standard purchase flow (choose plan → purchase)
  *   2. Recovery flow (Apple ID has subscription → restore/recover)
@@ -44,9 +44,10 @@ import { Theme } from "../../../core/theme";
  *     user to recovery before showing purchase options.
  *   - Controlled Component: Package selection state (selectedPackage) is local
  *     but synchronous with purchase/restore actions.
- *   - Compound Component: AccountPromptModal and RecoveryWizard are child modals
- *     triggered by parent actions. This implements the Inversion of Control pattern:
- *     the parent modal controls when child modals appear based on flow state.
+ *   - Compound Component / Inversion of Control: RecoveryWizard is a child modal
+ *     triggered by parent actions. The post-purchase account-link prompt is
+ *     inverted out via the onAccountLinkPrompt callback so the host screen owns
+ *     that auth-feature modal (PaywallModal no longer imports from features/auth).
  *
  * Key Dependencies:
  *   - useSubscription() hook: RevenueCat integration (offerings, purchase, restore)
@@ -68,6 +69,12 @@ interface PaywallModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /**
+   * Called after a successful purchase by an anonymous user, asking the host
+   * screen to surface its own account-link prompt. Inverts what used to be a
+   * direct AccountPromptModal dependency on the auth feature.
+   */
+  onAccountLinkPrompt?: () => void;
 }
 
 /**
@@ -89,17 +96,20 @@ const FEATURES = [
  * This modal handles multiple flows:
  *   1. Standard purchase: User browses plans and subscribes
  *   2. Recovery-first: User's Apple ID has a subscription → guide them to recover it first
- *   3. Account prompt: After purchase, anonymous users are prompted to create an account
+ *   3. Account prompt: After purchase, anonymous users are prompted (via onAccountLinkPrompt) to create an account
  *   4. Loading/error states: Offerings not yet loaded, or no plans available
  *
  * @param visible - Whether the modal is shown
  * @param onClose - Callback to close the modal (does not trigger success flow)
  * @param onSuccess - Optional callback when purchase/recovery succeeds
+ * @param onAccountLinkPrompt - Optional callback to prompt anonymous users to
+ *   link an account after a successful purchase (the prompt is owned by the host screen)
  */
 export function PaywallModal({
   visible,
   onClose,
   onSuccess,
+  onAccountLinkPrompt,
 }: PaywallModalProps) {
   const { theme, isDark } = useTheme();
   const { isAnonymous } = useAuth();
@@ -120,8 +130,7 @@ export function PaywallModal({
   // Loading flag during purchase/restore action (prevents double-taps)
   const [isPurchasing, setIsPurchasing] = useState(false);
 
-  // Child modal visibility flags (Compound Component pattern)
-  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
+  // Child modal visibility flag (Compound Component pattern)
   const [showRecoveryWizard, setShowRecoveryWizard] = useState(false);
 
   /**
@@ -189,10 +198,11 @@ export function PaywallModal({
     if (success) {
       onSuccess?.();
       onClose();
-      // Compound Component: Show account prompt modal for anonymous users after successful purchase
-      // This guides them to create a permanent account to protect their subscription
+      // After a successful purchase by an anonymous user, ask the host screen to
+      // surface its account-link prompt. The prompt lives in the auth feature;
+      // delegating via callback keeps this modal decoupled from features/auth.
       if (isAnonymous) {
-        setShowAccountPrompt(true);
+        onAccountLinkPrompt?.();
       }
     }
   };
@@ -507,15 +517,6 @@ export function PaywallModal({
           )}
         </View>
       </View>
-
-      {/* --- Compound Component: Account Prompt Modal --- */}
-      {/* Shown to anonymous users after successful purchase.
-          This prompts them to create an account to protect their subscription.
-          Child modal is controlled by this parent's state. */}
-      <AccountPromptModal
-        visible={showAccountPrompt}
-        onClose={() => setShowAccountPrompt(false)}
-      />
 
       {/* --- Compound Component: Recovery Wizard Modal --- */}
       {/* Shown when:

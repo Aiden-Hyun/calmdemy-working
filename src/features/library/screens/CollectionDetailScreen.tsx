@@ -18,7 +18,7 @@
  * ============================================================
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +31,7 @@ import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
 import { DownloadButton } from '../../../shared/downloads/DownloadButton';
 import { PaywallModal } from '../../subscription';
+import { AccountPromptModal } from '../../auth';
 import { buildSessionMetaInfo } from '../../../utils/courseCodeParser';
 import type {
   FirestoreAlbum,
@@ -76,6 +77,8 @@ export function CollectionDetailScreen({
     handleChildPress,
     refreshDownloadedIds,
   } = useCollectionDetail(config, id, { autoOpenItemId });
+
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
 
   const styles = useMemo(
     () => createStyles(theme, dark, isCourse),
@@ -357,7 +360,15 @@ export function CollectionDetailScreen({
       </SafeAreaView>
 
       {/* Paywall Modal */}
-      <PaywallModal visible={showPaywall} onClose={closePaywall} />
+      <PaywallModal
+        visible={showPaywall}
+        onClose={closePaywall}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
+      />
     </View>
   );
 }

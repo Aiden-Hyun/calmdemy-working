@@ -9,6 +9,7 @@ import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { ContentCard } from "../../../shared/cards/ContentCard";
 import { Skeleton } from "../../../core/ui/Skeleton";
 import { PaywallModal } from "../../subscription";
+import { AccountPromptModal } from "../../auth";
 import { 
   FirestoreSleepMeditation,
   FirestoreSeries
@@ -29,6 +30,7 @@ export function SleepHomeScreen() {
   const { data: series = [], isLoading: seriesLoading } = useSeries();
   
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -237,6 +239,11 @@ export function SleepHomeScreen() {
           <PaywallModal
             visible={showPaywall}
             onClose={() => setShowPaywall(false)}
+            onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+          />
+          <AccountPromptModal
+            visible={showAccountPrompt}
+            onClose={() => setShowAccountPrompt(false)}
           />
         </SafeAreaView>
       </LinearGradient>

@@ -15,6 +15,7 @@ import { getDownloadedContentIds } from "../../../services/downloadService";
 import { Theme } from "../../../core/theme";
 import { useSubscription } from "../../../core/subscription/SubscriptionContext";
 import { PaywallModal } from "../../subscription";
+import { AccountPromptModal } from "../../auth";
 
 export function MusicListScreen() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export function MusicListScreen() {
   const { data: sounds = [], isLoading: loading } = useMusic();
   const { data: audioUrls = new Map() } = useAudioUrls(sounds);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -137,6 +139,11 @@ export function MusicListScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </View>
   );

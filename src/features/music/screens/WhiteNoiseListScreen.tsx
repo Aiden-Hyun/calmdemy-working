@@ -15,6 +15,7 @@ import { getDownloadedContentIds } from "../../../services/downloadService";
 import { Theme } from "../../../core/theme";
 import { useSubscription } from "../../../core/subscription/SubscriptionContext";
 import { PaywallModal } from "../../subscription";
+import { AccountPromptModal } from "../../auth";
 
 export function WhiteNoiseListScreen() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export function WhiteNoiseListScreen() {
   const { isPremium: hasSubscription } = useSubscription();
   const { data: sounds = [], isLoading: loading } = useWhiteNoise();
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [audioUrls, setAudioUrls] = useState<Map<string, string>>(new Map());
   const [downloadedIds, setDownloadedIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
@@ -146,6 +148,11 @@ export function WhiteNoiseListScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAccountLinkPrompt={() => setShowAccountPrompt(true)}
+      />
+      <AccountPromptModal
+        visible={showAccountPrompt}
+        onClose={() => setShowAccountPrompt(false)}
       />
     </View>
   );
