@@ -11,7 +11,7 @@ import { useTheme } from "../../../core/theme/ThemeContext";
 import { getBedtimeStoryById } from "../../../services/firestoreService";
 import { getAudioUrl } from "../../../core/audio/audioFiles";
 import { Theme } from "../../../core/theme";
-import { BedtimeStory } from "../../../types";
+import { BedtimeStory } from "../types";
 
 export function BedtimeStoryPlayerScreen() {
   const { id } = useLocalSearchParams();

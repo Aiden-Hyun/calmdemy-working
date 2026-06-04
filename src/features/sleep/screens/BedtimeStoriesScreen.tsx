@@ -20,7 +20,7 @@ import { getAudioUrl } from '../../../core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../../services/downloadService';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
-import { BedtimeStory } from '../../../types';
+import { BedtimeStory } from '../types';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../subscription';
 import { AccountPromptModal } from '../../auth';

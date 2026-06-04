@@ -19,7 +19,7 @@ import { useSubscription } from "../../../core/subscription/SubscriptionContext"
 import { useBedtimeStories, useSleepMeditations, useSeries } from '../hooks/queries';
 import { getCategoryIcon } from "../../library";
 import { Theme } from "../../../core/theme";
-import { BedtimeStory } from "../../../types";
+import { BedtimeStory } from "../types";
 
 export function SleepHomeScreen() {
   const router = useRouter();

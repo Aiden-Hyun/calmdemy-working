@@ -18,7 +18,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-import { BedtimeStory } from "../../../types";
+import { BedtimeStory } from "../types";
 
 const bedtimeStoriesCollection = collection(db, "bedtime_stories");
 

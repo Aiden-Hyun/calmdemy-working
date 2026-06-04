@@ -2,8 +2,8 @@
  * features/sleep/index.ts — Public API
  *
  * Screens (consumed by route files), the sleep query hooks, and the manifest.
- * BedtimeStory type stays in src/types/ for now (deferred, per the 6c
- * relocate-as-is decision); the feature reads it via the neutral types path.
+ * Domain types (NatureSound / BedtimeStory / SleepStory) live in ./types,
+ * relocated from src/types/index.ts in 6d-4.
  */
 export { SleepHomeScreen } from './screens/SleepHomeScreen';
 export { BedtimeStoryPlayerScreen } from './screens/BedtimeStoryPlayerScreen';
