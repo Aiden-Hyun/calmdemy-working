@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react-native';
-import { ProtectedRoute } from '../../core/auth/ProtectedRoute';
+import { ProtectedRoute } from '../ProtectedRoute';
 
 // Mock expo-router
 vi.mock('expo-router', () => ({
@@ -11,7 +11,7 @@ vi.mock('expo-router', () => ({
 
 // Mock AuthContext
 const mockUseAuth = vi.fn();
-vi.mock('../../contexts/AuthContext', () => ({
+vi.mock('../AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
