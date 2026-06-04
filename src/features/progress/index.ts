@@ -25,6 +25,8 @@ export { StatsScreen } from './screens/StatsScreen';
 export { StatsCard } from './components/StatsCard';
 export { useStats } from './hooks/useStats';
 export { useListeningHistory } from './hooks/queries';
+export { usePlaybackTracking } from './hooks/usePlaybackTracking';
+export type { UsePlaybackTrackingProps, UsePlaybackTrackingReturn } from './hooks/usePlaybackTracking';
 export { milestones, getNextMilestone } from './data/milestones';
 export type { Milestone } from './data/milestones';
 export type { MeditationSession, ListeningHistoryItem } from './types';
