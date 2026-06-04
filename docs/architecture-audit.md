@@ -897,6 +897,75 @@ All 13 features migrated. `src/` now holds `core/`, `shared/`, `features/` (15 m
 
 Estimate: 2-3 days for the whole 6d sweep, one commit per coupling.
 
+#### Phase 6d — batching plan (canonical for the continuing sessions)
+
+The original Phase 6d had 8 couplings. Phase 6c's "deferred to follow-ups" list adds ~7 more carry-forward items. Together that's 15+ items — too large for one session. Batched into 4 sub-phases by area and risk:
+
+##### 6d-1 — Subscription/auth couplings + small fixes (low-risk, fast)
+
+Goal: break the subscription→auth direct imports and clean up the smallest 6d items. ~1 session.
+
+| Item | Current shape | Resolution |
+|---|---|---|
+| `PaywallModal → AccountPromptModal` | `features/subscription/components/PaywallModal.tsx` imports `AccountPromptModal` from `features/auth` directly (just an import-path update from 6c) | Invert: `PaywallModal` accepts an `onPromptAccountLink?: () => void` callback; the screen rendering both decides whether to open the auth modal after purchase. Subscription stops depending on auth. |
+| `RecoveryWizard → auth signIn methods` | Direct `useAuth().signInWith*()` calls inside `features/subscription/components/RecoveryWizard.tsx` | Same pattern: `RecoveryWizard` takes injected sign-in callbacks (`onSignInWithGoogle`, `onSignInWithApple`, `onSignInWithEmail`). The screen that owns the recovery flow wires auth's `useAuth` to those callbacks. |
+| `AccountSwitchConfirmModal` vs `AccountSwitchWarning` consolidation | 95% duplicates; both currently moved as-is in 6c (props differ — not a swap) | Reconcile prop shapes, pick the cleaner survivor, delete the other. Verify both call sites (login screen + AccountPromptModal) accept the unified shape. |
+| `OfflineNavigator` route constants | Hardcoded `/downloads` and `/(tabs)/home` in `core/nav/OfflineNavigator.tsx` | Extract to `core/nav/routes.ts` (or `core/storage/keys.ts` pattern) — typed route constants. Same one-source-of-truth as the storage keys. |
+
+**Open decisions to surface:**
+1. `PaywallModal` callback shape — `onPromptAccountLink?: () => void` (void; screen owns the modal state) vs `onPromptAccountLink?: () => Promise<boolean>` (subscription awaits the link result). Recommendation: void — keep PaywallModal stateless about the modal it triggers.
+2. Recovery wizard injection shape — three discrete `onSignInWith*` callbacks vs one `signInProvider: (provider) => Promise<void>` switch. Recommendation: three discrete callbacks — clearer, fewer string-typed enums.
+3. AccountSwitch survivor — which of `AccountSwitchConfirmModal` / `AccountSwitchWarning`? Read both end-to-end and surface with user before deleting.
+
+Commit cadence: 4 commits (one per item). TS clean after each.
+
+##### 6d-2 — Ambient-sound + player-timer couplings (medium)
+
+Goal: eliminate the two shared→feature back-edges around audio. ~1 session.
+
+| Item | Current shape | Resolution |
+|---|---|---|
+| `BackgroundAudioPicker (shared/media-player) → useSleepSounds (music)` via `src/hooks/queries/useMusicQueries.ts` barrel | The picker imports the music-feature data through a transitional barrel in `src/hooks/queries/` | Either: (a) pass the sound list in as a prop to BackgroundAudioPicker (the screen that mounts it fetches and provides the data) — preferred, or (b) move the ambient-sound data source to `core/data/ambient-sounds/`. After: delete the `useMusicQueries.ts` barrel. |
+| `PlaybackTimerContext → MediaPlayer.registerAudioPlayer` side-channel callback | The timer calls a callback the player has registered, which is wired up via a context method | Invert: the player takes a `fadeOutController` prop owned by the screen mounting both. The timer publishes `isActive`, `remainingSeconds`, `isFadingOut` via context (unchanged); the player owns whether to apply the fade. |
+
+**Open decisions:**
+1. (a) vs (b) for the ambient-sound coupling — recommendation: (a). Less moving, no new core/ module, and it makes the screens that compose `BackgroundAudioPicker` declare what sounds they offer.
+2. After the timer inversion: rename `PlaybackTimerContext` to keep "timer" but drop the implicit player-control role? Optional polish, not required.
+
+Commit cadence: 2-3 commits.
+
+##### 6d-3 — Player + MediaPlayer decomposition (the big architectural lift)
+
+Goal: decompose the two god-shapes that block clean per-feature ownership of playback concerns. ~2 sessions.
+
+| Item | Current shape | Resolution |
+|---|---|---|
+| `usePlayerBehavior` god-hook | Owns favorites + ratings + reports + history + paywall + player-state, ~600 LOC | Decompose into: `useFavoriteToggle` (library), `usePlaybackTracking` (progress), `useContentRating` (library), `useContentReport` (library), `useContentPaywallGate` (subscription). Each owned by its rightful feature; `TrackPlayerScreen` composes them. |
+| `TrackPlayerScreen` (was `MediaPlayer.tsx`) 1,461 LOC | Mixed view + orchestration; pulls in 14 dependencies | Extract `useMediaPlayerOrchestration` hook (or several) for the non-view logic (auto-play state, progress save scheduling, narrator/sound fetches, download checks). View becomes a thinner presentation component. |
+
+**Open decisions:**
+1. Order — decompose `usePlayerBehavior` first (input to the orchestration hook) or `TrackPlayerScreen` first? Recommend: `usePlayerBehavior` first; reveals which orchestration concerns are actually behavior vs view.
+2. Where the decomposed hooks live: each in its owning feature's `hooks/` (recommended) vs all in `shared/media-player/hooks/` (cohesive but couples shared to many features).
+3. Should `useFavoriteToggle` etc. be exposed by their feature's `index.ts`, or stay internal and the orchestration glue lives in `shared/media-player/`? Recommend: expose through public index — `TrackPlayerScreen` composes them via cross-feature imports through public APIs.
+
+Commit cadence: split into ≥4 commits, one per decomposed hook + one per orchestration extraction.
+
+##### 6d-4 — 6c carry-forward tidy (parallel to 6d, opportunistic)
+
+These items don't have to wait for 6d to finish. They can land any time post-6c. ~1 session if done as a single sweep.
+
+| Item | Action |
+|---|---|
+| Per-feature type extraction from `src/types/index.ts` | Move `GuidedMeditation`/`MeditationTechnique`/`MeditationTheme`/`MeditationCategory` → `features/meditation/types.ts`. Move `BedtimeStory`/`NatureSound`/`SleepStory` → `features/sleep/types.ts`. Move `DailyQuote`/`UserFavorite`/`ListeningHistoryItem`/`UserStats`/`ContentRating`/`ContentReport` → `features/library/types.ts` (these are content-layer types). Move `MeditationSession` → `features/progress/types.ts`. **Leave the cross-feature discriminators** (`SessionType`, `RatingType`, `ReportCategory`, `User`, `UserPreferences`) in `src/types/index.ts` for now — eventually `shared/types/` (do as part of the move). |
+| `useEmergencyMeditations` relocation | Currently lives in `features/meditation/hooks/queries.ts` (relocated as-is from old useMeditateQueries). Move to `features/emergency/hooks/queries.ts`. Re-export from `features/emergency/index.ts`. Update home's import path. |
+| Test files relocation | `src/components/__tests__/ProtectedRoute.test.tsx` → `src/core/auth/__tests__/`. `src/contexts/__tests__/AuthContext.test.tsx` → `src/core/auth/__tests__/`. |
+| `SoundPlayer → LoopingSoundScreen` rename | Locked decision. Export rename in `features/music/components/`, update consumers (just the music sub-screens). |
+| `music/[id]` rewrite | Add `getSoundById` Firestore helper to `features/music/api/`; adopt `usePlayerBehavior` (or the decomposed hooks if 6d-3 has landed) instead of the local rating/report flow. **Coordinate with 6d-3** — if `usePlayerBehavior` is being decomposed in parallel, do this rewrite after 6d-3 lands. |
+| AudioListScreen template application to remaining list screens | The 8 list screens that the doc's 6c plan called out (meditations index/techniques, music music/white-noise/nature-sounds, sleep bedtime-stories/sleep-meditations) — relocate uses to `AudioListScreen` with category-filter slot. **Coordinate with 6d-2** — the BackgroundAudioPicker fix changes how sound lists flow; revisit after 6d-2 lands. |
+| `getCategoryIcon` consolidation per-feature | Each feature owns its own category icon mapping. Bedtime-stories, music sub-screens, sleep tab → one helper per feature. Hand-fold into the AudioListScreen template application above. |
+
+**Recommended order to do 6d:** 6d-1 → 6d-2 → 6d-4 (types + emergency + tests + rename — opportunistic) → 6d-3 (the big decomposition). 6d-3 last because it's the architectural payoff that benefits from everything else being clean first.
+
 ### Phase 6e — Delete `firestoreService.ts` barrel
 
 When every consumer has migrated to feature-local imports (during their 6c migration), the barrel has no remaining importers. Confirm with `grep -r "from.*services/firestoreService"` returning empty, then `git rm src/services/firestoreService.ts`. Final cleanup.
