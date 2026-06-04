@@ -28,6 +28,7 @@ import { getSleepSoundById, getNarratorByName, FirestoreSleepSound, savePlayback
 import { useAuth } from '../../core/auth/AuthContext';
 import { useNetwork } from '../../core/network/NetworkContext';
 import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../../services/downloadService';
+import { useSleepSounds } from '../../features/music';
 
 /**
  * ============================================================
@@ -365,6 +366,12 @@ export function TrackPlayerScreen({
   // --- Background Audio Hook ---
   // Manages independent background sleep sound playback (runs alongside main audio)
   const backgroundAudio = useBackgroundAudio();
+
+  // --- Ambient Sound List ---
+  // Fetched here (the screen that composes BackgroundAudioPicker) and passed
+  // down as a prop, so the picker stays presentational and shared/ keeps its
+  // feature dependency at the public-API boundary (features/music index).
+  const { data: ambientSounds = [], isLoading: ambientSoundsLoading } = useSleepSounds();
 
   /**
    * --- LIFECYCLE EFFECT 3: Fetch Narrator Photo ---
@@ -1105,6 +1112,8 @@ export function TrackPlayerScreen({
         <BackgroundAudioPicker
           visible={showBackgroundPicker}
           onClose={() => setShowBackgroundPicker(false)}
+          sounds={ambientSounds}
+          soundsLoading={ambientSoundsLoading}
           selectedSoundId={backgroundAudio.selectedSoundId}
           loadingSoundId={backgroundAudio.loadingSoundId}
           isAudioReady={backgroundAudio.isAudioReady}

@@ -14,7 +14,6 @@ import Slider from "@react-native-community/slider";
 import { useTheme } from "../../core/theme/ThemeContext";
 import { Theme } from "../../core/theme";
 import { FirestoreSleepSound } from "../../services/firestoreService";
-import { useSleepSounds } from '../../hooks/queries/useMusicQueries';
 
 /**
  * ============================================================
@@ -39,9 +38,10 @@ import { useSleepSounds } from '../../hooks/queries/useMusicQueries';
  *     by category using tab selection (default: "all").
  *
  * Key Dependencies:
- *   - useSleepSounds() hook: React Query integration for Firestore sound list
+ *   - sounds prop: the sleep-sound list, fetched and injected by the parent
+ *     screen (Inversion of Control — the picker no longer reaches into a
+ *     feature query itself, keeping shared/ free of feature imports)
  *   - ThemeContext: Theme-aware styling
- *   - Firestore: Sleep sound metadata (title, category, audioPath, color)
  *
  * Consumed By:
  *   TrackPlayerScreen (via BackgroundAudioPicker in the modal overlay)
@@ -86,6 +86,10 @@ const categoryLabels: Record<string, string> = {
 interface BackgroundAudioPickerProps {
   visible: boolean;
   onClose: () => void;
+  /** Sleep-sound list, fetched and supplied by the parent screen. */
+  sounds: FirestoreSleepSound[];
+  /** Whether the parent is still loading the sound list. */
+  soundsLoading: boolean;
   selectedSoundId: string | null;
   loadingSoundId: string | null;
   isAudioReady: boolean;
@@ -106,6 +110,8 @@ interface BackgroundAudioPickerProps {
  *
  * @param visible - Whether the modal is shown
  * @param onClose - Callback to close the modal
+ * @param sounds - The sleep-sound list, fetched and injected by the parent screen
+ * @param soundsLoading - Whether the parent is still loading the sound list
  * @param selectedSoundId - ID of the currently selected sound (or null if none)
  * @param loadingSoundId - ID of the sound currently loading audio (for UI feedback)
  * @param isAudioReady - Whether the selected sound's audio has finished loading
@@ -119,6 +125,8 @@ interface BackgroundAudioPickerProps {
 export function BackgroundAudioPicker({
   visible,
   onClose,
+  sounds,
+  soundsLoading,
   selectedSoundId,
   loadingSoundId,
   isAudioReady,
@@ -135,9 +143,6 @@ export function BackgroundAudioPicker({
   // Local filter state: tracks which category is currently active
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
-  // React Query hook: fetches all sleep sounds from Firestore, cached automatically
-  const { data: allSounds = [], isLoading: loadingSounds } = useSleepSounds();
-
   /**
    * Derive available categories dynamically from Firestore data.
    * Always includes "all" at the beginning (before alphabetical sort).
@@ -147,10 +152,10 @@ export function BackgroundAudioPicker({
    * the category list automatically updates without hardcoding category values.
    */
   const categories = useMemo(() => {
-    const uniqueCats = [...new Set(allSounds.map((s) => s.category))];
+    const uniqueCats = [...new Set(sounds.map((s) => s.category))];
     // Sort alphabetically and add 'all' at the beginning
     return ["all", ...uniqueCats.sort()];
-  }, [allSounds]);
+  }, [sounds]);
 
   /**
    * Filter sounds based on the active category tab.
@@ -159,9 +164,9 @@ export function BackgroundAudioPicker({
    */
   const filteredSounds = useMemo(
     () => activeCategory === "all"
-      ? allSounds
-      : allSounds.filter((sound) => sound.category === activeCategory),
-    [activeCategory, allSounds]
+      ? sounds
+      : sounds.filter((sound) => sound.category === activeCategory),
+    [activeCategory, sounds]
   );
 
   /**
@@ -319,7 +324,7 @@ export function BackgroundAudioPicker({
             style={styles.soundList}
             showsVerticalScrollIndicator={false}
           >
-            {loadingSounds ? (
+            {soundsLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#7DAFB4" />
               </View>
