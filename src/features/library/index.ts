@@ -24,3 +24,5 @@ export { navigateToContent } from './navigation';
 export type { NavigateToContentContext } from './navigation';
 export { getCategoryIcon } from './contentIcons';
 export { useTodayQuote, useFavorites } from './hooks/queries';
+export { useFavoriteToggle } from './hooks/useFavoriteToggle';
+export type { UseFavoriteToggleProps, UseFavoriteToggleReturn } from './hooks/useFavoriteToggle';
