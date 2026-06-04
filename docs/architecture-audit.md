@@ -974,6 +974,39 @@ Goal: decompose the two god-shapes that block clean per-feature ownership of pla
 
 Commit cadence: split into ≥4 commits, one per decomposed hook + one per orchestration extraction.
 
+###### 6d-3 — complete
+
+Both god-shapes decomposed in 11 code commits. `tsc --noEmit` clean after every commit. (No live UI verification: `npm run ios` is out of scope and the vitest suite is unrunnable here — correctness rests on `tsc` + identical-prop/effect-preservation.)
+
+**Part 1 — `usePlayerBehavior` god-hook → 4 feature-owned hooks (5 commits).** The 382-line shared hook was split by concern, each hook owned by its rightful feature and exposed via the public index:
+
+| Decomposed hook | Owner | Commit |
+|---|---|---|
+| `useFavoriteToggle` (favorite status + optimistic toggle + anon-account gate) | library | `d4fe41f` |
+| `useContentRating` (rating state + optimistic radio-toggle) | library | `2e215e4` |
+| `useContentReport` (report handler) | library | `199b63b` |
+| `usePlaybackTracking` (play/pause + first-play history + 80% session observer) | progress | `637ec83` |
+| Compose in 5 screens; delete `usePlayerBehavior` | — | `8437972` |
+
+Each hook sources from its feature's own `api/` (not the legacy barrel). The five player consumers (meditation, bedtime-story, sleep-meditation, emergency, library collection-item player) now compose the hooks via feature public indexes and pass the same props into `TrackPlayerScreen`.
+
+**Decision (open-decision 3, ratified with user as "Option A"):** composition lives in the **feature player screens**, NOT in `TrackPlayerScreen`. The audit recommended `TrackPlayerScreen` compose them, but that component is in `shared/`; importing feature hooks there would reintroduce the `shared → feature` back-edges removed in 6d-1/6d-2. The screens are feature code, so `feature → library`/`feature → progress` (via public index) is allowed and keeps the graph acyclic (verified: no library/progress → meditation/sleep/emergency edges). The 5th spec hook (`useContentPaywallGate`) had no source in `usePlayerBehavior` — the only gate there was the anon-account prompt (folded into `useFavoriteToggle`); real paywall gating was never in this hook.
+
+**Part 2 — `TrackPlayerScreen` god-component → 6 orchestration hooks (6 commits).** The 1,475-line component's 15 lifecycle effects + 3 handlers were extracted by concern into `shared/media-player/hooks/` (all staying in shared):
+
+| Orchestration hook | Concern | Commit |
+|---|---|---|
+| `useAutoPlay` | auto-play preference (AsyncStorage) + next-track-on-completion | `f64fceb` |
+| `useNarratorPhoto` | instructor photo lookup | `cd8db87` |
+| `useTrackDownload` | offline download state/check/handler | `737e856` |
+| `useBackgroundSoundController` | ambient-sound engine + list + metadata + selection | `4b2c3c0` |
+| `useSleepTimerFade` | apply the timer's published fade-out to the owned audio | `69c9a43` |
+| `usePlaybackProgressSync` | restore/save/clear Firestore playback position | `8dd84cc` |
+
+Result: the component owns **no `useEffect`/`useRef`** and no longer reads auth or the progress barrel — its only local state is view-level (modal visibility, responsive breakpoints). It shrank from 1,475 → ~1,060 lines (remainder is JSX + StyleSheet). Effect ordering was preserved by keeping intra-concern effects together and calling the hooks in the original order. **Side benefit:** the media-player layer's one accepted `shared → feature` edge (`useSleepSounds` from features/music) is now isolated inside `useBackgroundSoundController`; `TrackPlayerScreen.tsx` itself imports no feature. The orchestration hooks still source narrator/sound/progress data from the legacy `firestoreService` barrel exactly as the component did — barrel migration remains Phase 6e, so no new feature edges were introduced.
+
+**Net:** Phase 6d-3 is the architectural payoff — playback concerns are now owned by the features that should own them (library/progress) and the shared player is a thin presentational shell composing single-concern orchestration hooks.
+
 ##### 6d-4 — 6c carry-forward tidy (parallel to 6d, opportunistic)
 
 These items don't have to wait for 6d to finish. They can land any time post-6c. ~1 session if done as a single sweep.
