@@ -19,7 +19,7 @@ import { Theme } from '../../../core/theme';
 import { useMeditationsByTechnique } from '../hooks/queries';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../../services/downloadService';
-import { GuidedMeditation, MeditationTechnique } from '../../../types';
+import { GuidedMeditation, MeditationTechnique } from '../types';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../subscription';
 import { AccountPromptModal } from '../../auth';

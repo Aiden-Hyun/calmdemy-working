@@ -106,61 +106,6 @@ export interface MeditationSession {
 }
 
 /**
- * Guided meditation content item.
- *
- * Represents a standalone meditation exercise in the /meditations collection.
- * Includes metadata (title, description, duration), media references (audioPath, thumbnailUrl),
- * and tagging for discovery (themes, techniques).
- *
- * Note: themes and techniques are arrays to support multi-tag filtering.
- * For example, a meditation might target both "stress" and "sleep" themes.
- */
-export interface GuidedMeditation {
-  id: string;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  audioPath: string;
-  thumbnailUrl?: string;
-  themes: MeditationTheme[];      // Multiple themes allowed for multi-tag discovery
-  techniques: MeditationTechnique[]; // Multiple techniques allowed
-  difficulty_level: "beginner" | "intermediate" | "advanced";
-  instructor?: string;
-  isFree?: boolean;
-}
-
-/**
- * Meditation theme tags (e.g., "stress", "sleep", "focus").
- *
- * Used to categorize meditations by their primary benefit or use case.
- * Frontend screens filter and display meditations by theme.
- */
-export type MeditationTheme = 
-  | "focus"
-  | "stress"
-  | "anxiety"
-  | "sleep"
-  | "relationships"
-  | "self-esteem"
-  | "gratitude"
-  | "loving-kindness";
-
-export type MeditationTechnique =
-  | "breathing"
-  | "body-scan"
-  | "visualization"
-  | "loving-kindness"
-  | "mindfulness"
-  | "grounding"
-  | "progressive-relaxation";
-
-/**
- * Legacy alias for MeditationTheme (backwards compatibility).
- * New code should use MeditationTheme directly.
- */
-export type MeditationCategory = MeditationTheme;
-
-/**
  * Nature sound content: ambient audio for relaxation/sleep.
  *
  * Examples: "Rain on Window", "Ocean Waves", "Forest Ambience".
@@ -288,7 +233,7 @@ export interface UserStats {
   current_streak: number;
   longest_streak: number;
   favorite_time_of_day?: string;
-  most_used_category?: MeditationCategory;
+  most_used_category?: string; // was MeditationCategory; widened in 6d-4 when that type moved to features/meditation (avoids a shared->feature import)
   weekly_minutes: number[];
   monthly_minutes: number[];
   yearly_minutes: number[];

@@ -17,7 +17,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-import { GuidedMeditation } from "../../../types";
+import { GuidedMeditation } from "../types";
 
 const meditationsCollection = collection(db, "guided_meditations");
 

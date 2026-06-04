@@ -14,7 +14,7 @@ import { useSubscription } from '../../../core/subscription/SubscriptionContext'
 import { useCourses, useGuidedMeditations } from '../hooks/queries';
 import { Theme } from '../../../core/theme';
 import { FirestoreCourse } from '../../../services/firestoreService';
-import { GuidedMeditation, MeditationTechnique } from '../../../types';
+import { GuidedMeditation, MeditationTechnique } from '../types';
 
 const themeCategories = [
   { id: 'focus', label: 'Focus', icon: 'eye-outline' as const, color: '#8B9F82' },

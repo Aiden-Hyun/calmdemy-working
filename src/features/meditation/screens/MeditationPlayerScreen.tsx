@@ -11,7 +11,7 @@ import { useTheme } from '../../../core/theme/ThemeContext';
 import { getMeditationById } from '../../../services/firestoreService';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { Theme } from '../../../core/theme';
-import { GuidedMeditation } from '../../../types';
+import { GuidedMeditation } from '../types';
 
 export function MeditationPlayerScreen() {
   const { id } = useLocalSearchParams();
