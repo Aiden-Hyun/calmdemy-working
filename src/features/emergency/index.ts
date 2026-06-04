@@ -7,8 +7,9 @@
  * outside features/emergency/ may import ONLY the symbols re-exported
  * here (Phase 8 makes this machine-checked).
  *
- * - EmergencyPlayerScreen — rendered by app/emergency/[id].tsx (route file)
- * - manifest              — consumed by src/registry.ts (Phase 7)
+ * - EmergencyPlayerScreen  — rendered by app/emergency/[id].tsx (route file)
+ * - useEmergencyMeditations — emergency content query; consumed by Home
+ * - manifest               — consumed by src/registry.ts (Phase 7)
  *
  * Data access (api/emergencyMeditations.ts) stays internal for now;
  * its consumers still reach it through the firestoreService barrel until
@@ -17,4 +18,5 @@
  */
 
 export { EmergencyPlayerScreen } from './screens/EmergencyPlayerScreen';
+export { useEmergencyMeditations } from './hooks/queries';
 export { manifest } from './manifest';

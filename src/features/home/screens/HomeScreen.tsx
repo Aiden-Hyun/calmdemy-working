@@ -8,7 +8,7 @@ import { useAuth } from '../../../core/auth/AuthContext';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { useTodayQuote, useFavorites } from '../../library';
-import { useEmergencyMeditations } from '../../meditation';
+import { useEmergencyMeditations } from '../../emergency';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatedView } from '../../../core/ui/AnimatedView';
 import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
