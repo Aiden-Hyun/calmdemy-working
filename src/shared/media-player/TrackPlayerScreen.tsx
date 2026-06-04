@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AudioControls } from './AudioControls';
 import { BackgroundAudioPicker } from './BackgroundAudioPicker';
 import { SleepTimerPicker } from './SleepTimerPicker';
@@ -29,6 +28,7 @@ import { useAuth } from '../../core/auth/AuthContext';
 import { useNetwork } from '../../core/network/NetworkContext';
 import { isDownloaded, downloadAudio, isDownloading as checkIsDownloading, getLocalThumbnailPath } from '../../services/downloadService';
 import { useSleepSounds } from '../../features/music';
+import { useAutoPlay } from './hooks/useAutoPlay';
 
 /**
  * ============================================================
@@ -81,9 +81,6 @@ import { useSleepSounds } from '../../features/music';
  *   ID changes during playback (e.g., skipping to next track).
  * ============================================================
  */
-
-// AsyncStorage key for persisting auto-play user preference
-const AUTOPLAY_KEY = 'calmdemy_autoplay_enabled';
 
 /**
  * Props interface for the TrackPlayerScreen component.
@@ -238,10 +235,13 @@ export function TrackPlayerScreen({
   const [narratorPhotoUrl, setNarratorPhotoUrl] = useState<string | null>(instructorPhotoUrl || null);
 
   // --- Auto-Play Feature ---
-  // User preference: whether to automatically play next track when current one completes
-  const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
-  // Ref to track if auto-play was already triggered (prevents double-firing on multiple progress updates)
-  const hasTriggeredAutoPlay = useRef(false);
+  // Preference + next-track-on-completion observer (orchestration hook).
+  const { autoPlayEnabled, toggleAutoPlay } = useAutoPlay({
+    trackKey: title,
+    hasNext,
+    onNext,
+    audioPlayer,
+  });
 
   // --- Download Feature State ---
   // Tracks whether this content is downloaded, downloading, and download progress percentage
@@ -264,26 +264,6 @@ export function TrackPlayerScreen({
   // Refs (not state) because these are implementation details that don't trigger re-renders
   const lastSaveTime = useRef(0); // Timestamp of last Firestore save (for debouncing)
   const hasRestoredPosition = useRef(false); // Flag to prevent restoring position multiple times
-
-  /**
-   * --- LIFECYCLE EFFECT 1: Load Auto-Play Preference ---
-   * On component mount, restore the user's auto-play setting from AsyncStorage.
-   * If no setting is stored, default to true (auto-play enabled).
-   * This gives users persistent control over auto-play behavior across app sessions.
-   */
-  useEffect(() => {
-    async function loadAutoPlayPreference() {
-      try {
-        const stored = await AsyncStorage.getItem(AUTOPLAY_KEY);
-        if (stored !== null) {
-          setAutoPlayEnabled(stored === 'true');
-        }
-      } catch (error) {
-        console.error('Failed to load auto-play preference:', error);
-      }
-    }
-    loadAutoPlayPreference();
-  }, []);
 
   /**
    * --- LIFECYCLE EFFECT 2: Check Download Status ---
@@ -347,21 +327,6 @@ export function TrackPlayerScreen({
         const thumbPath = await getLocalThumbnailPath(contentId);
         setLocalThumbnail(thumbPath);
       }
-    }
-  };
-
-  /**
-   * Toggles auto-play on/off and persists the preference to AsyncStorage.
-   * This is a Facade for the AsyncStorage operation: the component just calls
-   * this function; the function handles persistence details.
-   */
-  const toggleAutoPlay = async () => {
-    const newValue = !autoPlayEnabled;
-    setAutoPlayEnabled(newValue);
-    try {
-      await AsyncStorage.setItem(AUTOPLAY_KEY, String(newValue));
-    } catch (error) {
-      console.error('Failed to save auto-play preference:', error);
     }
   };
 
@@ -491,48 +456,6 @@ export function TrackPlayerScreen({
       hasFadePausedRef.current = false;
     }
   }, [sleepTimer.isFadingOut, sleepTimer.fadeVolume]);
-
-  /**
-   * --- LIFECYCLE EFFECT 9: Reset Auto-Play Trigger Flag ---
-   * When the track changes (title changes), reset the auto-play trigger flag.
-   * This allows auto-play to fire again on the next track's completion.
-   * Without this, auto-play would only fire once across all tracks.
-   */
-  useEffect(() => {
-    hasTriggeredAutoPlay.current = false;
-  }, [title]);
-
-  /**
-   * --- LIFECYCLE EFFECT 10: Auto-Play Next Track on Completion ---
-   * Implements automatic progression to the next track when current audio finishes.
-   * This is a State Machine: checks multiple conditions to detect completion:
-   *   - autoPlayEnabled: User has not disabled auto-play
-   *   - progress >= 0.99: Audio is 99% complete (avoids floating-point precision issues)
-   *   - !isPlaying: Audio has stopped naturally (not paused by user)
-   *   - duration > 0: Audio has loaded
-   *   - !hasTriggeredAutoPlay.current: Guard against double-firing on multiple progress updates
-   *
-   * The 500ms delay gives the UI time to update before skipping to next track.
-   */
-  useEffect(() => {
-    // Check if audio has completed naturally (progress >= 0.99 and not playing)
-    if (
-      autoPlayEnabled &&
-      hasNext &&
-      onNext &&
-      audioPlayer.progress >= 0.99 &&
-      !audioPlayer.isPlaying &&
-      audioPlayer.duration > 0 &&
-      !hasTriggeredAutoPlay.current
-    ) {
-      // Mark as triggered to prevent double-firing (State Machine guard)
-      hasTriggeredAutoPlay.current = true;
-      // Small delay to ensure smooth transition (improves perceived UX)
-      setTimeout(() => {
-        onNext();
-      }, 500);
-    }
-  }, [autoPlayEnabled, hasNext, onNext, audioPlayer.progress, audioPlayer.isPlaying, audioPlayer.duration]);
 
   /**
    * --- LIFECYCLE EFFECT 11: Restore Playback Position on Mount ---
