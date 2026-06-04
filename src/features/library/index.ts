@@ -28,3 +28,5 @@ export { useFavoriteToggle } from './hooks/useFavoriteToggle';
 export type { UseFavoriteToggleProps, UseFavoriteToggleReturn } from './hooks/useFavoriteToggle';
 export { useContentRating } from './hooks/useContentRating';
 export type { UseContentRatingProps, UseContentRatingReturn } from './hooks/useContentRating';
+export { useContentReport } from './hooks/useContentReport';
+export type { UseContentReportProps, UseContentReportReturn } from './hooks/useContentReport';
