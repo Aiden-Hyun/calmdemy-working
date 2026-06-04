@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
-import { SoundPlayer } from '../components/SoundPlayer';
+import { LoopingSoundScreen } from '../components/LoopingSoundScreen';
 import { DownloadButton } from '../../../shared/downloads/DownloadButton';
 import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { useTheme } from '../../../core/theme/ThemeContext';
@@ -356,7 +356,7 @@ export function SoundPlayerScreen() {
 
           {/* Sound Player */}
           <View style={styles.playerContainer}>
-            <SoundPlayer
+            <LoopingSoundScreen
               isPlaying={audioPlayer.isPlaying}
               isLoading={audioPlayer.isLoading}
               isLooping={audioPlayer.isLooping}

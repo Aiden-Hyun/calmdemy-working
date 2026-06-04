@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * SoundPlayer.tsx — Sleep/Ambient Sound Player (Controlled Component)
+ * LoopingSoundScreen.tsx — Sleep/Ambient Sound Player (Controlled Component)
  * ============================================================
  *
  * Architectural Role:
@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
 
-interface SoundPlayerProps {
+interface LoopingSoundScreenProps {
   isPlaying: boolean;
   isLoading: boolean;
   isLooping: boolean;
@@ -61,7 +61,7 @@ const TIMER_PRESETS = [
 ];
 
 /**
- * SoundPlayer — Sleep/ambient sound player UI component.
+ * LoopingSoundScreen — Sleep/ambient sound player UI component.
  *
  * A Controlled Component that receives all state as props and calls parent
  * callbacks for state changes. Displays:
@@ -74,7 +74,7 @@ const TIMER_PRESETS = [
  * All audio control logic is delegated to the parent; this component
  * is purely presentation and user input routing.
  */
-export function SoundPlayer({
+export function LoopingSoundScreen({
   isPlaying,
   isLoading,
   isLooping,
@@ -88,7 +88,7 @@ export function SoundPlayer({
   description,
   iconName = 'musical-notes',
   iconColor = '#C9B896',
-}: SoundPlayerProps) {
+}: LoopingSoundScreenProps) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
