@@ -9,7 +9,7 @@
  *
  * Shared mechanics live in `useCollectionItemPlayer`; this file reads the
  * route params (the set differs per type) and supplies the type-specific
- * presentation — the `usePlayerBehavior` title, the TrackPlayerScreen props
+ * presentation — the playback-tracking title, the TrackPlayerScreen props
  * (category / instructor / gradient / artwork icon / loading text /
  * metaInfo / parentTitle) and `buildSiblingParams` for prev/next.
  * ============================================================

@@ -6,7 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { TrackPlayerScreen } from "../../../shared/media-player/TrackPlayerScreen";
 import { useAudioPlayer } from "../../../core/audio/useAudioPlayer";
-import { usePlayerBehavior } from "../../../shared/media-player/usePlayerBehavior";
+import { useFavoriteToggle, useContentRating, useContentReport } from "../../library";
+import { usePlaybackTracking } from "../../progress";
 import { useTheme } from "../../../core/theme/ThemeContext";
 import { getBedtimeStoryById } from "../../../services/firestoreService";
 import { getAudioUrl } from "../../../core/audio/audioFiles";
@@ -24,15 +25,20 @@ export function BedtimeStoryPlayerScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const audioPlayer = useAudioPlayer();
 
-  // Use the shared player behavior hook
-  const {
-    isFavorited,
-    userRating,
-    onToggleFavorite,
-    onPlayPause,
-    onRate,
-    onReport,
-  } = usePlayerBehavior({
+  // Compose the per-feature playback-behavior hooks (Phase 6d-3 decomposition)
+  const { isFavorited, onToggleFavorite } = useFavoriteToggle({
+    contentId: id as string,
+    contentType: "bedtime_story",
+  });
+  const { userRating, onRate } = useContentRating({
+    contentId: id as string,
+    contentType: "bedtime_story",
+  });
+  const { onReport } = useContentReport({
+    contentId: id as string,
+    contentType: "bedtime_story",
+  });
+  const { onPlayPause } = usePlaybackTracking({
     contentId: id as string,
     contentType: "bedtime_story",
     audioPlayer,

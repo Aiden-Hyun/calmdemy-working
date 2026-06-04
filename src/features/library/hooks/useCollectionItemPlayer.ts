@@ -14,8 +14,9 @@
  *   - prev/next within the sibling list (paywall-gated, cleans up audio,
  *     router.replace to the player route; next auto-plays)
  *
- * It also owns the `usePlayerBehavior` wiring (favorites / rating /
- * report / play-pause). Presentation (TrackPlayerScreen props) and the
+ * It also owns the playback-behavior wiring — composing the per-feature
+ * useFavoriteToggle / useContentRating / useContentReport / usePlaybackTracking
+ * hooks (favorites / rating / report / play-pause). Presentation (TrackPlayerScreen props) and the
  * type-specific sibling-param shape stay in the screen, which passes
  * `buildSiblingParams` in — the parent-level fields (albumTitle, artist,
  * narrator, course codes, color…) live in the route params, not the
@@ -33,7 +34,10 @@ import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { getLocalAudioPath } from '../../../services/downloadService';
 import { markContentCompleted } from '../../../services/firestoreService';
-import { usePlayerBehavior } from '../../../shared/media-player/usePlayerBehavior';
+import { useFavoriteToggle } from './useFavoriteToggle';
+import { useContentRating } from './useContentRating';
+import { useContentReport } from './useContentReport';
+import { usePlaybackTracking } from '../../progress';
 import type { RatingType, ReportCategory } from '../../../types';
 import type { CollectionConfig } from '../types';
 
@@ -48,7 +52,7 @@ export interface UseCollectionItemPlayerArgs<TChild> {
   currentIndex: string | undefined;
   /** When 'true', auto-start playback on mount. */
   autoPlay: string | undefined;
-  /** Title handed to usePlayerBehavior (type-specific prefix; built by the screen). */
+  /** Title handed to usePlaybackTracking (type-specific prefix; built by the screen). */
   playerBehaviorTitle: string | undefined;
   durationMinutes: number;
   thumbnailUrl?: string;
@@ -71,7 +75,7 @@ export interface UseCollectionItemPlayerResult<TChild> {
   siblings: TChild[];
   hasPrevious: boolean;
   hasNext: boolean;
-  // usePlayerBehavior surface
+  // Composed playback-behavior surface
   isFavorited: boolean;
   userRating: RatingType | null;
   onToggleFavorite: () => Promise<void>;
@@ -113,14 +117,20 @@ export function useCollectionItemPlayer<TParent, TChild>(
 
   const audioPlayer = useAudioPlayer();
 
-  const {
-    isFavorited,
-    userRating,
-    onToggleFavorite,
-    onPlayPause,
-    onRate,
-    onReport,
-  } = usePlayerBehavior({
+  // Compose the per-feature playback-behavior hooks (Phase 6d-3 decomposition)
+  const { isFavorited, onToggleFavorite } = useFavoriteToggle({
+    contentId: childId,
+    contentType: config.childContentType,
+  });
+  const { userRating, onRate } = useContentRating({
+    contentId: childId,
+    contentType: config.childContentType,
+  });
+  const { onReport } = useContentReport({
+    contentId: childId,
+    contentType: config.childContentType,
+  });
+  const { onPlayPause } = usePlaybackTracking({
     contentId: childId,
     contentType: config.childContentType,
     audioPlayer,

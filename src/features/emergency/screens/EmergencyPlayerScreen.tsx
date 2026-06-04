@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { TrackPlayerScreen } from "../../../shared/media-player/TrackPlayerScreen";
 import { useAudioPlayer } from "../../../core/audio/useAudioPlayer";
-import { usePlayerBehavior } from "../../../shared/media-player/usePlayerBehavior";
+import { useFavoriteToggle, useContentRating, useContentReport } from "../../library";
+import { usePlaybackTracking } from "../../progress";
 import { getAudioUrlFromPath } from "../../../core/audio/audioFiles";
 
 // Helper to lighten a hex color
@@ -45,15 +46,20 @@ export function EmergencyPlayerScreen() {
   const audioPlayer = useAudioPlayer();
   const durationMinutes = parseInt(duration) || 4;
 
-  // Use the shared player behavior hook
-  const {
-    isFavorited,
-    userRating,
-    onToggleFavorite,
-    onPlayPause,
-    onRate,
-    onReport,
-  } = usePlayerBehavior({
+  // Compose the per-feature playback-behavior hooks (Phase 6d-3 decomposition)
+  const { isFavorited, onToggleFavorite } = useFavoriteToggle({
+    contentId: id,
+    contentType: "emergency",
+  });
+  const { userRating, onRate } = useContentRating({
+    contentId: id,
+    contentType: "emergency",
+  });
+  const { onReport } = useContentReport({
+    contentId: id,
+    contentType: "emergency",
+  });
+  const { onPlayPause } = usePlaybackTracking({
     contentId: id,
     contentType: "emergency",
     audioPlayer,
