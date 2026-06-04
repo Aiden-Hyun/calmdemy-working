@@ -24,7 +24,7 @@ import {
 } from '../../../services/firestoreService';
 import { navigateToContent as libNavigateToContent } from '../../library';
 import { Theme } from '../../../core/theme';
-import { ListeningHistoryItem } from '../../../types';
+import type { ListeningHistoryItem } from '../../progress';
 import { generateGuestNickname } from '../../../utils/guestNickname';
 
 export function HomeScreen() {

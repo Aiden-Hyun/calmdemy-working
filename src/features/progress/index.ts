@@ -13,6 +13,8 @@
  * - useStats — stats ViewModel; consumed by profile and Home
  * - useListeningHistory — consumed by Home until it migrates (step 10)
  * - milestones / getNextMilestone / Milestone — consumed by profile
+ * - MeditationSession — session record type; consumed by meditation (useMeditation)
+ * - ListeningHistoryItem — listening-history entry type; consumed by Home
  * - manifest — consumed by src/registry.ts (Phase 7)
  *
  * useUserStats stays internal (only useStats wraps it).
@@ -25,4 +27,5 @@ export { useStats } from './hooks/useStats';
 export { useListeningHistory } from './hooks/queries';
 export { milestones, getNextMilestone } from './data/milestones';
 export type { Milestone } from './data/milestones';
+export type { MeditationSession, ListeningHistoryItem } from './types';
 export { manifest } from './manifest';

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { createSession } from '../../../services/firestoreService';
 import { useAuth } from '../../../core/auth/AuthContext';
-import { MeditationSession } from '../../../types';
+import type { MeditationSession } from '../../progress';
 
 /**
  * ============================================================

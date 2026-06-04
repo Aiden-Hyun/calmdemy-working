@@ -4,10 +4,10 @@
  * ============================================================
  *
  * Architectural Role:
- *   This file is the centralized type registry for the entire app.
- *   It defines Firestore document shapes (User, MeditationSession, etc.),
- *   discriminated unions (SessionType, content types), and domain models
- *   that bridge the backend (Firestore) and frontend (React components).
+ *   This file holds the cross-cutting type definitions that do not belong to
+ *   any single feature: the User/auth shapes, the SessionType discriminator,
+ *   and the favorite/stats/rating/report records. Feature-owned content shapes
+ *   live in their own features/<x>/types.ts (relocated in 6d-4).
  *
  * Design Patterns:
  *   - Single Source of Truth: All type definitions live here, so if
@@ -15,15 +15,14 @@
  *   - Discriminated Unions: SessionType and ReportCategory are string
  *     literals (discriminated unions) that let TypeScript narrow types
  *     based on the discriminator field.
- *   - Denormalization: ListeningHistoryItem and UserFavorite include
- *     denormalized fields (content_title, content_thumbnail) for quick
- *     display without additional queries.
+ *   - Denormalization: UserFavorite includes denormalized fields
+ *     (content_title, content_thumbnail) for quick display without
+ *     additional queries.
  *
  * Key Concepts:
  *   - User: Authentication identity and profile data
  *   - SessionType: Discriminated union of all playable content types
- *   - MeditationSession: Record of a completed meditation/listening session
- *   - ResolvedContent: Polymorphic content (any SessionType can be favorited)
+ *   - UserFavorite / UserStats: cross-cutting user records
  *   - Firestore collections are typically pluralized (users, meditations, etc.)
  * ============================================================
  */
@@ -89,23 +88,6 @@ export type SessionType =
   | "technique";
 
 /**
- * Meditation session record: metadata about a completed meditation.
- *
- * Stored in /users/{uid}/sessions/{sessionId}.
- * This is the core record for tracking user progress, streaks, and mood improvements.
- */
-export interface MeditationSession {
-  id: string;
-  user_id: string;
-  duration_minutes: number;
-  session_type: SessionType;
-  completed_at: string;
-  notes?: string;
-  mood_before?: number;
-  mood_after?: number;
-}
-
-/**
  * Daily inspirational quote.
  *
  * Shown on the home screen. Stored in /dailyQuotes.
@@ -139,39 +121,6 @@ export interface UserFavorite {
     | "emergency"
     | "course_session";
   favorited_at: string;
-}
-
-/**
- * Listening history entry: record of a play session.
- *
- * Every time a user plays/listens to content, a ListeningHistoryItem is created.
- * Stored in /users/{uid}/listeningHistory/{id}.
- * Includes denormalized fields (title, thumbnail) for fast list rendering
- * without a second query.
- *
- * For course sessions, includes course_code (e.g., "CBT101") and session_code
- * (e.g., "CBT101M1L") for structured course navigation.
- */
-export interface ListeningHistoryItem {
-  id: string;
-  user_id: string;
-  content_id: string;
-  content_type:
-    | "meditation"
-    | "nature_sound"
-    | "bedtime_story"
-    | "breathing_exercise"
-    | "series_chapter"
-    | "album_track"
-    | "emergency"
-    | "course_session";
-  content_title: string; // Denormalized for quick display
-  content_thumbnail?: string; // Denormalized
-  duration_minutes: number;
-  played_at: string;
-  // For course sessions - to display code badge and module info
-  course_code?: string; // e.g., "CBT101"
-  session_code?: string; // e.g., "CBT101M1L"
 }
 
 /**

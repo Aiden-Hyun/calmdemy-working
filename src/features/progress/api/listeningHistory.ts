@@ -20,7 +20,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-import { ListeningHistoryItem } from "../../../types";
+import { ListeningHistoryItem } from "../types";
 
 const listeningHistoryCollection = collection(db, "listening_history");
 

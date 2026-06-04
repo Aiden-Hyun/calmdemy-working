@@ -26,7 +26,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-import { MeditationSession } from "../../../types";
+import { MeditationSession } from "../types";
 
 const sessionsCollection = collection(db, "meditation_sessions");
 
