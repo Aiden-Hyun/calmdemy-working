@@ -37,5 +37,6 @@ export const manifest: FeatureManifest = {
     'grounding',
     'sos',
   ],
-  enabled: true,
+  // Hidden from Discover (7a): contextual param route (/emergency/[id]) — not directly navigable.
+  enabled: false,
 };

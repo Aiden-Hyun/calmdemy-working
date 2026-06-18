@@ -25,5 +25,6 @@ export const manifest: FeatureManifest = {
   requiresAuth: true,
   requiresSubscription: false,
   searchKeywords: ['profile', 'account', 'settings', 'subscription'],
-  enabled: true,
+  // Hidden from Discover (7a): Profile is a permanent tab, not a browsable destination.
+  enabled: false,
 };

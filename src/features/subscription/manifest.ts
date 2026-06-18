@@ -28,5 +28,6 @@ export const manifest: FeatureManifest = {
   requiresAuth: false,
   requiresSubscription: false,
   searchKeywords: ['premium', 'subscription', 'upgrade', 'paywall', 'restore', 'refund'],
-  enabled: true,
+  // Hidden from Discover (7a): gating/paywall UI (modal-based), not a destination; route was a /settings dup.
+  enabled: false,
 };

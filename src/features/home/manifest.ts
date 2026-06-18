@@ -17,5 +17,6 @@ export const manifest: FeatureManifest = {
   requiresAuth: true,
   requiresSubscription: false,
   searchKeywords: ['home', 'today', 'recently played', 'favorites', 'quote'],
-  enabled: true,
+  // Hidden from Discover (7a): Home is a permanent tab, not a browsable destination.
+  enabled: false,
 };

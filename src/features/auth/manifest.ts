@@ -24,5 +24,6 @@ export const manifest: FeatureManifest = {
   requiresAuth: false,
   requiresSubscription: false,
   searchKeywords: ['sign in', 'login', 'account', 'apple', 'google', 'email', 'password'],
-  enabled: true,
+  // Hidden from Discover (7a): an authentication flow, not a browsable destination.
+  enabled: false,
 };
