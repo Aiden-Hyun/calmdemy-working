@@ -31,6 +31,26 @@
 
 import type { Ionicons } from '@expo/vector-icons';
 
+// Every feature's manifest, imported from its public index.ts. Explicit
+// import + push (no auto-discovery, no side-effect imports): one file, one
+// source of truth. Alphabetical by feature for readability; the registry
+// array below orders them by category.
+import { manifest as authManifest } from './features/auth';
+import { manifest as breathingManifest } from './features/breathing';
+import { manifest as downloadsManifest } from './features/downloads';
+import { manifest as emergencyManifest } from './features/emergency';
+import { manifest as homeManifest } from './features/home';
+import { manifest as legalManifest } from './features/legal';
+import { manifest as libraryManifest } from './features/library';
+import { manifest as meditationManifest } from './features/meditation';
+import { manifest as musicManifest } from './features/music';
+import { manifest as onboardingManifest } from './features/onboarding';
+import { manifest as profileManifest } from './features/profile';
+import { manifest as progressManifest } from './features/progress';
+import { manifest as settingsManifest } from './features/settings';
+import { manifest as sleepManifest } from './features/sleep';
+import { manifest as subscriptionManifest } from './features/subscription';
+
 /**
  * Category for grouping features in the Discover tab.
  *
@@ -93,11 +113,75 @@ export interface FeatureManifest {
 }
 
 /**
- * Aggregated list of every feature in the app.
+ * Aggregated list of every feature in the app (all 15, regardless of
+ * `enabled`). Ordered by category — library, practice, progress, account,
+ * legal — then alphabetical within each category. This is the default order
+ * the Discover tab renders when it doesn't impose its own sort.
  *
- * Phase 7 will replace this with a builder that imports every
- * features/<name>/manifest.ts and exposes helpers (getById, byCategory,
- * search). For now the array exists so the type contract is real
- * and downstream code can reference it.
+ * Wired in Phase 7a: explicit import + push, one source of truth.
  */
-export const featureRegistry: FeatureManifest[] = [];
+export const featureRegistry: FeatureManifest[] = [
+  // --- library ---
+  downloadsManifest,
+  homeManifest,
+  libraryManifest,
+  meditationManifest,
+  musicManifest,
+  sleepManifest,
+  // --- practice ---
+  breathingManifest,
+  emergencyManifest,
+  // --- progress ---
+  progressManifest,
+  // --- account ---
+  authManifest,
+  onboardingManifest,
+  profileManifest,
+  settingsManifest,
+  subscriptionManifest,
+  // --- legal ---
+  legalManifest,
+];
+
+/**
+ * Look up a feature by its `id`. Does NOT filter by `enabled` — deep links and
+ * route resolution must work even for hidden features (e.g. emergency, auth).
+ *
+ * @returns the manifest, or undefined if no feature has that id.
+ */
+export function getById(id: string): FeatureManifest | undefined {
+  return featureRegistry.find((m) => m.id === id);
+}
+
+/**
+ * All enabled features in a category, in registry order. Discover-facing, so
+ * disabled features are excluded.
+ */
+export function byCategory(category: FeatureCategory): FeatureManifest[] {
+  return featureRegistry.filter((m) => m.enabled && m.category === category);
+}
+
+/**
+ * Case-insensitive substring search across label + description + searchKeywords.
+ * Discover-facing, so disabled features are excluded. An empty/whitespace query
+ * returns [] (the caller shows the sectioned browse view instead).
+ */
+export function search(query: string): FeatureManifest[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return featureRegistry.filter((m) => {
+    if (!m.enabled) return false;
+    const haystack = [m.label, m.description, ...m.searchKeywords]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(q);
+  });
+}
+
+/**
+ * Every enabled feature, in registry order. Convenience for the Discover
+ * "everything" view.
+ */
+export function allEnabled(): FeatureManifest[] {
+  return featureRegistry.filter((m) => m.enabled);
+}
