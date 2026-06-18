@@ -33,7 +33,7 @@ import { useSubscription } from '../../../core/subscription/SubscriptionContext'
 import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { getLocalAudioPath } from '../../../core/downloads/downloadService';
-import { markContentCompleted } from '../../../services/firestoreService';
+import { markContentCompleted } from '../../progress';
 import { useFavoriteToggle } from './useFavoriteToggle';
 import { useContentRating } from './useContentRating';
 import { useContentReport } from './useContentReport';

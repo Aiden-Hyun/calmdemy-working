@@ -23,7 +23,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getEmergencyMeditations } from '../../../services/firestoreService';
+import { getEmergencyMeditations } from '../api/emergencyMeditations';
 
 /**
  * Hook for fetching high-priority emergency/quick meditations.

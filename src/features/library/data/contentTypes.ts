@@ -19,11 +19,8 @@
  * ============================================================
  */
 
-import {
-  getAlbumById,
-  getSeriesById,
-  getCourseById,
-} from '../../../services/firestoreService';
+import { getAlbumById, getSeriesById } from '../api/content';
+import { getCourseById } from '../../meditation';
 import type {
   FirestoreAlbum,
   FirestoreAlbumTrack,

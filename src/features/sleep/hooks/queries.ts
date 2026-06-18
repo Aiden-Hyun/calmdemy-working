@@ -30,11 +30,9 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  getBedtimeStories,
-  getSleepMeditations,
-  getSeries,
-} from '../../../services/firestoreService';
+import { getBedtimeStories } from '../api/bedtimeStories';
+import { getSleepMeditations } from '../api/sleepMeditations';
+import { getSeries } from '../api/series';
 
 /**
  * Hook for fetching bedtime stories (narrated sleep content).

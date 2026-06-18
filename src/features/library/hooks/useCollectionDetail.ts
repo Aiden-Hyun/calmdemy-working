@@ -28,7 +28,7 @@ import { useNetwork } from '../../../core/network/NetworkContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../../core/downloads/downloadService';
-import { getCompletedContentIds } from '../../../services/firestoreService';
+import { getCompletedContentIds } from '../../progress';
 import type { CollectionConfig } from '../types';
 
 export interface UseCollectionDetailResult<TParent, TChild> {

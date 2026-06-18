@@ -35,12 +35,12 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import { getCourses } from '../api/courses';
 import {
-  getCourses,
   getMeditations,
   getMeditationsByTheme,
   getMeditationsByTechnique,
-} from '../../../services/firestoreService';
+} from '../api/meditations';
 
 /**
  * Hook for fetching meditation courses (multi-session learning paths).

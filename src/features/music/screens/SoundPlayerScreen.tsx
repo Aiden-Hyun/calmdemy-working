@@ -11,17 +11,10 @@ import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
-import {
-  addToListeningHistory,
-  getSleepSounds,
-  getWhiteNoise,
-  getMusic,
-  getAsmr,
-  createSession,
-  getUserRating,
-  setContentRating,
-  reportContent,
-} from '../../../services/firestoreService';
+import { getSleepSounds } from '../api/sleepSounds';
+import { getWhiteNoise, getMusic, getAsmr } from '../api/music';
+import { addToListeningHistory, createSession } from '../../progress';
+import { getUserRating, setContentRating, reportContent } from '../../library';
 import type { FirestoreSleepSound, FirestoreMusicItem } from '../../../shared/types/content';
 import { Theme } from '../../../core/theme';
 import { RatingType, ReportCategory } from '../../../types';

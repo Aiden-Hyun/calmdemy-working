@@ -25,4 +25,7 @@ export {
   useMeditationsByTechnique,
 } from './hooks/queries';
 export { useMeditation } from './hooks/useMeditation';
+// getCourseById surfaced for library's contentTypes registry when the
+// firestoreService barrel was deleted (Phase 6e-B).
+export { getCourseById } from './api/courses';
 export { manifest } from './manifest';

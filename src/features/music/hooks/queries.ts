@@ -32,13 +32,9 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  getSleepSounds,
-  getWhiteNoise,
-  getMusic,
-  getAsmr,
-  getAlbums,
-} from '../../../services/firestoreService';
+import { getSleepSounds } from '../api/sleepSounds';
+import { getWhiteNoise, getMusic, getAsmr } from '../api/music';
+import { getAlbums } from '../api/albums';
 
 /**
  * Hook for fetching sleep-specific ambient sounds.

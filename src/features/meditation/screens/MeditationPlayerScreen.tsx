@@ -9,7 +9,7 @@ import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { useFavoriteToggle, useContentRating, useContentReport } from '../../library';
 import { usePlaybackTracking } from '../../progress';
 import { useTheme } from '../../../core/theme/ThemeContext';
-import { getMeditationById } from '../../../services/firestoreService';
+import { getMeditationById } from '../api/meditations';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { Theme } from '../../../core/theme';
 import { GuidedMeditation } from '../types';
