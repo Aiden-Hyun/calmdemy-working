@@ -16,7 +16,7 @@ import { SkeletonListItem } from "../../../core/ui/Skeleton";
 import { DownloadButton } from "../../../shared/downloads/DownloadButton";
 import { useMeditationsByTheme } from "../hooks/queries";
 import { getAudioUrlFromPath } from "../../../core/audio/audioFiles";
-import { getDownloadedContentIds } from "../../../services/downloadService";
+import { getDownloadedContentIds } from "../../../core/downloads/downloadService";
 import { useTheme } from "../../../core/theme/ThemeContext";
 import { Theme } from "../../../core/theme";
 import { GuidedMeditation } from "../types";

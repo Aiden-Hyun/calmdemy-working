@@ -18,7 +18,7 @@ import { Theme } from '../../../core/theme';
 import { FirestoreSleepMeditation } from '../../../services/firestoreService';
 import { useSleepMeditations } from '../hooks/queries';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
-import { getDownloadedContentIds } from '../../../services/downloadService';
+import { getDownloadedContentIds } from '../../../core/downloads/downloadService';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../subscription';
 import { AccountPromptModal } from '../../auth';

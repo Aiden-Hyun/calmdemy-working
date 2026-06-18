@@ -23,7 +23,7 @@ import {
   getTotalStorageUsed,
   formatFileSize,
   DownloadedContent,
-} from '../api/downloadService';
+} from '../../../core/downloads/downloadService';
 
 export function DownloadsScreen() {
   const router = useRouter();

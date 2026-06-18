@@ -27,7 +27,7 @@ import { useAuth } from '../../../core/auth/AuthContext';
 import { useNetwork } from '../../../core/network/NetworkContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
-import { getDownloadedContentIds } from '../../../services/downloadService';
+import { getDownloadedContentIds } from '../../../core/downloads/downloadService';
 import { getCompletedContentIds } from '../../../services/firestoreService';
 import type { CollectionConfig } from '../types';
 

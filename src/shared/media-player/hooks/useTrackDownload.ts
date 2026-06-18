@@ -8,7 +8,7 @@
  * whether a download is in progress, the progress percentage, and the resolved
  * local thumbnail path (preferred over the remote URL for offline artwork).
  *
- * Sources the download primitives from services/downloadService (a shared
+ * Sources the download primitives from core/downloads/downloadService (a shared
  * service, not a feature) — no feature dependency.
  * ============================================================
  */
@@ -19,7 +19,7 @@ import {
   downloadAudio,
   isDownloading as checkIsDownloading,
   getLocalThumbnailPath,
-} from '../../../services/downloadService';
+} from '../../../core/downloads/downloadService';
 
 export interface UseTrackDownloadProps {
   contentId?: string;

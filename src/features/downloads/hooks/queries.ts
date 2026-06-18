@@ -14,7 +14,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getDownloadedContent } from '../api/downloadService';
+import { getDownloadedContent } from '../../../core/downloads/downloadService';
 
 export function useDownloadedContent() {
   return useQuery({

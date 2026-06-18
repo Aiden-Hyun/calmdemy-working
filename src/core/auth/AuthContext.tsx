@@ -83,7 +83,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { deleteUserAccount } from "../../services/firestoreService";
-import { deleteAllDownloads } from "../../services/downloadService";
+import { deleteAllDownloads } from "../../core/downloads/downloadService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { requireEnv } from "../env";
 import { THEME_MODE_KEY } from "../storage/keys";

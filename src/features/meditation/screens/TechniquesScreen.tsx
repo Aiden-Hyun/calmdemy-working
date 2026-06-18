@@ -18,7 +18,7 @@ import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
 import { useMeditationsByTechnique } from '../hooks/queries';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
-import { getDownloadedContentIds } from '../../../services/downloadService';
+import { getDownloadedContentIds } from '../../../core/downloads/downloadService';
 import { GuidedMeditation, MeditationTechnique } from '../types';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { PaywallModal } from '../../subscription';

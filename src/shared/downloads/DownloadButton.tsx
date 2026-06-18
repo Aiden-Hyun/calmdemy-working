@@ -8,7 +8,7 @@ import {
   downloadAudio,
   cancelDownload,
   deleteDownload,
-} from '../../services/downloadService';
+} from '../../core/downloads/downloadService';
 
 /**
  * ============================================================

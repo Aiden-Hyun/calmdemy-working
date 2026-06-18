@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TrackPlayerScreen } from '../../../shared/media-player/TrackPlayerScreen';
 import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { useTheme } from '../../../core/theme/ThemeContext';
-import { DownloadedContent, getDownloadedContent } from '../api/downloadService';
+import { DownloadedContent, getDownloadedContent } from '../../../core/downloads/downloadService';
 
 export function OfflinePlayerScreen() {
   const { contentId, index } = useLocalSearchParams<{ contentId: string; index: string }>();

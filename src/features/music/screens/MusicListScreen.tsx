@@ -11,7 +11,7 @@ import { useTheme } from "../../../core/theme/ThemeContext";
 import { FirestoreMusicItem } from "../../../services/firestoreService";
 import { useMusic } from '../hooks/queries';
 import { useAudioUrls } from '../../../core/audio/useAudioUrlQueries';
-import { getDownloadedContentIds } from "../../../services/downloadService";
+import { getDownloadedContentIds } from "../../../core/downloads/downloadService";
 import { Theme } from "../../../core/theme";
 import { useSubscription } from "../../../core/subscription/SubscriptionContext";
 import { PaywallModal } from "../../subscription";

@@ -13,12 +13,13 @@
  *   Home once it migrates
  * - manifest — consumed by src/registry.ts (Phase 7)
  *
- * Note on the download service: its implementation lives in
- * api/downloadService.ts but is intentionally NOT re-exported here. Its
- * low-level helpers are consumed by shared/ modules and core/auth, which must
- * not import from a feature — so those consumers read it through the neutral
- * barrel at src/services/downloadService.ts instead. DownloadButton (the
- * reusable control) lives in shared/downloads/, not this feature.
+ * Note on the download service: its implementation was promoted to
+ * core/downloads/downloadService.ts in Phase 6e-A. The helpers are pure
+ * infrastructure (expo-file-system + AsyncStorage, no Firestore/feature logic)
+ * and are consumed by shared/ modules and core/auth, which must not import from
+ * a feature — so core/ is their correct home and every consumer (including this
+ * feature's own hooks/screens) imports from there. DownloadButton (the reusable
+ * control) lives in shared/downloads/, not this feature.
  * ============================================================
  */
 

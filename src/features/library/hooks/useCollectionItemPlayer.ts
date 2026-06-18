@@ -32,7 +32,7 @@ import { useAuth } from '../../../core/auth/AuthContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
-import { getLocalAudioPath } from '../../../services/downloadService';
+import { getLocalAudioPath } from '../../../core/downloads/downloadService';
 import { markContentCompleted } from '../../../services/firestoreService';
 import { useFavoriteToggle } from './useFavoriteToggle';
 import { useContentRating } from './useContentRating';

@@ -46,7 +46,7 @@ import { useSubscription } from '../../core/subscription/SubscriptionContext';
 import { useAudioUrls } from '../../core/audio/useAudioUrlQueries';
 import { DownloadButton } from '../downloads/DownloadButton';
 import { PaywallModal } from '../../features/subscription';
-import { getDownloadedContentIds } from '../../services/downloadService';
+import { getDownloadedContentIds } from '../../core/downloads/downloadService';
 
 /**
  * Structural shape every audio-list item must satisfy. Both

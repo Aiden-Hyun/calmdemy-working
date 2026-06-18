@@ -17,7 +17,7 @@ import { DownloadButton } from '../../../shared/downloads/DownloadButton';
 import { useBedtimeStories } from '../hooks/queries';
 import { getCategoryIcon } from '../../library';
 import { getAudioUrl } from '../../../core/audio/audioFiles';
-import { getDownloadedContentIds } from '../../../services/downloadService';
+import { getDownloadedContentIds } from '../../../core/downloads/downloadService';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
 import { BedtimeStory } from '../types';
