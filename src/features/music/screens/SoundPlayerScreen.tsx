@@ -17,13 +17,12 @@ import {
   getWhiteNoise,
   getMusic,
   getAsmr,
-  FirestoreSleepSound,
-  FirestoreMusicItem,
   createSession,
   getUserRating,
   setContentRating,
   reportContent,
 } from '../../../services/firestoreService';
+import type { FirestoreSleepSound, FirestoreMusicItem } from '../../../shared/types/content';
 import { Theme } from '../../../core/theme';
 import { RatingType, ReportCategory } from '../../../types';
 import { ReportModal } from '../../../shared/modals/ReportModal';

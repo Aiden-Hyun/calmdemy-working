@@ -15,28 +15,7 @@
 
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-export interface FirestoreAlbumTrack {
-  id: string;
-  trackNumber: number;
-  title: string;
-  duration_minutes: number;
-  audioPath: string;
-  isFree?: boolean;
-}
-
-export interface FirestoreAlbum {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl?: string;
-  color: string;
-  artist: string;
-  trackCount: number;
-  totalDuration: number;
-  category: string;
-  tracks: FirestoreAlbumTrack[];
-}
+import type { FirestoreAlbumTrack, FirestoreAlbum } from "../../../shared/types/content";
 
 /**
  * In-memory Cache-Aside store for albums, populated by getAlbums(). Owned by

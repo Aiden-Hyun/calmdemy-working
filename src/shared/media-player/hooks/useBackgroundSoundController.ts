@@ -21,7 +21,8 @@ import { useState, useEffect } from 'react';
 import { useAudioPlayer } from '../../../core/audio/useAudioPlayer';
 import { useBackgroundAudio } from '../../../core/audio/useBackgroundAudio';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
-import { getSleepSoundById, FirestoreSleepSound } from '../../../services/firestoreService';
+import { getSleepSoundById } from '../../../services/firestoreService';
+import type { FirestoreSleepSound } from '../../../shared/types/content';
 import { useSleepSounds } from '../../../features/music';
 
 export interface UseBackgroundSoundControllerProps {

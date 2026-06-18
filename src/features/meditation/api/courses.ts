@@ -22,37 +22,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-export interface FirestoreCourseSession {
-  id: string;
-  courseId: string;
-  code?: string; // e.g., "CBT101M1P" -> parsed to "Module 1 Practice"
-  title: string;
-  description: string;
-  duration_minutes: number;
-  audioPath: string;
-  order: number;
-  dayNumber?: number; // Display ordinal shown in the course detail UI (e.g., "Day 1").
-  isFree?: boolean;
-}
-
-export interface FirestoreCourse {
-  id: string;
-  code?: string; // e.g., "CBT101"
-  title: string;
-  subtitle?: string;
-  description: string;
-  thumbnailUrl?: string;
-  color: string;
-  icon?: string;
-  duration_minutes?: number;
-  totalDuration?: number; // Aggregated session minutes, surfaced in the detail header.
-  difficulty?: string;    // Free-form difficulty label (e.g., "Beginner").
-  session_count?: number;
-  sessionCount: number; // Computed from sessions.length
-  instructor: string;
-  sessions: FirestoreCourseSession[];
-}
+import type { FirestoreCourseSession, FirestoreCourse } from "../../../shared/types/content";
 
 // Helper to fetch sessions for a course
 async function getCourseSessionsByCourseId(

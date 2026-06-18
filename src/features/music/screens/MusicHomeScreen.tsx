@@ -18,7 +18,7 @@ import {
   FirestoreSleepSound,
   FirestoreMusicItem,
   FirestoreAlbum,
-} from "../../../services/firestoreService";
+} from "../../../shared/types/content";
 
 export function MusicHomeScreen() {
   const router = useRouter();

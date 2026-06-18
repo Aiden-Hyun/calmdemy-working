@@ -13,7 +13,7 @@ import { useTheme } from '../../../core/theme/ThemeContext';
 import { useSubscription } from '../../../core/subscription/SubscriptionContext';
 import { useCourses, useGuidedMeditations } from '../hooks/queries';
 import { Theme } from '../../../core/theme';
-import { FirestoreCourse } from '../../../services/firestoreService';
+import { FirestoreCourse } from '../../../shared/types/content';
 import { GuidedMeditation, MeditationTechnique } from '../types';
 
 const themeCategories = [

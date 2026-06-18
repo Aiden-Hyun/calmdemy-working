@@ -9,10 +9,8 @@ import { useAudioPlayer } from "../../../core/audio/useAudioPlayer";
 import { useFavoriteToggle, useContentRating, useContentReport } from "../../library";
 import { usePlaybackTracking } from "../../progress";
 import { useTheme } from "../../../core/theme/ThemeContext";
-import {
-  getSleepMeditationById,
-  FirestoreSleepMeditation,
-} from "../../../services/firestoreService";
+import { getSleepMeditationById } from "../../../services/firestoreService";
+import type { FirestoreSleepMeditation } from "../../../shared/types/content";
 import { getAudioUrlFromPath } from "../../../core/audio/audioFiles";
 import { Theme } from "../../../core/theme";
 

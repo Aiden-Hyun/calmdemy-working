@@ -21,7 +21,7 @@ import { parseSessionCode } from '../../../utils/courseCodeParser';
 import {
   ResolvedContent,
   FirestoreEmergencyMeditation,
-} from '../../../services/firestoreService';
+} from '../../../shared/types/content';
 import { navigateToContent as libNavigateToContent } from '../../library';
 import { Theme } from '../../../core/theme';
 import type { ListeningHistoryItem } from '../../progress';

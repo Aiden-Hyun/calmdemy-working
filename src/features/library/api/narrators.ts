@@ -11,16 +11,7 @@
 
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-/**
- * Narrator data model.
- */
-export interface FirestoreNarrator {
-  id: string;
-  name: string;
-  bio?: string;
-  photoUrl: string;
-}
+import type { FirestoreNarrator } from "../../../shared/types/content";
 
 /**
  * In-memory cache for narrator lookups (Cache-Aside pattern).

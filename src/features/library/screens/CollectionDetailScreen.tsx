@@ -37,7 +37,7 @@ import type {
   FirestoreAlbum,
   FirestoreSeries,
   FirestoreCourse,
-} from '../../../services/firestoreService';
+} from '../../../shared/types/content';
 import { COLLECTION_CONFIGS } from '../data/contentTypes';
 import { getCategoryIcon } from '../contentIcons';
 import { useCollectionDetail } from '../hooks/useCollectionDetail';

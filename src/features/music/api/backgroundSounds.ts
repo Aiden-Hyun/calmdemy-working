@@ -17,15 +17,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-export interface FirestoreBackgroundSound {
-  id: string;
-  title: string;
-  icon: string;
-  category: string;
-  audioPath: string;
-  color: string;
-}
+import type { FirestoreBackgroundSound } from "../../../shared/types/content";
 
 /**
  * Retrieve all background sounds.

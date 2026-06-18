@@ -8,7 +8,7 @@ import { AnimatedView } from "../../../core/ui/AnimatedView";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { DownloadButton } from "../../../shared/downloads/DownloadButton";
 import { useTheme } from "../../../core/theme/ThemeContext";
-import { FirestoreMusicItem } from "../../../services/firestoreService";
+import { FirestoreMusicItem } from "../../../shared/types/content";
 import { useWhiteNoise } from '../hooks/queries';
 import { getAudioUrlFromPath } from "../../../core/audio/audioFiles";
 import { getDownloadedContentIds } from "../../../core/downloads/downloadService";

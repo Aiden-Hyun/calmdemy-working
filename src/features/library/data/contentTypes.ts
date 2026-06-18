@@ -23,13 +23,15 @@ import {
   getAlbumById,
   getSeriesById,
   getCourseById,
-  type FirestoreAlbum,
-  type FirestoreAlbumTrack,
-  type FirestoreSeries,
-  type FirestoreSeriesChapter,
-  type FirestoreCourse,
-  type FirestoreCourseSession,
 } from '../../../services/firestoreService';
+import type {
+  FirestoreAlbum,
+  FirestoreAlbumTrack,
+  FirestoreSeries,
+  FirestoreSeriesChapter,
+  FirestoreCourse,
+  FirestoreCourseSession,
+} from '../../../shared/types/content';
 import type {
   CollectionConfig,
   CollectionContentType,

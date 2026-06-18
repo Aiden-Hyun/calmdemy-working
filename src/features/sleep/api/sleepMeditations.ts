@@ -14,22 +14,7 @@
 
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-/**
- * Sleep meditation data model.
- */
-export interface FirestoreSleepMeditation {
-  id: string;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  instructor: string;
-  icon: string;
-  audioPath: string;
-  thumbnailUrl?: string;
-  color: string;
-  isFree?: boolean;
-}
+import type { FirestoreSleepMeditation } from "../../../shared/types/content";
 
 /**
  * Retrieve all sleep meditations.

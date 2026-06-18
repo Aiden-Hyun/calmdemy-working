@@ -12,23 +12,7 @@
 
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-/**
- * Emergency meditation data model.
- * Optimized for quick access during high-stress moments.
- */
-export interface FirestoreEmergencyMeditation {
-  id: string;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  icon: string;
-  color: string;
-  audioPath: string;
-  narrator?: string;
-  thumbnailUrl?: string;
-  isFree?: boolean;
-}
+import type { FirestoreEmergencyMeditation } from "../../../shared/types/content";
 
 /**
  * Retrieve all emergency meditations.

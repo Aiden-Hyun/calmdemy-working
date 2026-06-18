@@ -13,7 +13,7 @@ import { AccountPromptModal } from "../../auth";
 import { 
   FirestoreSleepMeditation,
   FirestoreSeries
-} from "../../../services/firestoreService";
+} from "../../../shared/types/content";
 import { useTheme } from "../../../core/theme/ThemeContext";
 import { useSubscription } from "../../../core/subscription/SubscriptionContext";
 import { useBedtimeStories, useSleepMeditations, useSeries } from '../hooks/queries';

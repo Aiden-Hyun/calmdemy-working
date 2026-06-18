@@ -15,7 +15,7 @@ import { Theme } from "../../../core/theme";
 import { AnimatedView } from "../../../core/ui/AnimatedView";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { Skeleton } from "../../../core/ui/Skeleton";
-import { FirestoreCourse } from "../../../services/firestoreService";
+import { FirestoreCourse } from "../../../shared/types/content";
 import { useCourses } from "../hooks/queries";
 
 const therapyCategories = [

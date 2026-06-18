@@ -17,18 +17,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-export interface FirestoreSleepSound {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  category: string;
-  audioPath: string;
-  color: string;
-  thumbnailUrl?: string;
-  isFree?: boolean;
-}
+import type { FirestoreSleepSound } from "../../../shared/types/content";
 
 /**
  * Retrieve all sleep sounds.

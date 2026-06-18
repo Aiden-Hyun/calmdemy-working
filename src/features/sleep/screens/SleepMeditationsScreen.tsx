@@ -15,7 +15,7 @@ import { AnimatedPressable } from '../../../core/ui/AnimatedPressable';
 import { DownloadButton } from '../../../shared/downloads/DownloadButton';
 import { useTheme } from '../../../core/theme/ThemeContext';
 import { Theme } from '../../../core/theme';
-import { FirestoreSleepMeditation } from '../../../services/firestoreService';
+import { FirestoreSleepMeditation } from '../../../shared/types/content';
 import { useSleepMeditations } from '../hooks/queries';
 import { getAudioUrlFromPath } from '../../../core/audio/audioFiles';
 import { getDownloadedContentIds } from '../../../core/downloads/downloadService';

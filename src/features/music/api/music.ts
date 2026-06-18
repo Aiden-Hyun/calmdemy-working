@@ -10,19 +10,7 @@
 
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-export interface FirestoreMusicItem {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  category: string;
-  audioPath: string;
-  color: string;
-  duration_minutes?: number;
-  thumbnailUrl?: string;
-  isFree?: boolean;
-}
+import type { FirestoreMusicItem } from "../../../shared/types/content";
 
 /**
  * Retrieve all white noise tracks.

@@ -22,10 +22,15 @@ import { getEmergencyMeditationById } from "../../emergency/api/emergencyMeditat
 import { getSleepMeditationById } from "../../sleep/api/sleepMeditations";
 import { getCourses } from "../../meditation/api/courses";
 import { getSeries } from "../../sleep/api/series";
-import type { FirestoreSeries, FirestoreSeriesChapter } from "../../sleep/api/series";
 import { getAlbums } from "../../music/api/albums";
-import type { FirestoreAlbum, FirestoreAlbumTrack } from "../../music/api/albums";
 import { getUserFavorites } from "./favorites";
+import type {
+  FirestoreSeries,
+  FirestoreSeriesChapter,
+  FirestoreAlbum,
+  FirestoreAlbumTrack,
+  ResolvedContent,
+} from "../../../shared/types/content";
 
 /**
  * In-memory Cache-Aside stores reused across getContentById and the parent
@@ -36,29 +41,8 @@ import { getUserFavorites } from "./favorites";
 let _seriesCache: any[] | null = null;
 let _albumsCache: any[] | null = null;
 
-/**
- * Unified interface for resolved content, regardless of type.
- * Allows functions to display metadata for heterogeneous content in a single UI (e.g., favorites list).
- */
-export interface ResolvedContent {
-  id: string;
-  title: string;
-  thumbnail_url?: string;
-  duration_minutes: number;
-  content_type:
-    | "meditation"
-    | "nature_sound"
-    | "bedtime_story"
-    | "breathing_exercise"
-    | "series_chapter"
-    | "album_track"
-    | "emergency"
-    | "course_session"
-    | "sleep_meditation";
-  // For course sessions — display course code (e.g., "CBT101") and session code (e.g., "CBT101M1L")
-  course_code?: string;
-  session_code?: string;
-}
+// ResolvedContent is imported from shared/types/content (above); it is the
+// uniform projection getContentById/getFavoritesWithDetails return.
 
 /**
  * Polymorphic content resolver: fetch any content by type and ID.

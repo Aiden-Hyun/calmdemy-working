@@ -16,29 +16,7 @@
 
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-
-export interface FirestoreSeriesChapter {
-  id: string;
-  chapterNumber: number;
-  title: string;
-  description: string;
-  duration_minutes: number;
-  audioPath: string;
-  isFree?: boolean;
-}
-
-export interface FirestoreSeries {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl?: string;
-  color: string;
-  narrator: string;
-  chapterCount: number;
-  totalDuration: number;
-  category: string;
-  chapters: FirestoreSeriesChapter[];
-}
+import type { FirestoreSeriesChapter, FirestoreSeries } from "../../../shared/types/content";
 
 /**
  * In-memory Cache-Aside store for series, populated by getSeries(). Owned by

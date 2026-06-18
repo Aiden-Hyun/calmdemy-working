@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useTheme } from "../../core/theme/ThemeContext";
 import { Theme } from "../../core/theme";
-import { FirestoreSleepSound } from "../../services/firestoreService";
+import { FirestoreSleepSound } from "../../shared/types/content";
 
 /**
  * ============================================================

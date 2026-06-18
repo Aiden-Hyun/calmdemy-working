@@ -37,10 +37,6 @@ export {
   getMeditationsByTechnique,
   getMeditationById,
 } from "../features/meditation/api/meditations";
-export type {
-  FirestoreCourse,
-  FirestoreCourseSession,
-} from "../features/meditation/api/courses";
 export { getCourses, getCourseById } from "../features/meditation/api/courses";
 // Note: getPrograms / meditation_programs were dead (no consumers) and removed in Group E.
 
@@ -69,37 +65,30 @@ export {
   getSleepStories,
   getSleepStoryById,
 } from "../features/sleep/api/bedtimeStories";
-export type { FirestoreSleepMeditation } from "../features/sleep/api/sleepMeditations";
 export {
   getSleepMeditations,
   getSleepMeditationById,
 } from "../features/sleep/api/sleepMeditations";
-export type { FirestoreSeries, FirestoreSeriesChapter } from "../features/sleep/api/series";
 export { getSeries } from "../features/sleep/api/series";
 
 // ---- Emergency (Phase 3, Group B) ----
-export type { FirestoreEmergencyMeditation } from "../features/emergency/api/emergencyMeditations";
 export {
   getEmergencyMeditations,
   getEmergencyMeditationById,
 } from "../features/emergency/api/emergencyMeditations";
 
 // ---- Music (Phase 3, Group G) ----
-export type { FirestoreAlbum, FirestoreAlbumTrack } from "../features/music/api/albums";
 export { getAlbums } from "../features/music/api/albums";
-export type { FirestoreSleepSound } from "../features/music/api/sleepSounds";
 export {
   getSleepSounds,
   getSleepSoundsByCategory,
   getSleepSoundById,
 } from "../features/music/api/sleepSounds";
-export type { FirestoreBackgroundSound } from "../features/music/api/backgroundSounds";
 export {
   getBackgroundSounds,
   getBackgroundSoundsByCategory,
   getBackgroundSoundById,
 } from "../features/music/api/backgroundSounds";
-export type { FirestoreMusicItem } from "../features/music/api/music";
 export { getWhiteNoise, getMusic, getAsmr } from "../features/music/api/music";
 
 // ---- Account deletion (Phase 3, Group D) ----
@@ -112,7 +101,6 @@ export {
   toggleFavorite,
   isFavorite,
 } from "../features/library/api/favorites";
-export type { ResolvedContent } from "../features/library/api/content";
 export {
   getContentById,
   getFavoritesWithDetails,
@@ -122,7 +110,6 @@ export {
   getSeriesById,
   getAlbumById,
 } from "../features/library/api/content";
-export type { FirestoreNarrator } from "../features/library/api/narrators";
 export {
   getNarrators,
   getNarratorByName,

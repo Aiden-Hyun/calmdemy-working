@@ -21,7 +21,7 @@
  */
 
 import type { Router } from 'expo-router';
-import type { FirestoreEmergencyMeditation } from '../../services/firestoreService';
+import type { FirestoreEmergencyMeditation } from '../../shared/types/content';
 import {
   findSeriesIdByChapterId,
   findAlbumIdByTrackId,
