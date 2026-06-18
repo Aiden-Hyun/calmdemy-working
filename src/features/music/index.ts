@@ -22,4 +22,7 @@ export {
   useAsmr,
   useAlbums,
 } from './hooks/queries';
+// getSleepSoundById surfaced for the shared/media-player background-sound
+// controller when the firestoreService barrel was deleted (Phase 6e-B).
+export { getSleepSoundById } from './api/sleepSounds';
 export { manifest } from './manifest';

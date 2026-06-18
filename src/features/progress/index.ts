@@ -30,4 +30,10 @@ export type { UsePlaybackTrackingProps, UsePlaybackTrackingReturn } from './hook
 export { milestones, getNextMilestone } from './data/milestones';
 export type { Milestone } from './data/milestones';
 export type { MeditationSession, ListeningHistoryItem } from './types';
+// Data-access fns surfaced for cross-feature + shared/media-player consumers
+// when the firestoreService barrel was deleted (Phase 6e-B).
+export { createSession } from './api/sessions';
+export { addToListeningHistory } from './api/listeningHistory';
+export { markContentCompleted, getCompletedContentIds } from './api/completion';
+export { savePlaybackProgress, getPlaybackProgress, clearPlaybackProgress } from './api/playbackProgress';
 export { manifest } from './manifest';

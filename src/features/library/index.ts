@@ -30,3 +30,7 @@ export { useContentRating } from './hooks/useContentRating';
 export type { UseContentRatingProps, UseContentRatingReturn } from './hooks/useContentRating';
 export { useContentReport } from './hooks/useContentReport';
 export type { UseContentReportProps, UseContentReportReturn } from './hooks/useContentReport';
+// Ratings/reports + narrator lookup surfaced for cross-feature + shared/media-player
+// consumers when the firestoreService barrel was deleted (Phase 6e-B).
+export { getUserRating, setContentRating, reportContent } from './api/ratings';
+export { getNarratorByName } from './api/narrators';
