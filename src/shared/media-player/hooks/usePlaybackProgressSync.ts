@@ -11,8 +11,9 @@
  *   - clear the saved position once the content is effectively complete (95%),
  *   - save the final position on unmount.
  *
- * Sources the save/get/clear primitives from the legacy firestoreService barrel
- * (the same imports the component used); the barrel migration is Phase 6e.
+ * Sources the save/get/clear primitives from the progress feature's public
+ * index — a permitted `shared/media-player -> features/{music,library,progress}`
+ * edge (Phase 6e-B; see the audit doc's allow-list).
  *
  * Pure side-effect hook — returns nothing.
  * ============================================================
@@ -25,7 +26,7 @@ import {
   savePlaybackProgress,
   getPlaybackProgress,
   clearPlaybackProgress,
-} from '../../../services/firestoreService';
+} from '../../../features/progress';
 
 export interface UsePlaybackProgressSyncProps {
   contentId?: string;

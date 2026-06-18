@@ -7,14 +7,17 @@
  * When a player screen supplies an instructor name but no photo URL, this hook
  * looks the photo up so the narrator can still be shown with their picture.
  *
- * Sources `getNarratorByName` from the legacy firestoreService barrel (the same
- * import the component used) — the barrel migration is Phase 6e, so this stays
- * shared -> barrel and introduces no new feature dependency.
+ * Sources `getNarratorByName` from the library feature's public index. This is
+ * one of the permitted `shared/media-player -> features/{music,library,progress}`
+ * edges (Phase 6e-B): the media player intentionally plays content from every
+ * content feature, so a bounded, documented dependency on their public APIs is
+ * honest rather than fictional isolation. See the audit doc's "Permitted
+ * shared -> feature edges" allow-list (Phase 8 reads it directly).
  * ============================================================
  */
 
 import { useState, useEffect } from 'react';
-import { getNarratorByName } from '../../../services/firestoreService';
+import { getNarratorByName } from '../../../features/library';
 
 /**
  * useNarratorPhoto — resolve the instructor's photo URL.
