@@ -1060,9 +1060,34 @@ The `downloadService` barrel is deleted; its implementation was **promoted to `c
 
 **Back-edge dissolved:** `core/auth → features/downloads` (`AuthContext.deleteAllDownloads`) is gone — core now imports from core. No shared→feature or core→feature edges remain for downloads. `grep "from.*services/downloadService"` → empty. `tsc --noEmit` clean.
 
-###### 6e-B — firestore (pending)
+###### 6e-B — complete
 
-`firestoreService` is not a clean delete: (1) `library ↔ content-feature` type cycles (library imports `FirestoreAlbum/Series/Course/…` while those features import library's `getCategoryIcon`/hooks) and (2) `shared/media-player` hooks reading feature data (narrator/sleep-sound/progress). Plan: extract the shared Firestore **content-shape types** to a neutral `src/shared/types/content.ts` (breaks the cycles); expose the few still-barrel-only functions (`createSession`, `markContentCompleted`, `getCompletedContentIds`, `getUserRating`, `setContentRating`, `reportContent`) via feature public indexes; **widen + document** the `shared/media-player → features/{music,library,progress}` exception (encoded as a machine-checkable allow-list for Phase 8); repoint the ~16 intra-feature imports to `../api/...`; then `git rm src/services/firestoreService.ts`. The cross-feature discriminators in `src/types/index.ts` (`SessionType`, `RatingType`, `ReportCategory`, `User`, `UserPreferences`) are a **separate** follow-up — not migrated in 6e-B.
+The `firestoreService` barrel is deleted. It wasn't a clean delete (two structural blockers), resolved in 4 commits. `tsc --noEmit` clean after every commit.
+
+| Step | Resolution | Commit |
+|---|---|---|
+| Extract content shapes | 13 cross-cutting Firestore content shapes (`FirestoreAlbum/AlbumTrack`, `FirestoreSeries/SeriesChapter`, `FirestoreCourse/CourseSession`, `FirestoreSleepMeditation`, `FirestoreSleepSound`, `FirestoreBackgroundSound`, `FirestoreMusicItem`, `FirestoreEmergencyMeditation`, `FirestoreNarrator`, `ResolvedContent`) → neutral `src/shared/types/content.ts`; functions stay feature-owned and import their shapes from shared | `543285b` |
+| Expose fns via indexes | progress: `createSession`/`addToListeningHistory`/`markContentCompleted`/`getCompletedContentIds`/`save`+`get`+`clearPlaybackProgress`; library: `getUserRating`/`setContentRating`/`reportContent`/`getNarratorByName`; music: `getSleepSoundById`; (later) meditation: `getCourseById` | `84eaa61`, `341a93e` |
+| Widen media-player | the 3 hooks reading feature data (`useNarratorPhoto`→library, `usePlaybackProgressSync`→progress, `useBackgroundSoundController`→music) repoint off the barrel onto feature public indexes | `34948d3` |
+| Repoint + delete | intra-feature → `../api/<module>`; cross-feature → feature index; `AuthContext.deleteUserAccount` → `core/auth/cleanup`; then `git rm src/services/firestoreService.ts` | `341a93e` |
+
+**Blocker 1 (cycle) resolved:** with the shapes in `shared/types/content.ts`, **library imports zero content-feature types**. The library content-resolver's pre-existing *runtime* edges (`content.ts` → `getAlbums`/`getSeries`/`getCourses`/`getEmergencyMeditationById`/`getSleepMeditationById`) remain — they terminate at leaf `api/` files that don't import back into library, so there is **no file-level import cycle**. The feature-level `library ↔ {music,…}` coupling those resolver calls represent is a content-aggregator reality (Phase 8 boundary policy will list it explicitly), not a 6e regression.
+
+**Blocker 2 (shared→feature) resolved by the documented exception below** rather than promoting feature data-access into core (which would be wrong — these are feature Firestore reads, not infra) or prop-drilling across 5 player screens (fictional isolation for a player that by definition spans every content feature).
+
+`src/services/` is now **gone** (empty after both barrels deleted). The cross-feature discriminators in `src/types/index.ts` (`SessionType`, `RatingType`, `ReportCategory`, `User`, `UserPreferences`) remain a **separate** follow-up — not migrated in 6e-B; `src/shared/types/` now exists as their eventual home.
+
+###### Permitted `shared → feature` edges (Phase 8 allow-list)
+
+`shared/` must not import from `features/` **except** the bounded set below. The media player is the one shared module that legitimately crosses this line: it plays content owned by every content feature, so a documented dependency on their public APIs is honest rather than fictional isolation. Phase 8's ESLint boundary rule reads this list directly.
+
+```
+shared/media-player → features/music     (via public index: useSleepSounds, getSleepSoundById)
+shared/media-player → features/library   (via public index: getNarratorByName)
+shared/media-player → features/progress  (via public index: save/get/clearPlaybackProgress)
+```
+
+All three are through the feature's public `index.ts` only (never deep `api/` paths). The `TrackPlayerScreen → features/music` host-screen edge from 6d-2 is the same `media-player → music` edge, now joined by library + progress for the orchestration hooks extracted in 6d-3.
 
 ### Open decisions worth raising before starting Phase 6
 
