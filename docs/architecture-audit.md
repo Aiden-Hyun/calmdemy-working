@@ -1044,9 +1044,25 @@ These items don't have to wait for 6d to finish. They can land any time post-6c.
 
 **Net result:** `src/types/index.ts` shrank from a 13-type shared registry to the 5 cross-cutting discriminators. Each feature now owns its domain types under `features/<x>/types.ts`. The only new cross-feature edge is `meditation → progress` (real, via `MeditationSession`); all other type imports are either feature-internal, feature→shared (allowed), or ride pre-existing edges (`home → progress`). The three deferred items are the structural list-screen work, left for a dedicated batch.
 
-### Phase 6e — Delete `firestoreService.ts` barrel
+### Phase 6e — Delete the two service barrels
 
-When every consumer has migrated to feature-local imports (during their 6c migration), the barrel has no remaining importers. Confirm with `grep -r "from.*services/firestoreService"` returning empty, then `git rm src/services/firestoreService.ts`. Final cleanup.
+Both `src/services/` barrels (`downloadService.ts`, `firestoreService.ts`) are transitional re-export shims. 6e deletes them. Split into two sub-batches: **6e-A** (downloads — the clean one) and **6e-B** (firestore — needs a content-types extraction + a documented shared→feature exception).
+
+###### 6e-A — complete
+
+The `downloadService` barrel is deleted; its implementation was **promoted to `core/`**. The download manager is pure infrastructure (`expo-file-system` + `AsyncStorage`, no Firestore or feature-domain logic), so `core/` is its correct home — not a feature.
+
+| Step | Resolution | Commit |
+|---|---|---|
+| Move impl | `git mv features/downloads/api/downloadService.ts → core/downloads/downloadService.ts`; empty `features/downloads/api/` removed | `5f010e4` |
+| Repoint consumers | All 16 importers (13 external feature/shared/core + 3 downloads-internal hooks/screens) → `core/downloads/downloadService` | `5f010e4` |
+| Delete barrel | `git rm src/services/downloadService.ts` | `5f010e4` |
+
+**Back-edge dissolved:** `core/auth → features/downloads` (`AuthContext.deleteAllDownloads`) is gone — core now imports from core. No shared→feature or core→feature edges remain for downloads. `grep "from.*services/downloadService"` → empty. `tsc --noEmit` clean.
+
+###### 6e-B — firestore (pending)
+
+`firestoreService` is not a clean delete: (1) `library ↔ content-feature` type cycles (library imports `FirestoreAlbum/Series/Course/…` while those features import library's `getCategoryIcon`/hooks) and (2) `shared/media-player` hooks reading feature data (narrator/sleep-sound/progress). Plan: extract the shared Firestore **content-shape types** to a neutral `src/shared/types/content.ts` (breaks the cycles); expose the few still-barrel-only functions (`createSession`, `markContentCompleted`, `getCompletedContentIds`, `getUserRating`, `setContentRating`, `reportContent`) via feature public indexes; **widen + document** the `shared/media-player → features/{music,library,progress}` exception (encoded as a machine-checkable allow-list for Phase 8); repoint the ~16 intra-feature imports to `../api/...`; then `git rm src/services/firestoreService.ts`. The cross-feature discriminators in `src/types/index.ts` (`SessionType`, `RatingType`, `ReportCategory`, `User`, `UserPreferences`) are a **separate** follow-up — not migrated in 6e-B.
 
 ### Open decisions worth raising before starting Phase 6
 
