@@ -1089,6 +1089,23 @@ shared/media-player → features/progress  (via public index: save/get/clearPlay
 
 All three are through the feature's public `index.ts` only (never deep `api/` paths). The `TrackPlayerScreen → features/music` host-screen edge from 6d-2 is the same `media-player → music` edge, now joined by library + progress for the orchestration hooks extracted in 6d-3.
 
+### Phase 7 — Registry wiring + Discover + tab restructure
+
+Five sub-batches: **7a** (registry wiring), **7b** (Discover screen), **7c** (tab restructure), **7d** (Library tab home), **7e** (Tools tab home).
+
+###### Phase 7a — complete
+
+Manifest audit + registry wiring landed in 3 commits. `tsc --noEmit` clean after each.
+
+**Audit findings:** all 15 manifests carry every required field (type-enforced), no empty `searchKeywords`, no anemic descriptions, no placeholder sentinels, all `category` values valid. The only findings were *Discover-semantics* suspects — manifests that exist as features but aren't browsable destinations.
+
+| Item | Resolution | Commit |
+|---|---|---|
+| Hide non-destinations | Flipped `enabled: false` on **home** + **profile** (permanent tabs), **subscription** (modal/paywall UI; route was a `/settings` dup), **emergency** (contextual `/emergency/[id]` param route — not navigable), **auth** (auth flow, not a destination). Onboarding was already `false`. No other manifest field touched. | `f013b15` |
+| Wire registry | `featureRegistry` populated by explicit import + push from all 15 public indexes (no auto-discovery/side-effects); ordered by category (library, practice, progress, account, legal) then alphabetical. Helpers: `getById` (no `enabled` filter — deep links resolve for hidden features), `byCategory` / `search` / `allEnabled` (all `enabled`-filtered). `search` = case-insensitive substring over label + description + searchKeywords; empty query → `[]`. | `5d7fb8c` |
+
+**Net:** registry holds all **15** manifests; **9 enabled** (downloads, meditation, breathing, music, progress, library, settings, legal, sleep) are Discover-visible; **6 disabled** (home, profile, subscription, emergency, auth, onboarding). The `manifest → registry` import stays type-only, so `registry ↔ feature` is acyclic at runtime.
+
 ### Open decisions worth raising before starting Phase 6
 
 These deserve the user's input before the fresh session commits to a direction:
