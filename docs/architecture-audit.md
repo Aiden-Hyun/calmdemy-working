@@ -1106,6 +1106,14 @@ Manifest audit + registry wiring landed in 3 commits. `tsc --noEmit` clean after
 
 **Net:** registry holds all **15** manifests; **9 enabled** (downloads, meditation, breathing, music, progress, library, settings, legal, sleep) are Discover-visible; **6 disabled** (home, profile, subscription, emergency, auth, onboarding). The `manifest → registry` import stays type-only, so `registry ↔ feature` is acyclic at runtime.
 
+###### Phase 7b — complete
+
+Discover tab screen built at `app/(tabs)/discover.tsx` (`b53876b`). Registry-driven: empty query → `SectionList` grouped by category (library, practice, progress, account, legal; non-empty sections only) via `byCategory`; non-empty query → flat `search()` results with a "No features match" empty state. Tiles = color-tinted Ionicon + label + 2-line description + chevron, full-row tap → `router.push(route)`. Reuses `AnimatedView`/`AnimatedPressable` + theme; `ProtectedRoute`-wrapped; no new deps, no filter chips/toggle/fuzzy. Renders 9 enabled features (Library 5, Practice 1, Progress 1, Account 1, Legal 1). `router.push(route as any)` — manifest routes are strings, untyped for typedRoutes.
+
+###### Phase 7c — complete
+
+Tab bar restructured to **Home / Library / Tools / Profile / Discover** (`320d7eb`). Added `library.tsx` + `tools.tsx` placeholder routes (real homes in 7d/7e). New icons: Library `library`, Tools `construct`, Discover `compass` (all glyphs exist — no substitutions). `music`/`meditate`/`sleep` became orphan routes via `<Tabs.Screen options={{ href: null }} />` — removed from the bar but kept in the `(tabs)` group, so the bar persists when viewing them and every deep link + `library/navigation.ts`'s `router.push('/(tabs)/meditate|sleep|music')` still resolves. No route file deleted.
+
 ### Open decisions worth raising before starting Phase 6
 
 These deserve the user's input before the fresh session commits to a direction:
