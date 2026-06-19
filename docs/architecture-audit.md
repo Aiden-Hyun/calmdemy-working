@@ -1114,6 +1114,18 @@ Discover tab screen built at `app/(tabs)/discover.tsx` (`b53876b`). Registry-dri
 
 Tab bar restructured to **Home / Library / Tools / Profile / Discover** (`320d7eb`). Added `library.tsx` + `tools.tsx` placeholder routes (real homes in 7d/7e). New icons: Library `library`, Tools `construct`, Discover `compass` (all glyphs exist — no substitutions). `music`/`meditate`/`sleep` became orphan routes via `<Tabs.Screen options={{ href: null }} />` — removed from the bar but kept in the `(tabs)` group, so the bar persists when viewing them and every deep link + `library/navigation.ts`'s `router.push('/(tabs)/meditate|sleep|music')` still resolves. No route file deleted.
 
+###### Phase 7d — complete
+
+Library tab home built (`05cffe9`), replacing the placeholder. Recently-played hero (horizontal carousel from `useListeningHistory(7)`, hidden entirely when history is empty) over a 2-column Browse grid of Meditation/Music/Sleep/Downloads tiles. Browse tiles are registry-driven (`getById` → label/icon/color/description/route); hero cards route via library's `navigateToContent`. Consumes `features/progress` + `features/library` public indexes + the registry only; no new aggregation. Known limitation: `navigateToContent` gets an empty `emergencyMeditations` context (no extra fetch), so a recently-played emergency item falls back to the meditate tab rather than the emergency player.
+
+###### Phase 7e — complete
+
+Tools tab home built (`2b31928`), replacing the placeholder. Registry-driven breathing tile (active, → `/breathing`) above a single non-interactive "More tools coming soon" card (dashed border, muted ellipsis icon, no named features). Phase 9 practice tools slot in beside breathing.
+
+###### Phase 7 — complete
+
+All five sub-batches landed. Tab bar is **Home / Library / Tools / Profile / Discover**; `music`/`meditate`/`sleep` are href:null orphans (deep links preserved). The registry (`src/registry.ts`) drives Discover (full shelf, 9 enabled features, sectioned + search) and the Library/Tools browse tiles. `tsc --noEmit` clean after every commit. No simulator/runtime verification (per constraints) — type-level + JSX read-through only. Remaining: **Phase 8** (ESLint enforcement of `features → shared → core` + the documented `shared/media-player` allow-list) and **Phase 9** (new product features: Journal/CBT/Mood) — both fresh-session candidates.
+
 ### Open decisions worth raising before starting Phase 6
 
 These deserve the user's input before the fresh session commits to a direction:
