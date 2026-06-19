@@ -16,4 +16,5 @@
  * ============================================================
  */
 
+export { JournalHomeScreen } from "./screens/JournalHomeScreen";
 export { manifest } from "./manifest";
