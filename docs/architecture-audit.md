@@ -1192,6 +1192,39 @@ A boundary violation prints e.g. `Architecture boundary violated: 'core' may not
 
 **Status of the architecture invariants: machine-enforced as of `c67386f`.** `features → shared → core` (one-way), public-index feature isolation, and route composition are now CI-gateable. Phase 9 (Journal/CBT/Mood) builds on an enforced floor.
 
+### Phase 9 — v1 complete (Journal + Mood + CBT + Tools)
+
+The first round of real product work on the enforced floor. Three new feature modules and the Tools-tab integration shipped across four sub-batches with a pause gate between each. **TS 0 / lint 0 after every commit.** No ESLint allow-list changes — every new feature lives entirely within `core` + `shared` + its own internals (the floor held without exceptions).
+
+All three features write to per-user Firestore subcollections (`users/{uid}/{journalEntries,moodEntries,cbtEntries}`); created append-only (mood replaces per-day). **Firestore security rules for these three paths are a separate config concern** — flagged to the user; `read, write: if request.auth.uid == userId`.
+
+| Sub-batch | Feature | Commits | LOC | Notes |
+|---|---|---|---|---|
+| 9a ✅ | `features/journal/` | 7 (`8a55acc`→`4ea2ad3`) | ~990 | Free-form entries + 12 optional prompts; new-entry pageSheet modal, home list, full-screen detail (`/journal/[id]`). |
+| 9b ✅ | `features/mood/` | 3 (`ddd0e5b`→`fa61b04`) | ~755 | Daily 5-point check-in, **replace-per-day** (date-key doc id); 14-day dot history with tap-to-see-note. Confirmed emoji+color palette. |
+| 9c ✅ | `features/cbt/` | 9 (`3aee217`→`33cfcbd`) | ~1,870 | 5 methods in one feature. 4 guided flows (A-B-C, Socratic, Core Beliefs, Decatastrophizing) share one `StepFlow` harness; Gratitude is standalone. Method picker + last-10 history + read-only entry detail. |
+| 9d ✅ | Tools tab | 2 (`5940ce7` + this doc) | — | `app/(tabs)/tools.tsx` placeholder → registry-driven 2-column grid of the four practice tools; "coming soon" card removed. |
+
+**Registry / Discover:** the practice category now holds 5 enabled features — Breathing (pre-existing), CBT Tools, Emergency*, Journal, Mood (*emergency is `enabled: false`, so Discover shows Breathing/CBT/Journal/Mood under Practice). Total enabled Discover features: 12.
+
+**Design notes (deviations worth recording):**
+- **`StepFlow`** (cbt) is the one new abstraction — a generic guided-flow harness (text/slider/distortion steps, progress dots, back preserves entered text, save only on the final step). It stays inside `features/cbt/`; no pressure on `shared/`.
+- **`cbtFlows`** (in `data/methods.ts`) is the single source of truth for step definitions, consumed by both the exercise screens and the detail screen (via `cbtStepTitle`) so step labels can't drift.
+- **`createdAt: number`** (client `Date.now()`) across all three features, honoring the locked data shapes rather than the older `serverTimestamp()`+conversion pattern (v1 accepts minor clock skew).
+- The four guided cbt exercise screens are near-identical `StepFlow` wrappers, landed in one commit (9 commits for 9c vs. the ~10–14 sketch) for cleaner history.
+
+**Total: 21 commits** across Phase 9 (7 + 3 + 9 + 2).
+
+**Explicitly deferred to v2 (not built):**
+- [ ] Edit / delete entries (all three are append-only; mood replaces same-day only)
+- [ ] Gamification — levels, points, badges, achievements
+- [ ] Streak tracking
+- [ ] Progress-tab integration (mood charts / journal-cbt counts in stats)
+- [ ] Search, tags, filtering
+- [ ] Calendar view
+- [ ] Sharing / export
+- [ ] Reminders / notifications
+
 ### Open decisions worth raising before starting Phase 6
 
 These deserve the user's input before the fresh session commits to a direction:
