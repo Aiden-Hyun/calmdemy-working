@@ -160,6 +160,12 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="mood"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }

@@ -14,4 +14,5 @@
  * ============================================================
  */
 
+export { MoodHomeScreen } from "./screens/MoodHomeScreen";
 export { manifest } from "./manifest";
