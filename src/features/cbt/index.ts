@@ -15,4 +15,5 @@
  * ============================================================
  */
 
+export { CbtHomeScreen } from "./screens/CbtHomeScreen";
 export { manifest } from "./manifest";

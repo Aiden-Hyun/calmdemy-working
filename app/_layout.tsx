@@ -166,6 +166,12 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="cbt"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }
