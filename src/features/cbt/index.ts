@@ -21,4 +21,5 @@ export { SocraticExerciseScreen } from "./screens/SocraticExerciseScreen";
 export { CoreBeliefsExerciseScreen } from "./screens/CoreBeliefsExerciseScreen";
 export { DecatastrophizingExerciseScreen } from "./screens/DecatastrophizingExerciseScreen";
 export { GratitudeExerciseScreen } from "./screens/GratitudeExerciseScreen";
+export { CbtEntryDetailScreen } from "./screens/CbtEntryDetailScreen";
 export { manifest } from "./manifest";

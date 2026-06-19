@@ -172,6 +172,18 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="cbt/[method]"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="cbt/entry/[id]"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }
