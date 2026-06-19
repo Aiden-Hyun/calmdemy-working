@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useRouter, useRootNavigationState } from 'expo-router';
-import { LoadingScreen } from '../../shared/loading/LoadingScreen';
+import { LoadingScreen } from '../ui/LoadingScreen';
 
 /**
  * ============================================================
