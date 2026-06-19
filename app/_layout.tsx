@@ -142,11 +142,23 @@ function RootNavigator() {
             headerShown: false,
           }} 
         />
-        <Stack.Screen 
-          name="downloads" 
-          options={{ 
+        <Stack.Screen
+          name="downloads"
+          options={{
             headerShown: false,
-          }} 
+          }}
+        />
+        <Stack.Screen
+          name="journal"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="journal/[id]"
+          options={{
+            headerShown: false,
+          }}
         />
       </Stack>
   );
