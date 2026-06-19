@@ -1079,15 +1079,16 @@ The `firestoreService` barrel is deleted. It wasn't a clean delete (two structur
 
 ###### Permitted `shared → feature` edges (Phase 8 allow-list)
 
-`shared/` must not import from `features/` **except** the bounded set below. The media player is the one shared module that legitimately crosses this line: it plays content owned by every content feature, so a documented dependency on their public APIs is honest rather than fictional isolation. Phase 8's ESLint boundary rule reads this list directly.
+`shared/` must not import from `features/` **except** the bounded set below. Two shared modules legitimately cross this line: the media player (it plays content owned by every content feature, so a documented dependency on their public APIs is honest rather than fictional isolation) and the shared list template (it renders the subscription `PaywallModal`, which depends on `core/auth` + `core/subscription` and therefore cannot live in `shared/`). Phase 8's ESLint boundary rule reads this list directly.
 
 ```
-shared/media-player → features/music     (via public index: useSleepSounds, getSleepSoundById)
-shared/media-player → features/library   (via public index: getNarratorByName)
-shared/media-player → features/progress  (via public index: save/get/clearPlaybackProgress)
+shared/media-player → features/music        (via public index: useSleepSounds, getSleepSoundById)
+shared/media-player → features/library       (via public index: getNarratorByName)
+shared/media-player → features/progress       (via public index: save/get/clearPlaybackProgress)
+shared/lists        → features/subscription   (via public index: PaywallModal)
 ```
 
-All three are through the feature's public `index.ts` only (never deep `api/` paths). The `TrackPlayerScreen → features/music` host-screen edge from 6d-2 is the same `media-player → music` edge, now joined by library + progress for the orchestration hooks extracted in 6d-3.
+All four are through the feature's public `index.ts` only (never deep `api/` paths). The `TrackPlayerScreen → features/music` host-screen edge from 6d-2 is the same `media-player → music` edge, now joined by library + progress for the orchestration hooks extracted in 6d-3. The `shared/lists → features/subscription` edge is the `AudioListScreen → PaywallModal` dependency ratified "persists by design" in 6d-1 — added to this canonical list in Phase 8 (it had been documented in the 6c/6d narratives but omitted from this block).
 
 ### Phase 7 — Registry wiring + Discover + tab restructure
 
@@ -1125,6 +1126,71 @@ Tools tab home built (`2b31928`), replacing the placeholder. Registry-driven bre
 ###### Phase 7 — complete
 
 All five sub-batches landed. Tab bar is **Home / Library / Tools / Profile / Discover**; `music`/`meditate`/`sleep` are href:null orphans (deep links preserved). The registry (`src/registry.ts`) drives Discover (full shelf, 9 enabled features, sectioned + search) and the Library/Tools browse tiles. `tsc --noEmit` clean after every commit. No simulator/runtime verification (per constraints) — type-level + JSX read-through only. Remaining: **Phase 8** (ESLint enforcement of `features → shared → core` + the documented `shared/media-player` allow-list) and **Phase 9** (new product features: Journal/CBT/Mood) — both fresh-session candidates.
+
+### Phase 8 — complete
+
+The architecture invariants Phases 0–7 maintained by hand are now **machine-enforced**. ESLint refuses to compile any code that violates the layering. 5 commits, `tsc --noEmit` at 0 errors throughout.
+
+**Plugin chosen:** `eslint-plugin-boundaries@6.0.2` (purpose-built layer rules, declarative, maps 1:1 to the architecture), on `eslint@10.5.0` + `typescript-eslint@8.61.1` (parser only — no `@typescript-eslint` rules). Flat config at `eslint.config.mjs`. devDependencies only; installed with `--legacy-peer-deps` to match the repo's existing react/test-renderer peer resolution.
+
+**Config shape** (`eslint.config.mjs`, the v6 unified `boundaries/dependencies` rule — it enforces BOTH the layer direction and the public-index entry point in one rule):
+
+*Elements* (by path):
+
+| Element | Pattern | Capture |
+|---|---|---|
+| `registry` | `src/registry.ts` | — |
+| `core` | `src/core/*` | `subsystem` |
+| `shared` | `src/shared/*` | `module` |
+| `feature` | `src/features/*` | `feature` |
+| `root` | `src/{types,utils,constants}`, `src/test-setup.ts` | — (pure leaf utils) |
+| `route` | `app/**` | — |
+
+*Rules* (`default: disallow`; every other edge is an error):
+
+| From | May import |
+|---|---|
+| `core` | `core`, `root` |
+| `shared` | `core`, `shared`, `root` + allow-list |
+| `feature` | `core`, `shared`, `root`, `registry`, and **other features via `index.ts` only** |
+| `registry` | `core`, `shared`, `root`, and **features via `index.ts`** |
+| `route` | `core`, `shared`, `root`, `registry`, `route`, and **features via `index.ts` only** |
+
+- **Routes** get the entry-point rule (no reaching into feature internals) but not the layer direction — they are the composition layer above features (decision 2).
+- **Tests** (`**/__tests__/**`) are exempt from the boundary rule — they legitimately import internals (decision 3).
+- CI integration is out of scope (decision 5): Phase 8 adds only the `"lint": "eslint ."` npm script. No husky/CI infra.
+
+**Final allow-list** (the only sanctioned `shared → feature` edges — mirrors the block above, all via public `index.ts`):
+
+```
+shared/media-player → features/{music, library, progress}
+shared/lists        → features/subscription
+```
+
+**Violations found (first full run): 6, in 2 classes — all class (i) genuine fixes, no allow-list expansion for fixes:**
+
+| # | Class | Violation | Resolution | Commit |
+|---|---|---|---|---|
+| A | (i) genuine back-edge | `core/auth/ProtectedRoute` → `shared/loading/LoadingScreen` (core → shared) | Moved `LoadingScreen` to `core/ui` (it depends only on `core/theme`; sole consumer is `core/auth`). `shared/loading/` removed. | `56abd9e` |
+| C | (i) feature → feature via deep path | `library/api/content.ts` → 5 getters from `{emergency,sleep,meditation,music}/api/*` | Surfaced each getter on its feature's public `index.ts`; `content.ts` imports via `../../<feature>`. Now ordinary feature → feature edges through public indexes. | `8944115` |
+| B | (ii) documented exception | `shared/lists/AudioListScreen` → `features/subscription` (PaywallModal) | **Confirmed with user** as the 4th canonical allow-list edge (PaywallModal depends on `core/auth`+`core/subscription`, can't move to `shared/`; ratified "persists by design" in 6d-1). Added to the allow-list block + ESLint config. | `c67386f` |
+
+No class (iii) false positives. The 3 pre-existing media-player allow-list edges passed unchanged.
+
+**How to run lint locally:**
+
+```
+npm run lint        # eslint . — 0 errors = architecture conformant
+```
+
+A boundary violation prints e.g. `Architecture boundary violated: 'core' may not import 'feature'. … See docs/architecture-audit.md (Phase 8)` and exits non-zero.
+
+**Notes / known limitations (none blocking):**
+- *Directive shims:* the config registers `react-hooks/exhaustive-deps` and `@typescript-eslint/no-var-requires` as inert no-ops (with `reportUnusedDisableDirectives: 'off'`) so the source's pre-existing intentional inline `eslint-disable` comments for those rules resolve cleanly. Those rules are **not** enforced (boundary-only scope). If a later phase adds the real react-hooks / typescript-eslint plugins, delete the shim block (documented inline in the config).
+- *Resolver:* `import/resolver` node `extensions` extended with `.ts/.tsx/.json` so relative TS imports map to element files (the default resolver only knew `.js`).
+- *Unmatched files:* a file placed directly under `src/core|shared|features/` (not inside a subsystem/module/feature folder) is an unrecognized element and is not checked. None exist today; `boundaries/no-unknown-files` could harden this later if desired (left off to keep scope to the specified boundaries).
+
+**Status of the architecture invariants: machine-enforced as of `c67386f`.** `features → shared → core` (one-way), public-index feature isolation, and route composition are now CI-gateable. Phase 9 (Journal/CBT/Mood) builds on an enforced floor.
 
 ### Open decisions worth raising before starting Phase 6
 
