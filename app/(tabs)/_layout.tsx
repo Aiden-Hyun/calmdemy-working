@@ -42,54 +42,42 @@ export default function TabLayout() {
 
   return (
     <Tabs screenOptions={screenOptions}>
+      {/* Visible tab bar (left → right): Home, Library, Tools, Profile, Discover */}
       <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "sunny" : "sunny-outline"} 
-              size={24} 
-              color={color} 
+            <Ionicons
+              name={focused ? "sunny" : "sunny-outline"}
+              size={24}
+              color={color}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="music"
+        name="library"
         options={{
-          title: 'Music',
+          title: 'Library',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "musical-notes" : "musical-notes-outline"} 
-              size={24} 
-              color={color} 
+            <Ionicons
+              name={focused ? "library" : "library-outline"}
+              size={24}
+              color={color}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="meditate"
+        name="tools"
         options={{
-          title: 'Meditate',
+          title: 'Tools',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "leaf" : "leaf-outline"} 
-              size={24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="sleep"
-        options={{
-          title: 'Sleep',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "moon" : "moon-outline"} 
-              size={24} 
-              color={color} 
+            <Ionicons
+              name={focused ? "construct" : "construct-outline"}
+              size={24}
+              color={color}
             />
           ),
         }}
@@ -99,14 +87,35 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "person" : "person-outline"} 
-              size={24} 
-              color={color} 
+            <Ionicons
+              name={focused ? "person" : "person-outline"}
+              size={24}
+              color={color}
             />
           ),
         }}
       />
+      <Tabs.Screen
+        name="discover"
+        options={{
+          title: 'Discover',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "compass" : "compass-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      {/* Orphan routes (Phase 7c): hidden from the tab bar via href:null but
+          kept in the (tabs) group, so the tab bar persists when viewing them
+          and deep links (/(tabs)/music|meditate|sleep) + the Library browse
+          tiles still navigate. */}
+      <Tabs.Screen name="music" options={{ href: null }} />
+      <Tabs.Screen name="meditate" options={{ href: null }} />
+      <Tabs.Screen name="sleep" options={{ href: null }} />
     </Tabs>
   );
 }
