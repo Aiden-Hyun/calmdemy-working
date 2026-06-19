@@ -3,10 +3,11 @@
  * app/(tabs)/tools.tsx — Tools tab home
  * ============================================================
  *
- * The active-practice surface. Today that's breathing (registry-driven tile)
- * plus a single non-interactive "more coming soon" card — honest about the
- * current state without naming features that haven't shipped. Future practice
- * tools (Phase 9) slot in alongside the breathing tile.
+ * The active-practice surface: a 2-column grid of the practice tools. Every
+ * tile is registry-driven (getById) so its label/icon/color/description stays
+ * in sync with the feature's manifest; tapping routes to the feature.
+ *
+ * Phase 9 v1 ships four: Breathing, Journal, Mood, CBT Tools.
  * ============================================================
  */
 
@@ -22,12 +23,19 @@ import { AnimatedView } from '../../src/core/ui/AnimatedView';
 import { AnimatedPressable } from '../../src/core/ui/AnimatedPressable';
 import { getById } from '../../src/registry';
 
+// The practice tools surfaced on this tab, in display order. Each resolves to a
+// manifest; any that can't resolve is skipped (defensive).
+const TOOL_IDS = ['breathing', 'journal', 'mood', 'cbt'];
+
 function ToolsScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const breathing = getById('breathing');
+  const tools = useMemo(
+    () => TOOL_IDS.map((id) => getById(id)).filter((m) => !!m),
+    []
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -40,50 +48,24 @@ function ToolsScreen() {
           <Text style={styles.subtitle}>Active practices for in-the-moment relief</Text>
         </View>
 
-        {breathing && (
-          <AnimatedView>
-            <AnimatedPressable
-              style={styles.tile}
-              onPress={() => router.push(breathing.route as any)}
-            >
-              <View
-                style={[styles.iconWrap, { backgroundColor: `${breathing.color}22` }]}
+        <View style={styles.grid}>
+          {tools.map((tool) => (
+            <AnimatedView key={tool!.id} style={styles.gridItem}>
+              <AnimatedPressable
+                style={styles.tile}
+                onPress={() => router.push(tool!.route as never)}
               >
-                <Ionicons name={breathing.icon} size={26} color={breathing.color} />
-              </View>
-              <View style={styles.tileText}>
-                <Text style={styles.tileLabel}>{breathing.label}</Text>
+                <View style={[styles.iconWrap, { backgroundColor: `${tool!.color}22` }]}>
+                  <Ionicons name={tool!.icon} size={26} color={tool!.color} />
+                </View>
+                <Text style={styles.tileLabel}>{tool!.label}</Text>
                 <Text style={styles.tileDesc} numberOfLines={2}>
-                  {breathing.description}
+                  {tool!.description}
                 </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={theme.colors.textMuted}
-              />
-            </AnimatedPressable>
-          </AnimatedView>
-        )}
-
-        {/* Non-interactive: signals more is coming without naming unshipped tools. */}
-        <AnimatedView>
-          <View style={[styles.tile, styles.comingSoonTile]}>
-            <View style={[styles.iconWrap, styles.comingSoonIcon]}>
-              <Ionicons
-                name="ellipsis-horizontal"
-                size={26}
-                color={theme.colors.textMuted}
-              />
-            </View>
-            <View style={styles.tileText}>
-              <Text style={styles.comingSoonLabel}>More tools coming soon</Text>
-              <Text style={styles.tileDesc} numberOfLines={2}>
-                New practices to support your day are on the way.
-              </Text>
-            </View>
-          </View>
-        </AnimatedView>
+              </AnimatedPressable>
+            </AnimatedView>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -122,20 +104,22 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
       marginTop: 2,
     },
-    tile: {
+    grid: {
       flexDirection: 'row',
-      alignItems: 'center',
-      gap: 14,
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      rowGap: theme.spacing.md,
+    },
+    gridItem: {
+      width: '48%',
+    },
+    tile: {
       padding: 16,
-      marginBottom: 12,
       borderRadius: theme.borderRadius.xl,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
-    },
-    comingSoonTile: {
-      borderStyle: 'dashed',
-      backgroundColor: 'transparent',
+      minHeight: 150,
     },
     iconWrap: {
       width: 52,
@@ -143,22 +127,12 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.borderRadius.lg,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    comingSoonIcon: {
-      backgroundColor: theme.colors.surface,
-    },
-    tileText: {
-      flex: 1,
+      marginBottom: theme.spacing.md,
     },
     tileLabel: {
       fontFamily: theme.fonts.ui.semiBold,
       fontSize: 16,
       color: theme.colors.text,
-    },
-    comingSoonLabel: {
-      fontFamily: theme.fonts.ui.semiBold,
-      fontSize: 16,
-      color: theme.colors.textSecondary,
     },
     tileDesc: {
       fontFamily: theme.fonts.ui.regular,
