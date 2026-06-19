@@ -44,6 +44,7 @@ import { manifest as journalManifest } from './features/journal';
 import { manifest as legalManifest } from './features/legal';
 import { manifest as libraryManifest } from './features/library';
 import { manifest as meditationManifest } from './features/meditation';
+import { manifest as moodManifest } from './features/mood';
 import { manifest as musicManifest } from './features/music';
 import { manifest as onboardingManifest } from './features/onboarding';
 import { manifest as profileManifest } from './features/profile';
@@ -133,6 +134,7 @@ export const featureRegistry: FeatureManifest[] = [
   breathingManifest,
   emergencyManifest,
   journalManifest,
+  moodManifest,
   // --- progress ---
   progressManifest,
   // --- account ---
