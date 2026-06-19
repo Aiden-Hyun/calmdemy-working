@@ -37,6 +37,7 @@ import type { Ionicons } from '@expo/vector-icons';
 // array below orders them by category.
 import { manifest as authManifest } from './features/auth';
 import { manifest as breathingManifest } from './features/breathing';
+import { manifest as cbtManifest } from './features/cbt';
 import { manifest as downloadsManifest } from './features/downloads';
 import { manifest as emergencyManifest } from './features/emergency';
 import { manifest as homeManifest } from './features/home';
@@ -132,6 +133,7 @@ export const featureRegistry: FeatureManifest[] = [
   sleepManifest,
   // --- practice ---
   breathingManifest,
+  cbtManifest,
   emergencyManifest,
   journalManifest,
   moodManifest,
