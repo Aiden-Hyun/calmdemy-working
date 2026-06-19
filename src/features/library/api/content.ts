@@ -18,11 +18,14 @@
 
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../core/firebase";
-import { getEmergencyMeditationById } from "../../emergency/api/emergencyMeditations";
-import { getSleepMeditationById } from "../../sleep/api/sleepMeditations";
-import { getCourses } from "../../meditation/api/courses";
-import { getSeries } from "../../sleep/api/series";
-import { getAlbums } from "../../music/api/albums";
+// Cross-feature content resolution goes through each feature's PUBLIC index
+// only (Phase 8 invariant: feature → feature is allowed, but never via deep
+// internal paths like api/). The library content resolver is a content
+// aggregator by nature — it dispatches across every content feature.
+import { getEmergencyMeditationById } from "../../emergency";
+import { getSleepMeditationById, getSeries } from "../../sleep";
+import { getCourses } from "../../meditation";
+import { getAlbums } from "../../music";
 import { getUserFavorites } from "./favorites";
 import type {
   FirestoreSeries,

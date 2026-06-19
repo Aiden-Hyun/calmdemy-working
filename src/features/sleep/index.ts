@@ -11,4 +11,9 @@ export { SleepMeditationPlayerScreen } from './screens/SleepMeditationPlayerScre
 export { BedtimeStoriesScreen } from './screens/BedtimeStoriesScreen';
 export { SleepMeditationsScreen } from './screens/SleepMeditationsScreen';
 export { useBedtimeStories, useSleepMeditations, useSeries } from './hooks/queries';
+// Single-item resolvers surfaced for library's polymorphic content resolver
+// (api/content.ts), consumed through this public index (Phase 8: feature →
+// feature is allowed via index.ts only).
+export { getSleepMeditationById } from './api/sleepMeditations';
+export { getSeries } from './api/series';
 export { manifest } from './manifest';

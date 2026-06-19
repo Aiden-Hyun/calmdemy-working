@@ -9,14 +9,14 @@
  *
  * - EmergencyPlayerScreen  — rendered by app/emergency/[id].tsx (route file)
  * - useEmergencyMeditations — emergency content query; consumed by Home
+ * - getEmergencyMeditationById — single-item resolver; consumed by library's
+ *   polymorphic content resolver (api/content.ts) through this public index
+ *   (Phase 8: feature → feature is allowed via index.ts only).
  * - manifest               — consumed by src/registry.ts (Phase 7)
- *
- * Data access (api/emergencyMeditations.ts) stays internal for now;
- * its consumers still reach it through the firestoreService barrel until
- * Phase 6e. Re-export it here when those consumers migrate.
  * ============================================================
  */
 
 export { EmergencyPlayerScreen } from './screens/EmergencyPlayerScreen';
 export { useEmergencyMeditations } from './hooks/queries';
+export { getEmergencyMeditationById } from './api/emergencyMeditations';
 export { manifest } from './manifest';
