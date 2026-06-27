@@ -99,7 +99,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         // failure (e.g. a Firestore permission blip) gets cached as a
         // *successful* empty result and — with staleTime: Infinity — never
         // refetches. Bumping the buster clears any such poisoned entries.
-        buster: '2026-06-content-rules-fix',
+        buster: '2026-06-content-rules-fix-2',
         dehydrateOptions: {
           /**
            * Selective dehydration: only persist queries that have succeeded

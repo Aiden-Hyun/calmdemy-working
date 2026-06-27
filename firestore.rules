@@ -19,22 +19,42 @@ service cloud.firestore {
     }
 
     // ── Per-user data (top-level collections keyed by a user_id field) ─────
-    // These are read by user-constrained queries (where user_id == uid) and by
-    // deterministic-id gets (`${uid}_${contentId}`). The `resource == null`
-    // branch lets a get on a not-yet-created doc return null instead of
-    // throwing permission-denied (e.g. playback progress before first save).
-    function ownsUserData() {
-      return request.auth != null
-        && (resource == null || resource.data.user_id == request.auth.uid)
-        && (request.resource == null || request.resource.data.user_id == request.auth.uid);
+    // All read via user-constrained queries (where user_id == uid), so the read
+    // rule must be the plain `resource.data.user_id == uid` form: do NOT add a
+    // `resource == null` branch here — it makes Firestore's query analyzer
+    // reject the whole list query (a get on a not-yet-created doc will log a
+    // caught permission-denied, which the data layer already swallows).
+    function ownsExisting() {
+      return request.auth != null && resource.data.user_id == request.auth.uid;
+    }
+    function ownsNew() {
+      return request.auth != null && request.resource.data.user_id == request.auth.uid;
     }
 
-    match /meditation_sessions/{id}  { allow read, write: if ownsUserData(); }
-    match /user_favorites/{id}       { allow read, write: if ownsUserData(); }
-    match /listening_history/{id}    { allow read, write: if ownsUserData(); }
-    match /playback_progress/{id}    { allow read, write: if ownsUserData(); }
-    match /completed_content/{id}    { allow read, write: if ownsUserData(); }
-    match /content_ratings/{id}      { allow read, write: if ownsUserData(); }
+    match /meditation_sessions/{id} {
+      allow read, update, delete: if ownsExisting();
+      allow create: if ownsNew();
+    }
+    match /user_favorites/{id} {
+      allow read, update, delete: if ownsExisting();
+      allow create: if ownsNew();
+    }
+    match /listening_history/{id} {
+      allow read, update, delete: if ownsExisting();
+      allow create: if ownsNew();
+    }
+    match /playback_progress/{id} {
+      allow read, update, delete: if ownsExisting();
+      allow create: if ownsNew();
+    }
+    match /completed_content/{id} {
+      allow read, update, delete: if ownsExisting();
+      allow create: if ownsNew();
+    }
+    match /content_ratings/{id} {
+      allow read, update, delete: if ownsExisting();
+      allow create: if ownsNew();
+    }
 
     // Reports are create-only from the client; not read back.
     match /content_reports/{id} {
