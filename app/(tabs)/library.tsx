@@ -124,27 +124,29 @@ function LibraryScreen() {
         {/* Browse */}
         <AnimatedView>
           <Text style={styles.sectionHeader}>Browse</Text>
-          <View style={styles.browseGrid}>
+          <View style={styles.browseList}>
             {browseTiles.map((m) => (
               <AnimatedPressable
                 key={m.id}
-                style={styles.browseTile}
+                style={styles.browseRow}
                 onPress={() => router.push(m.route as any)}
               >
                 <View style={[styles.browseIcon, { backgroundColor: `${m.color}22` }]}>
                   <Ionicons name={m.icon} size={24} color={m.color} />
                 </View>
-                <Text
-                  style={styles.browseLabel}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.8}
-                >
-                  {m.label}
-                </Text>
-                <Text style={styles.browseDesc} numberOfLines={2}>
-                  {m.description}
-                </Text>
+                <View style={styles.browseText}>
+                  <Text style={styles.browseLabel} numberOfLines={1}>
+                    {m.label}
+                  </Text>
+                  <Text style={styles.browseDesc} numberOfLines={2}>
+                    {m.description}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={theme.colors.textMuted}
+                />
               </AnimatedPressable>
             ))}
           </View>
@@ -231,15 +233,14 @@ const createStyles = (theme: Theme) =>
       marginTop: 2,
       lineHeight: 18,
     },
-    browseGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
+    browseList: {
       paddingHorizontal: theme.spacing.lg,
-      rowGap: 12,
+      gap: 12,
     },
-    browseTile: {
-      width: '48%',
+    browseRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
       padding: 16,
       borderRadius: theme.borderRadius.xl,
       backgroundColor: theme.colors.surface,
@@ -252,7 +253,9 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.borderRadius.lg,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 10,
+    },
+    browseText: {
+      flex: 1,
     },
     browseLabel: {
       fontFamily: theme.fonts.ui.semiBold,
@@ -261,9 +264,9 @@ const createStyles = (theme: Theme) =>
     },
     browseDesc: {
       fontFamily: theme.fonts.ui.regular,
-      fontSize: 12,
+      fontSize: 13,
       color: theme.colors.textSecondary,
       marginTop: 2,
-      lineHeight: 17,
+      lineHeight: 18,
     },
   });

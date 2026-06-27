@@ -48,27 +48,29 @@ function ToolsScreen() {
           <Text style={styles.subtitle}>Active practices for in-the-moment relief</Text>
         </View>
 
-        <View style={styles.grid}>
+        <View style={styles.list}>
           {tools.map((tool) => (
-            <AnimatedView key={tool!.id} style={styles.gridItem}>
+            <AnimatedView key={tool!.id}>
               <AnimatedPressable
-                style={styles.tile}
+                style={styles.row}
                 onPress={() => router.push(tool!.route as never)}
               >
                 <View style={[styles.iconWrap, { backgroundColor: `${tool!.color}22` }]}>
                   <Ionicons name={tool!.icon} size={26} color={tool!.color} />
                 </View>
-                <Text
-                  style={styles.tileLabel}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.8}
-                >
-                  {tool!.label}
-                </Text>
-                <Text style={styles.tileDesc} numberOfLines={2}>
-                  {tool!.description}
-                </Text>
+                <View style={styles.rowText}>
+                  <Text style={styles.tileLabel} numberOfLines={1}>
+                    {tool!.label}
+                  </Text>
+                  <Text style={styles.tileDesc} numberOfLines={2}>
+                    {tool!.description}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={theme.colors.textMuted}
+                />
               </AnimatedPressable>
             </AnimatedView>
           ))}
@@ -111,22 +113,18 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
       marginTop: 2,
     },
-    grid: {
+    list: {
+      gap: theme.spacing.md,
+    },
+    row: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      rowGap: theme.spacing.md,
-    },
-    gridItem: {
-      width: '48%',
-    },
-    tile: {
+      alignItems: 'center',
+      gap: 14,
       padding: 16,
       borderRadius: theme.borderRadius.xl,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      minHeight: 150,
     },
     iconWrap: {
       width: 52,
@@ -134,7 +132,9 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.borderRadius.lg,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: theme.spacing.md,
+    },
+    rowText: {
+      flex: 1,
     },
     tileLabel: {
       fontFamily: theme.fonts.ui.semiBold,
