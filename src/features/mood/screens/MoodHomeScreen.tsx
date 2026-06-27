@@ -19,6 +19,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AnimatedView } from "../../../core/ui/AnimatedView";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
@@ -164,9 +165,11 @@ export function MoodHomeScreen() {
 
           {selectedHistoryEntry && (
             <View style={styles.detailCard}>
-              <Text style={styles.detailEmoji}>
-                {moodVisuals[selectedHistoryEntry.value].emoji}
-              </Text>
+              <MaterialCommunityIcons
+                name={moodVisuals[selectedHistoryEntry.value].icon}
+                size={36}
+                color={moodVisuals[selectedHistoryEntry.value].color}
+              />
               <View style={styles.detailText}>
                 <Text style={styles.detailMood}>
                   {moodVisuals[selectedHistoryEntry.value].label}
@@ -270,9 +273,6 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
-    },
-    detailEmoji: {
-      fontSize: 32,
     },
     detailText: {
       flex: 1,

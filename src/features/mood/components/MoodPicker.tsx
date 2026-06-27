@@ -10,6 +10,7 @@
 
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { useTheme } from "../../../core/theme/ThemeContext";
 import { Theme } from "../../../core/theme";
@@ -45,7 +46,11 @@ export function MoodPicker({ selected, onSelect }: MoodPickerProps) {
                 },
               ]}
             >
-              <Text style={styles.emoji}>{visual.emoji}</Text>
+              <MaterialCommunityIcons
+                name={visual.icon}
+                size={30}
+                color={visual.color}
+              />
             </View>
             <Text
               style={[
@@ -80,9 +85,6 @@ const createStyles = (theme: Theme) =>
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 2,
-    },
-    emoji: {
-      fontSize: 26,
     },
     label: {
       fontFamily: theme.fonts.ui.regular,
