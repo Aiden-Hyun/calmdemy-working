@@ -58,7 +58,14 @@ function ToolsScreen() {
                 <View style={[styles.iconWrap, { backgroundColor: `${tool!.color}22` }]}>
                   <Ionicons name={tool!.icon} size={26} color={tool!.color} />
                 </View>
-                <Text style={styles.tileLabel}>{tool!.label}</Text>
+                <Text
+                  style={styles.tileLabel}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {tool!.label}
+                </Text>
                 <Text style={styles.tileDesc} numberOfLines={2}>
                   {tool!.description}
                 </Text>

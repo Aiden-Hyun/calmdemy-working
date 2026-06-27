@@ -134,7 +134,14 @@ function LibraryScreen() {
                 <View style={[styles.browseIcon, { backgroundColor: `${m.color}22` }]}>
                   <Ionicons name={m.icon} size={24} color={m.color} />
                 </View>
-                <Text style={styles.browseLabel}>{m.label}</Text>
+                <Text
+                  style={styles.browseLabel}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {m.label}
+                </Text>
                 <Text style={styles.browseDesc} numberOfLines={2}>
                   {m.description}
                 </Text>
