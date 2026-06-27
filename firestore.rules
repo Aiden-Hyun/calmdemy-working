@@ -4,6 +4,17 @@ service cloud.firestore {
     // Users can read/write their own user document
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Phase 9 per-user subcollections (journal, mood, CBT)
+      match /journalEntries/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /moodEntries/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /cbtEntries/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // Meditation sessions - users can only access their own
