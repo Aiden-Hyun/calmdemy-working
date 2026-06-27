@@ -1,7 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read/write their own user document
+
+    // ── User documents + per-user subcollections ──────────────────────────
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
@@ -17,43 +18,50 @@ service cloud.firestore {
       }
     }
 
-    // Meditation sessions - users can only access their own
-    match /meditation_sessions/{sessionId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.user_id;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+    // ── Per-user data (top-level collections keyed by a user_id field) ─────
+    // These are read by user-constrained queries (where user_id == uid) and by
+    // deterministic-id gets (`${uid}_${contentId}`). The `resource == null`
+    // branch lets a get on a not-yet-created doc return null instead of
+    // throwing permission-denied (e.g. playback progress before first save).
+    function ownsUserData() {
+      return request.auth != null
+        && (resource == null || resource.data.user_id == request.auth.uid)
+        && (request.resource == null || request.resource.data.user_id == request.auth.uid);
     }
 
-    // User favorites - users can only access their own
-    match /user_favorites/{favoriteId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.user_id;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+    match /meditation_sessions/{id}  { allow read, write: if ownsUserData(); }
+    match /user_favorites/{id}       { allow read, write: if ownsUserData(); }
+    match /listening_history/{id}    { allow read, write: if ownsUserData(); }
+    match /playback_progress/{id}    { allow read, write: if ownsUserData(); }
+    match /completed_content/{id}    { allow read, write: if ownsUserData(); }
+    match /content_ratings/{id}      { allow read, write: if ownsUserData(); }
+
+    // Reports are create-only from the client; not read back.
+    match /content_reports/{id} {
+      allow read: if false;
+      allow create: if request.auth != null
+        && request.resource.data.user_id == request.auth.uid;
     }
 
-    // Public read-only content
-    match /guided_meditations/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /breathing_exercises/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /bedtime_stories/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /meditation_programs/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /daily_quotes/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
+    // ── Public read-only content catalogs (no client writes) ──────────────
+    // Catalog data served to every signed-in user; writes happen server-side.
+    match /guided_meditations/{id}    { allow read: if true; allow write: if false; }
+    match /breathing_exercises/{id}   { allow read: if true; allow write: if false; }
+    match /bedtime_stories/{id}       { allow read: if true; allow write: if false; }
+    match /sleep_meditations/{id}     { allow read: if true; allow write: if false; }
+    match /emergency_meditations/{id} { allow read: if true; allow write: if false; }
+    match /meditation_programs/{id}   { allow read: if true; allow write: if false; }
+    match /courses/{id}               { allow read: if true; allow write: if false; }
+    match /course_sessions/{id}       { allow read: if true; allow write: if false; }
+    match /series/{id}                { allow read: if true; allow write: if false; }
+    match /albums/{id}                { allow read: if true; allow write: if false; }
+    match /sleep_sounds/{id}          { allow read: if true; allow write: if false; }
+    match /background_sounds/{id}     { allow read: if true; allow write: if false; }
+    match /white_noise/{id}           { allow read: if true; allow write: if false; }
+    match /music/{id}                 { allow read: if true; allow write: if false; }
+    match /asmr/{id}                  { allow read: if true; allow write: if false; }
+    match /narrators/{id}             { allow read: if true; allow write: if false; }
+    match /daily_quotes/{id}          { allow read: if true; allow write: if false; }
+    match /content_index/{id}         { allow read: if true; allow write: if false; }
   }
 }
-
