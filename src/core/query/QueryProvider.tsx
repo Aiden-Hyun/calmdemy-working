@@ -93,6 +93,13 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       persistOptions={{
         persister: asyncStoragePersister,
         maxAge: 1000 * 60 * 60 * 24, // Cache persists for 24 hours
+        // Cache-buster: bump this string to discard the entire persisted cache
+        // on the next cold start. Needed here because the data-access layer
+        // swallows errors into `[]` (graceful degradation), so a transient
+        // failure (e.g. a Firestore permission blip) gets cached as a
+        // *successful* empty result and — with staleTime: Infinity — never
+        // refetches. Bumping the buster clears any such poisoned entries.
+        buster: '2026-06-content-rules-fix',
         dehydrateOptions: {
           /**
            * Selective dehydration: only persist queries that have succeeded
