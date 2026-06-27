@@ -17,6 +17,7 @@ import { AnimatedView } from "../../../core/ui/AnimatedView";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { useTheme } from "../../../core/theme/ThemeContext";
 import { Theme } from "../../../core/theme";
+import { BackButton } from "../../../core/ui/BackButton";
 import { CbtEntry } from "../types";
 import { cbtMethods } from "../data/methods";
 import { useCbtHistory } from "../hooks/useCbtHistory";
@@ -51,6 +52,7 @@ export function CbtHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <BackButton />
         <View style={styles.header}>
           <Text style={styles.title}>CBT Tools</Text>
           <Text style={styles.subtitle}>

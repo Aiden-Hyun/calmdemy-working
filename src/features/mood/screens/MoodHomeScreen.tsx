@@ -24,6 +24,7 @@ import { AnimatedView } from "../../../core/ui/AnimatedView";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { useTheme } from "../../../core/theme/ThemeContext";
 import { Theme } from "../../../core/theme";
+import { BackButton } from "../../../core/ui/BackButton";
 import { MoodEntry, MoodValue } from "../types";
 import { moodVisuals } from "../data/moodVisuals";
 import { toDateKey } from "../api/moodEntries";
@@ -102,6 +103,7 @@ export function MoodHomeScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        <BackButton />
         <View style={styles.header}>
           <Text style={styles.title}>Mood</Text>
           <Text style={styles.subtitle}>
