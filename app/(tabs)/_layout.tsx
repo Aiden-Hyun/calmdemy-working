@@ -38,6 +38,10 @@ export default function TabLayout() {
       marginTop: 4,
     },
     headerShown: false,
+    // Animate tab switches so navigating to a tab (incl. the href:null orphans
+    // meditate/music/sleep reached from Library tiles) glides instead of
+    // snapping — consistent with the stack slide elsewhere.
+    animation: 'shift' as const,
   }), [theme, bottomPadding, tabBarHeight]);
 
   return (

@@ -40,6 +40,12 @@ function RootNavigator() {
           contentStyle: {
             backgroundColor: theme.colors.background,
           },
+          // Uniform slide-from-right push with swipe-back, so every drill-down
+          // animates the same way (explicit rather than relying on the platform
+          // default). Per-screen overrides — e.g. login's fullScreenModal,
+          // breathing's modal — still win.
+          animation: 'slide_from_right' as const,
+          gestureEnabled: true,
   }), [theme]);
 
   return (
