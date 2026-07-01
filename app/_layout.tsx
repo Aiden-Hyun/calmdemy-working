@@ -190,6 +190,18 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="routines"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="routines/habit/new"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }

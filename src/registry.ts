@@ -50,6 +50,7 @@ import { manifest as musicManifest } from './features/music';
 import { manifest as onboardingManifest } from './features/onboarding';
 import { manifest as profileManifest } from './features/profile';
 import { manifest as progressManifest } from './features/progress';
+import { manifest as routinesManifest } from './features/routines';
 import { manifest as settingsManifest } from './features/settings';
 import { manifest as sleepManifest } from './features/sleep';
 import { manifest as subscriptionManifest } from './features/subscription';
@@ -137,6 +138,7 @@ export const featureRegistry: FeatureManifest[] = [
   emergencyManifest,
   journalManifest,
   moodManifest,
+  routinesManifest,
   // --- progress ---
   progressManifest,
   // --- account ---

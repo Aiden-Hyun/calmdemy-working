@@ -16,6 +16,35 @@ service cloud.firestore {
       match /cbtEntries/{entryId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Routines feature suite (see docs/routines/BUILD_PLAN.md §5.8)
+      match /routineProfiles/{profileId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /routineHabits/{habitId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /routineCompletions/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /routineTodos/{todoId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /routineGoalTags/{tagId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /routineTrackers/{trackerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        match /entries/{dateKey} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+      match /routineDayNotes/{dateKey} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /routineReminders/{reminderKey} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // ── Per-user data (top-level collections keyed by a user_id field) ─────
