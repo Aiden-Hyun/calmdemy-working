@@ -96,3 +96,32 @@ export function useToggleCompletion() {
     },
   });
 }
+
+/**
+ * Spend a shield: write today's completion as `shielded`, preserving the streak
+ * across a day the user can't complete. Same invalidations as a toggle.
+ */
+export function useSpendShield() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { habitId: string; profileId: string; dateKey: string }) =>
+      setCompletion(user!.uid, {
+        habitId: input.habitId,
+        profileId: input.profileId,
+        dateKey: input.dateKey,
+        state: "shielded",
+      }),
+    onSuccess: (_r, input) => {
+      queryClient.invalidateQueries({
+        queryKey: ["habitCompletions", user?.uid, input.dateKey],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["habitCompletionsWeek", user?.uid],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["habitCompletionsRange", user?.uid, input.habitId],
+      });
+    },
+  });
+}

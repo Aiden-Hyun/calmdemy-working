@@ -70,6 +70,7 @@ export function HabitEditorScreen({ habitId }: HabitEditorScreenProps) {
   const [repeat, setRepeat] = useState<RepeatConfig>({ type: "daily" });
   const [difficulty, setDifficulty] = useState<Difficulty>("plus");
   const [priority, setPriority] = useState<Priority>(2);
+  const [shields, setShields] = useState<number>(0);
   const [tagIds, setTagIds] = useState<string[]>([]);
 
   // Prefill once the habit loads (edit mode), keyed on its id so a refetch
@@ -83,6 +84,7 @@ export function HabitEditorScreen({ habitId }: HabitEditorScreenProps) {
       setRepeat(existing.repeat);
       setDifficulty(existing.difficulty);
       setPriority(existing.priority);
+      setShields(existing.shieldsMax);
       setTagIds(existing.goalTagIds);
     }
   }, [existing?.id]);
@@ -105,7 +107,17 @@ export function HabitEditorScreen({ habitId }: HabitEditorScreenProps) {
 
   const handleSave = () => {
     if (!canSave) return;
-    const fields = { name, icon, color, moment, repeat, difficulty, priority, goalTagIds: tagIds };
+    const fields = {
+      name,
+      icon,
+      color,
+      moment,
+      repeat,
+      difficulty,
+      priority,
+      shieldsMax: shields,
+      goalTagIds: tagIds,
+    };
     if (isEditing && habitId) {
       updateHabit.mutate({ habitId, patch: fields }, { onSuccess: () => router.back() });
     } else {
@@ -222,6 +234,29 @@ export function HabitEditorScreen({ habitId }: HabitEditorScreenProps) {
 
         <Text style={styles.sectionTitle}>Priority</Text>
         <PriorityPicker value={priority} onChange={setPriority} />
+
+        <Text style={styles.sectionTitle}>Streak shields</Text>
+        <View style={styles.shieldsRow}>
+          <AnimatedPressable
+            style={styles.shieldStep}
+            onPress={() => setShields((s) => Math.max(0, s - 1))}
+          >
+            <Text style={styles.shieldStepText}>−</Text>
+          </AnimatedPressable>
+          <Text style={styles.shieldValue}>
+            {shields === 0 ? "None" : `${shields} / week`}
+          </Text>
+          <AnimatedPressable
+            style={styles.shieldStep}
+            onPress={() => setShields((s) => Math.min(3, s + 1))}
+          >
+            <Text style={styles.shieldStepText}>+</Text>
+          </AnimatedPressable>
+        </View>
+        <Text style={styles.shieldHint}>
+          Shields protect your streak on a day you can’t finish — up to this many
+          per week.
+        </Text>
 
         <Text style={styles.sectionTitle}>Goals</Text>
         <GoalTagChips
@@ -362,6 +397,37 @@ const createStyles = (theme: Theme) =>
     momentTextActive: {
       fontFamily: theme.fonts.ui.semiBold,
       color: "#8FA98C",
+    },
+    shieldsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    shieldStep: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    shieldStepText: {
+      fontFamily: theme.fonts.ui.semiBold,
+      fontSize: 20,
+      color: theme.colors.text,
+    },
+    shieldValue: {
+      fontFamily: theme.fonts.ui.semiBold,
+      fontSize: 15,
+      color: theme.colors.text,
+    },
+    shieldHint: {
+      fontFamily: theme.fonts.ui.regular,
+      fontSize: 12,
+      color: theme.colors.textMuted,
+      marginTop: theme.spacing.sm,
     },
     saveBtn: {
       marginTop: theme.spacing.xl,

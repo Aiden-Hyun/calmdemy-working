@@ -13,7 +13,15 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  type AlertButton,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -28,9 +36,11 @@ import {
   useTodayCompletions,
   useToggleCompletion,
   useWeekCompletions,
+  useSpendShield,
 } from "../hooks/useHabitCompletions";
 import { useGoalTags } from "../hooks/useGoalTags";
 import { isDueToday } from "../domain/repeat";
+import { shieldsRemaining } from "../domain/streaks";
 import { todayKey } from "../domain/dateKeys";
 import { MOMENT_META, MOMENT_ORDER } from "../data/presets";
 import type { CompletionState, Habit } from "../types";
@@ -52,6 +62,7 @@ export function RoutinesHomeScreen() {
   const { data: weekCompletions } = useWeekCompletions();
   const { data: goalTags } = useGoalTags();
   const toggle = useToggleCompletion();
+  const spendShield = useSpendShield();
   const dateKey = todayKey();
 
   const [filterTagId, setFilterTagId] = useState<string | null>(null);
@@ -135,20 +146,32 @@ export function RoutinesHomeScreen() {
   };
 
   const handleLongPress = (habit: Habit) => {
-    Alert.alert(habit.name, "Set today", [
+    const shieldsLeft = shieldsRemaining(
+      habit,
+      (weekCompletions ?? []).filter((c) => c.habitId === habit.id),
+      "week"
+    );
+    const options: AlertButton[] = [
       { text: "Done", onPress: () => mutate(habit, "done") },
       { text: "Rest day", onPress: () => mutate(habit, "rest") },
+    ];
+    if (shieldsLeft > 0) {
+      options.push({
+        text: "Use shield",
+        onPress: () =>
+          spendShield.mutate({ habitId: habit.id, profileId: habit.profileId, dateKey }),
+      });
+    }
+    options.push(
       { text: "Clear", style: "destructive", onPress: () => mutate(habit, null) },
       {
-        text: "Edit habit",
+        text: "View details",
         onPress: () =>
-          router.push({
-            pathname: "/routines/habit/[id]/edit",
-            params: { id: habit.id },
-          }),
+          router.push({ pathname: "/routines/habit/[id]", params: { id: habit.id } }),
       },
-      { text: "Cancel", style: "cancel" },
-    ]);
+      { text: "Cancel", style: "cancel" }
+    );
+    Alert.alert(habit.name, "Set today", options);
   };
 
   const hasHabits = (habits ?? []).some((h) => !h.archivedAt);

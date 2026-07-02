@@ -16,4 +16,5 @@
 
 export { RoutinesHomeScreen } from "./screens/RoutinesHomeScreen";
 export { HabitEditorScreen } from "./screens/HabitEditorScreen";
+export { HabitDetailScreen } from "./screens/HabitDetailScreen";
 export { manifest } from "./manifest";
