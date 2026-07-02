@@ -18,4 +18,6 @@ export { RoutinesHomeScreen } from "./screens/RoutinesHomeScreen";
 export { HabitEditorScreen } from "./screens/HabitEditorScreen";
 export { HabitDetailScreen } from "./screens/HabitDetailScreen";
 export { ProfilesScreen } from "./screens/ProfilesScreen";
+export { TodosScreen } from "./screens/TodosScreen";
+export { TodoCalendarScreen } from "./screens/TodoCalendarScreen";
 export { manifest } from "./manifest";

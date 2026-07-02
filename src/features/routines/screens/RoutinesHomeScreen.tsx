@@ -213,12 +213,20 @@ export function RoutinesHomeScreen() {
               {hasHabits ? `${doneCount} of ${totalDue} done` : "Build your daily routine"}
             </Text>
           </View>
-          <AnimatedPressable
-            style={styles.addBtn}
-            onPress={() => router.push("/routines/habit/new")}
-          >
-            <Ionicons name="add" size={26} color={theme.colors.surface} />
-          </AnimatedPressable>
+          <View style={styles.headerActions}>
+            <AnimatedPressable
+              style={styles.iconBtn}
+              onPress={() => router.push("/routines/todos")}
+            >
+              <Ionicons name="checkbox-outline" size={22} color={theme.colors.text} />
+            </AnimatedPressable>
+            <AnimatedPressable
+              style={styles.addBtn}
+              onPress={() => router.push("/routines/habit/new")}
+            >
+              <Ionicons name="add" size={26} color={theme.colors.surface} />
+            </AnimatedPressable>
+          </View>
         </View>
 
         {activeProfile && (
@@ -371,6 +379,21 @@ const createStyles = (theme: Theme) =>
       fontSize: 14,
       color: theme.colors.textSecondary,
       marginTop: 2,
+    },
+    headerActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    iconBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
     addBtn: {
       width: 44,

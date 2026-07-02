@@ -51,6 +51,19 @@ export function monthBounds(key: string): { start: string; end: string } {
   return { start: toDateKey(start.getTime()), end: toDateKey(end.getTime()) };
 }
 
+/** Friendly label for a date key relative to today ("Today", "Tomorrow", "Mon, Jul 5"). */
+export function dayLabel(key: string): string {
+  const today = todayKey();
+  if (key === today) return "Today";
+  if (key === addDaysToKey(today, 1)) return "Tomorrow";
+  if (key === addDaysToKey(today, -1)) return "Yesterday";
+  return fromDateKey(key).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /**
  * First (Sunday) and last (Saturday) day keys of the week `key` falls in.
  * Sunday-start matches the Weekday type (0 = Sunday) and the day picker order.

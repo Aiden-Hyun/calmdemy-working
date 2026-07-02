@@ -220,6 +220,18 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="routines/todos"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="routines/calendar"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }
