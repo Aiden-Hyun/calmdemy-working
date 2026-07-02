@@ -31,6 +31,7 @@ import { useTheme } from "../../../core/theme/ThemeContext";
 import { Theme } from "../../../core/theme";
 import { BackButton } from "../../../core/ui/BackButton";
 import { HabitRow } from "../components/HabitRow";
+import { GreenLightIndicator } from "../components/GreenLightIndicator";
 import { useHabits } from "../hooks/useHabits";
 import {
   useTodayCompletions,
@@ -41,6 +42,7 @@ import {
 import { useGoalTags } from "../hooks/useGoalTags";
 import { isDueToday } from "../domain/repeat";
 import { shieldsRemaining } from "../domain/streaks";
+import { computeGreenLight } from "../domain/greenLight";
 import { todayKey } from "../domain/dateKeys";
 import { MOMENT_META, MOMENT_ORDER } from "../data/presets";
 import type { CompletionState, Habit } from "../types";
@@ -95,19 +97,26 @@ export function RoutinesHomeScreen() {
     return (goalTags ?? []).filter((t) => used.has(t.id));
   }, [habits, goalTags]);
 
-  // Today's due, non-archived habits (optionally tag-filtered), grouped into
-  // moment sections and sorted by priority within each.
-  const sections = useMemo(() => {
+  // Today's due, non-archived habits — the whole day, ignoring the tag filter.
+  // Header count and Green Light read the whole day; the filter only narrows
+  // the list below.
+  const allDueToday = useMemo(() => {
     const now = new Date();
-    const due = (habits ?? []).filter((h) => {
+    return (habits ?? []).filter((h) => {
       if (h.archivedAt) return false;
-      if (filterTagId && !h.goalTagIds.includes(filterTagId)) return false;
       const st = stateByHabit.get(h.id);
       return isDueToday(h, now, {
         handledToday: st === "done" || st === "rest" || st === "shielded",
         weekDoneCount: weekDoneByHabit.get(h.id) ?? 0,
       });
     });
+  }, [habits, stateByHabit, weekDoneByHabit]);
+
+  // Tag-filtered, grouped into moment sections, sorted by priority within each.
+  const sections = useMemo(() => {
+    const due = filterTagId
+      ? allDueToday.filter((h) => h.goalTagIds.includes(filterTagId))
+      : allDueToday;
     return MOMENT_ORDER.map((moment) => ({
       moment,
       meta: MOMENT_META[moment],
@@ -115,22 +124,26 @@ export function RoutinesHomeScreen() {
         .filter((h) => h.moment === moment)
         .sort((a, b) => b.priority - a.priority || a.order - b.order),
     })).filter((section) => section.items.length > 0);
-  }, [habits, stateByHabit, weekDoneByHabit, filterTagId]);
+  }, [allDueToday, filterTagId]);
 
-  const totalDue = useMemo(
+  const greenLight = useMemo(
+    () => computeGreenLight(allDueToday, stateByHabit),
+    [allDueToday, stateByHabit]
+  );
+
+  const totalDue = allDueToday.length;
+  const visibleCount = useMemo(
     () => sections.reduce((sum, s) => sum + s.items.length, 0),
     [sections]
   );
   const doneCount = useMemo(() => {
     let n = 0;
-    sections.forEach((s) =>
-      s.items.forEach((h) => {
-        const st = stateByHabit.get(h.id);
-        if (st === "done" || st === "rest" || st === "shielded") n += 1;
-      })
-    );
+    allDueToday.forEach((h) => {
+      const st = stateByHabit.get(h.id);
+      if (st === "done" || st === "rest" || st === "shielded") n += 1;
+    });
     return n;
-  }, [sections, stateByHabit]);
+  }, [allDueToday, stateByHabit]);
 
   const mutate = (habit: Habit, nextState: CompletionState | null) =>
     toggle.mutate({
@@ -198,6 +211,12 @@ export function RoutinesHomeScreen() {
           </AnimatedPressable>
         </View>
 
+        {totalDue > 0 && (
+          <View style={styles.greenLightRow}>
+            <GreenLightIndicator light={greenLight} />
+          </View>
+        )}
+
         {usedTags.length > 0 && (
           <ScrollView
             horizontal
@@ -257,7 +276,7 @@ export function RoutinesHomeScreen() {
               </AnimatedPressable>
             </View>
           </AnimatedView>
-        ) : totalDue === 0 ? (
+        ) : visibleCount === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>
               {filterTagId ? "Nothing here today" : "Nothing scheduled today"}
@@ -337,6 +356,9 @@ const createStyles = (theme: Theme) =>
       backgroundColor: ACCENT,
       alignItems: "center",
       justifyContent: "center",
+    },
+    greenLightRow: {
+      paddingBottom: theme.spacing.sm,
     },
     filterRow: {
       gap: theme.spacing.sm,

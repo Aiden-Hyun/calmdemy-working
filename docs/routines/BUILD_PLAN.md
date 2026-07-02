@@ -48,7 +48,7 @@ This is **extra/additive** content. It is not wired into any existing content pi
 | 5 | Habit priority (1–3) | M2 | 1 | ✅ |
 | 22 | Goal tags | M2 | 1 | ✅ |
 | 6 | Streaks & shields | M3 | 1, 2, 3 | ✅ |
-| 14 | Green Light system | M4 | 1, 5 (also 2, 3) | ⬜ |
+| 14 | Green Light system | M4 | 1, 5 (also 2, 3) | ✅ |
 | 7 | Routine profiles (≤10, Apply Today) | M5 | 1, 2, 4, 5, 22 | ⬜ |
 | 8 | To-dos | M6 | M0 | ⬜ |
 | 9 | To-do calendar | M6 | 8 | ⬜ |
@@ -103,10 +103,10 @@ This is **extra/additive** content. It is not wired into any existing content pi
 - [x] BONUS: `HabitDetailScreen` + route `app/routines/habit/[id].tsx` (streak/shields/summary + Edit + Archive), reached via Today long-press "View details" (Edit moved off the Today menu onto the detail screen).
 - [x] Composite index `(routineCompletions: habitId ASC, dateKey ASC)` added to `firestore.indexes.json` and **deployed** to `calmnest-e910e`.
 
-**M4 — Green Light**
-- [ ] `domain/greenLight.ts` (`computeGreenLight` priority-weighted).
-- [ ] `GreenLightIndicator` (three vector circles) on `RoutinesHomeScreen` header.
-- [ ] Live-updates as habits are checked (derived in `select`/`queryFn`, no extra fetch).
+**M4 — Green Light** — ✅ done 2026-07-01 (`tsc` + `eslint` clean)
+- [x] `domain/greenLight.ts` (`computeGreenLight` priority-weighted; `done`/`rest`/`shielded` satisfy; thresholds 0.8/0.4 as tunable constants — OQ3).
+- [x] `GreenLightIndicator` (three vector circles + status label) on the `RoutinesHomeScreen` header.
+- [x] Live-updates as habits are checked — computed in-render via `useMemo` off the completions query (no extra fetch); reflects the WHOLE day (ignores the tag filter). Refactored Today so `allDueToday` feeds both Green Light and the header count, while `sections` applies the tag filter.
 
 **M5 — Profiles**
 - [ ] `types.ts`: `RoutineProfile`; `api/profiles.ts` (CRUD + `applyToday`); `hooks/useProfiles.ts`.
@@ -914,7 +914,7 @@ Add `react-native-view-shot` + `expo-sharing` (§8.5); wrap `ShareableSummaryCar
 
 - **OQ1 — [RESOLVED 2026-07-01]:** Routines is **FREE for now**. Manifest ships `requiresSubscription: false` (as built in M0). Flip to `true` later if premium-gated (single-field change).
 - **OQ2 — [RESOLVED 2026-07-01]:** Reminders **mirror to Firestore**. Activate collection I `routineReminders` (rules added in M0) as the cross-device source of truth, with device-local AsyncStorage as the fast cache. Implement the mirror in M9 (`hooks/useHabitReminders.ts` + notificationService keyed API writes through to Firestore).
-- **OQ3:** Green Light thresholds (0.8 / 0.4) are placeholders — confirm with design before shipping.
+- **OQ3 — [IMPLEMENTED, confirm later]:** Green Light thresholds shipped as `GREEN_THRESHOLD = 0.8` / `YELLOW_THRESHOLD = 0.4` constants in `domain/greenLight.ts`. Tune before public release if design wants different cutoffs (one-line change).
 - **OQ4 — [RESOLVED 2026-07-01]:** Shield period is **weekly**. `shieldsRemaining(habit, completions, period="week")` counts `shielded` completions in the current week against `shieldsMax`. (`shieldsRemaining` also accepts `"month"` if we ever want a monthly bucket.)
 - **OQ5:** Should `RoutinesHomeScreen` use a segmented control or section-link cards for the mini-hub? Decide during M1 UI.
 
@@ -942,7 +942,10 @@ Add `react-native-view-shot` + `expo-sharing` (§8.5); wrap `ShareableSummaryCar
 | 2026-07-01 | **M1 implemented & verified** (`tsc --noEmit` + `eslint` clean). Features 1–3: habit CRUD + completion log, Today screen, habit editor, repeat picker, rest days, and the times-per-week/weekly quota. Minor API refinement vs. the spec: `toggleCompletion` split into `setCompletion`/`clearCompletion` (so un-check deletes the doc); added `getCompletionsForRange` + `useWeekCompletions` for the quota. Data model unchanged. |
 | 2026-07-01 | **M2 implemented & verified** (`tsc --noEmit` + `eslint` clean). Features 4/5/22: `DifficultyPicker`, `PriorityPicker`, `GoalTagChips`; `api/goalTags.ts` + `hooks/useGoalTags.ts` + `data/difficulty.ts`/`data/goalTags.ts`; `HabitRow` badges; Today priority-sort + tag filter. Editor made bidirectional (create/edit) + `[id]/edit` route. New query key `["goalTags", uid]`; goal tags seed on first use (idempotent slug ids). Data model unchanged. |
 | 2026-07-01 | **M3 implemented & verified** (`tsc --noEmit` + `eslint` clean). Feature 6: `domain/streaks.ts` (`computeStreak` returns `{value, unit}` — day streak for daily/weekdays, week streak for quota cadences; `shieldsRemaining`), `StreakBadge`, `useSpendShield`, editor shields stepper (0–3/wk), `HabitDetailScreen` + `[id]` route. Deployed the `(habitId, dateKey)` composite index (needed for the streak range query). OQ4 resolved (weekly shields). Data model unchanged. |
+| 2026-07-01 | **M4 implemented & verified** (`tsc --noEmit` + `eslint` clean). Feature 14: `domain/greenLight.ts` (`computeGreenLight`, priority-weighted, thresholds 0.8/0.4) + `GreenLightIndicator`. Today refactored to `allDueToday` (whole-day, feeds Green Light + count) vs. tag-filtered `sections`. OQ3 resolved. No new deps, no data-model change, no deploy needed (pure + UI). |
 | 2026-07-01 | **Shipped M0+M1.** Committed the 21 routines files on branch `feat/routines-m0-m1` (`6b23e9c`), pushed to `origin` (github.com/Aiden-Hyun/calmdemy-working), and deployed `firestore.rules` to `calmnest-e910e`. Excluded unrelated working-tree changes (`.DS_Store`, iOS pbxproj, store-asset PNGs). Composite index `(habitId, dateKey)` still deferred until M3/M8. | M0, M1 | M2 |
 | 2026-07-01 | **M2 complete (features 4, 5, 22).** Difficulty + priority pickers, goal-tag CRUD with seeded defaults + inline create, row badges (difficulty pill + priority dots), Today priority-sort + goal-tag filter row. Made `HabitEditorScreen` bidirectional and added the `[id]/edit` route + Today "Edit habit" action. `tsc` + `eslint` clean. Not yet committed. | 4, 5, 22 (+ edit mode) | M3 — streaks & shields. Also: commit/push M2, and still-pending simulator smoke test. |
 | 2026-07-01 | **Committed + pushed M2** (`1210c48`) to `origin`. | 4, 5, 22 | M3 |
 | 2026-07-01 | **M3 complete (feature 6).** `domain/streaks.ts` (`computeStreak` day/week + `shieldsRemaining`), `StreakBadge`, `useSpendShield`, editor shields stepper, `HabitDetailScreen` + `[id]` route (streak/shields/summary/edit/archive), Today "Use shield" + "View details". Added & **deployed** the `(habitId, dateKey)` composite index. Resolved OQ4 (weekly shields). `tsc` + `eslint` clean. **Not yet committed.** | 6 (+ detail screen, archive) | M4 — Green Light. Also: commit/push M3; simulator smoke test still pending. |
+| 2026-07-01 | **Committed + pushed M3** (`cae018c`) to `origin`. | 6 | M4 |
+| 2026-07-01 | **M4 complete (feature 14).** `domain/greenLight.ts` (priority-weighted, thresholds 0.8/0.4) + `GreenLightIndicator` (three circles + label) on the Today header; refactored Today so `allDueToday` feeds Green Light + header count (whole day) while the tag filter only narrows the list. Resolved OQ3 (thresholds as constants). `tsc` + `eslint` clean. **Not yet committed.** | 14 | M5 — Profiles. Also: commit/push M4; simulator smoke test still pending. |
