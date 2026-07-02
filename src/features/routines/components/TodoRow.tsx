@@ -5,11 +5,17 @@
  *
  * A checkable to-do line: circle toggle, title + optional subtitle, and an
  * optional trailing delete. Presentational — handlers come from props.
+ *
+ * Layout note: the row is a plain full-width View (a column child stretches to
+ * full width), and the text sits in a `flex: 1` Pressable. We deliberately do
+ * NOT wrap the flex area in AnimatedPressable — that component puts the style
+ * (incl. flex) on an inner Animated.View while its outer Pressable stays
+ * content-sized, which collapses the text to zero width inside a row.
  * ============================================================
  */
 
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { useTheme } from "../../../core/theme/ThemeContext";
@@ -31,23 +37,23 @@ export function TodoRow({ todo, subtitle, onToggle, onDelete }: TodoRowProps) {
 
   return (
     <View style={styles.wrap}>
-      <AnimatedPressable style={styles.row} onPress={onToggle}>
+      <AnimatedPressable style={styles.check} onPress={onToggle}>
         <Ionicons
           name={todo.done ? "checkmark-circle" : "ellipse-outline"}
           size={24}
           color={todo.done ? ACCENT : theme.colors.border}
         />
-        <View style={styles.text}>
-          <Text style={[styles.title, todo.done && styles.titleDone]} numberOfLines={1}>
-            {todo.title}
-          </Text>
-          {!!subtitle && (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          )}
-        </View>
       </AnimatedPressable>
+      <Pressable style={styles.textArea} onPress={onToggle}>
+        <Text style={[styles.title, todo.done && styles.titleDone]} numberOfLines={1}>
+          {todo.title}
+        </Text>
+        {!!subtitle && (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        )}
+      </Pressable>
       {onDelete && (
         <AnimatedPressable style={styles.trash} onPress={onDelete}>
           <Ionicons name="trash-outline" size={18} color={theme.colors.textMuted} />
@@ -62,15 +68,13 @@ const createStyles = (theme: Theme) =>
     wrap: {
       flexDirection: "row",
       alignItems: "center",
-    },
-    row: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
       gap: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
     },
-    text: {
+    check: {
+      paddingVertical: 2,
+    },
+    textArea: {
       flex: 1,
     },
     title: {

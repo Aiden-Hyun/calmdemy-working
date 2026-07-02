@@ -20,6 +20,8 @@ import {
   type CreateProfileInput,
   type UpdateProfileInput,
 } from "../api/profiles";
+import { optimisticList } from "./optimistic";
+import type { RoutineProfile } from "../types";
 
 /** All routine profiles (seeds the default on first use). */
 export function useProfiles() {
@@ -31,14 +33,30 @@ export function useProfiles() {
   });
 }
 
+/** Create — OPTIMISTIC (temp id, inactive). */
 export function useCreateProfile() {
   const { user } = useAuth();
+  const uid = user?.uid;
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateProfileInput) => createProfile(user!.uid, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["routineProfiles", user?.uid] });
-    },
+    mutationFn: (input: CreateProfileInput) => createProfile(uid!, input),
+    ...optimisticList<RoutineProfile, CreateProfileInput>(
+      queryClient,
+      ["routineProfiles", uid],
+      (list, input) => [
+        ...list,
+        {
+          id: `temp-${Date.now()}`,
+          userId: uid ?? "",
+          name: input.name.trim(),
+          icon: input.icon,
+          color: input.color,
+          order: input.order ?? Date.now(),
+          isActive: false,
+          createdAt: Date.now(),
+        },
+      ]
+    ),
   });
 }
 
@@ -54,25 +72,29 @@ export function useUpdateProfile() {
   });
 }
 
+/** Delete — OPTIMISTIC (row vanishes instantly). */
 export function useDeleteProfile() {
   const { user } = useAuth();
+  const uid = user?.uid;
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (profileId: string) => deleteProfile(user!.uid, profileId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["routineProfiles", user?.uid] });
-    },
+    mutationFn: (profileId: string) => deleteProfile(uid!, profileId),
+    ...optimisticList<RoutineProfile, string>(queryClient, ["routineProfiles", uid], (list, profileId) =>
+      list.filter((p) => p.id !== profileId)
+    ),
   });
 }
 
-/** "Apply Today" — swap the active profile. */
+/** "Apply Today" — swap the active profile. OPTIMISTIC: flips `isActive` in the
+ * cache so the active badge (and Today's habit set) update instantly. */
 export function useApplyProfile() {
   const { user } = useAuth();
+  const uid = user?.uid;
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (profileId: string) => applyToday(user!.uid, profileId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["routineProfiles", user?.uid] });
-    },
+    mutationFn: (profileId: string) => applyToday(uid!, profileId),
+    ...optimisticList<RoutineProfile, string>(queryClient, ["routineProfiles", uid], (list, profileId) =>
+      list.map((p) => ({ ...p, isActive: p.id === profileId }))
+    ),
   });
 }

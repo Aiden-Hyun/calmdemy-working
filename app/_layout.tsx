@@ -232,6 +232,24 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="routines/trackers"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="routines/tracker/[id]"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="routines/timer"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }

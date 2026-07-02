@@ -18,6 +18,8 @@ import {
   type CreateGoalTagInput,
   type UpdateGoalTagInput,
 } from "../api/goalTags";
+import { optimisticList } from "./optimistic";
+import type { GoalTag } from "../types";
 
 /** All of the user's goal tags (seeds defaults on first use). */
 export function useGoalTags() {
@@ -29,14 +31,26 @@ export function useGoalTags() {
   });
 }
 
+/** Create — OPTIMISTIC (temp id chip appears instantly; `mutateAsync` still
+ * resolves to the real id for the editor to select). */
 export function useCreateGoalTag() {
   const { user } = useAuth();
+  const uid = user?.uid;
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateGoalTagInput) => createGoalTag(user!.uid, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goalTags", user?.uid] });
-    },
+    mutationFn: (input: CreateGoalTagInput) => createGoalTag(uid!, input),
+    ...optimisticList<GoalTag, CreateGoalTagInput>(queryClient, ["goalTags", uid], (list, input) => [
+      ...list,
+      {
+        id: `temp-${Date.now()}`,
+        userId: uid ?? "",
+        label: input.label.trim(),
+        icon: input.icon,
+        color: input.color,
+        order: input.order ?? Date.now(),
+        createdAt: Date.now(),
+      },
+    ]),
   });
 }
 

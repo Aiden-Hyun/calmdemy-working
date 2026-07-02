@@ -25,7 +25,7 @@ import { getById } from '../../src/registry';
 
 // The practice tools surfaced on this tab, in display order. Each resolves to a
 // manifest; any that can't resolve is skipped (defensive).
-const TOOL_IDS = ['breathing', 'journal', 'mood', 'cbt', 'routines'];
+const TOOL_IDS = ['breathing', 'journal', 'mood', 'cbt', 'routines', 'todos', 'trackers'];
 
 function ToolsScreen() {
   const { theme } = useTheme();

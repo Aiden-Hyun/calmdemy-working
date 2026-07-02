@@ -30,11 +30,43 @@ export const manifest: FeatureManifest = {
     "habit",
     "habits",
     "streak",
-    "tracker",
-    "to-do",
-    "todo",
     "goal",
     "reminder",
   ],
+  enabled: true,
+};
+
+/**
+ * To-dos and Trackers live inside the routines module (they share its types,
+ * domain helpers, and Firestore collections) but surface as their OWN tiles on
+ * the Tools tab — so they get their own manifests here rather than a separate
+ * feature module (which the boundaries lint rule would block from importing
+ * routines' internals). Their routes stay under /routines/*.
+ */
+export const todosManifest: FeatureManifest = {
+  id: "todos",
+  label: "To-dos",
+  description: "Quick one-off tasks and a simple month calendar.",
+  icon: "checkbox-outline",
+  color: "#A5B4D4",
+  route: "/routines/todos",
+  category: "practice",
+  requiresAuth: true,
+  requiresSubscription: false,
+  searchKeywords: ["to-do", "todo", "tasks", "checklist", "calendar", "reminder"],
+  enabled: true,
+};
+
+export const trackersManifest: FeatureManifest = {
+  id: "trackers",
+  label: "Trackers",
+  description: "Log daily numbers like weight or workouts and watch the trend.",
+  icon: "stats-chart-outline",
+  color: "#C9A0C0",
+  route: "/routines/trackers",
+  category: "practice",
+  requiresAuth: true,
+  requiresSubscription: false,
+  searchKeywords: ["tracker", "trackers", "weight", "chart", "trend", "log", "measure"],
   enabled: true,
 };

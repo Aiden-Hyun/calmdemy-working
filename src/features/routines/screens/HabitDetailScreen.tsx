@@ -173,6 +173,16 @@ export function HabitDetailScreen({ habitId }: HabitDetailScreenProps) {
         )}
 
         <AnimatedPressable
+          style={styles.timerBtn}
+          onPress={() =>
+            router.push({ pathname: "/routines/timer", params: { label: habit.name } })
+          }
+        >
+          <Ionicons name="timer-outline" size={18} color={ACCENT} />
+          <Text style={styles.timerBtnText}>Start focus timer</Text>
+        </AnimatedPressable>
+
+        <AnimatedPressable
           style={styles.editBtn}
           onPress={() =>
             router.push({ pathname: "/routines/habit/[id]/edit", params: { id: habitId } })
@@ -288,12 +298,28 @@ const createStyles = (theme: Theme) =>
       fontFamily: theme.fonts.ui.regular,
       fontSize: 13,
     },
-    editBtn: {
+    timerBtn: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
       marginTop: theme.spacing.xl,
+      paddingVertical: 14,
+      borderRadius: theme.borderRadius.xl,
+      borderWidth: 1,
+      borderColor: ACCENT,
+    },
+    timerBtnText: {
+      fontFamily: theme.fonts.ui.semiBold,
+      fontSize: 15,
+      color: ACCENT,
+    },
+    editBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      marginTop: theme.spacing.md,
       paddingVertical: 15,
       borderRadius: theme.borderRadius.xl,
       backgroundColor: ACCENT,

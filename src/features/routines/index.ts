@@ -20,4 +20,7 @@ export { HabitDetailScreen } from "./screens/HabitDetailScreen";
 export { ProfilesScreen } from "./screens/ProfilesScreen";
 export { TodosScreen } from "./screens/TodosScreen";
 export { TodoCalendarScreen } from "./screens/TodoCalendarScreen";
-export { manifest } from "./manifest";
+export { TrackersScreen } from "./screens/TrackersScreen";
+export { TrackerDetailScreen } from "./screens/TrackerDetailScreen";
+export { TimerScreen } from "./screens/TimerScreen";
+export { manifest, todosManifest, trackersManifest } from "./manifest";

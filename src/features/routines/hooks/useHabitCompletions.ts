@@ -18,7 +18,7 @@ import {
   setCompletion,
 } from "../api/completions";
 import { todayKey, weekBounds } from "../domain/dateKeys";
-import type { CompletionState } from "../types";
+import type { CompletionState, HabitCompletion } from "../types";
 
 /** Every completion recorded today (across all habits). */
 export function useTodayCompletions() {
@@ -60,8 +60,15 @@ export function useCompletionsRange(
  * Set or clear a habit's state for a day. `nextState: null` clears it (deletes
  * the doc); any CompletionState writes it. Invalidates that day's completions.
  */
+/**
+ * Set or clear a habit's state for a day — OPTIMISTIC: the day's completion
+ * cache is patched immediately (so the check circle and the Green Light flip
+ * without waiting for Firestore), then the write and reconciling refetches run
+ * in the background, with rollback on error. `nextState: null` clears (deletes).
+ */
 export function useToggleCompletion() {
   const { user } = useAuth();
+  const uid = user?.uid;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
@@ -71,27 +78,58 @@ export function useToggleCompletion() {
       nextState: CompletionState | null;
     }): Promise<void> => {
       if (input.nextState === null) {
-        await clearCompletion(user!.uid, input.habitId, input.dateKey);
+        await clearCompletion(uid!, input.habitId, input.dateKey);
         return;
       }
-      await setCompletion(user!.uid, {
+      await setCompletion(uid!, {
         habitId: input.habitId,
         profileId: input.profileId,
         dateKey: input.dateKey,
         state: input.nextState,
       });
     },
-    onSuccess: (_r, input) => {
+    onMutate: async (input) => {
+      const key = ["habitCompletions", uid, input.dateKey];
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<HabitCompletion[]>(key);
+
+      queryClient.setQueryData<HabitCompletion[]>(key, (list) => {
+        const arr = list ?? [];
+        if (input.nextState === null) {
+          return arr.filter((c) => c.habitId !== input.habitId);
+        }
+        const optimistic: HabitCompletion = {
+          id: `${input.habitId}_${input.dateKey}`,
+          userId: uid ?? "",
+          habitId: input.habitId,
+          profileId: input.profileId,
+          dateKey: input.dateKey,
+          state: input.nextState,
+          createdAt: Date.now(),
+        };
+        const idx = arr.findIndex((c) => c.habitId === input.habitId);
+        if (idx >= 0) {
+          const next = arr.slice();
+          next[idx] = optimistic;
+          return next;
+        }
+        return [...arr, optimistic];
+      });
+
+      return { key, prev };
+    },
+    onError: (_err, _input, ctx) => {
+      if (ctx) queryClient.setQueryData(ctx.key, ctx.prev);
+    },
+    onSettled: (_data, _err, input) => {
       queryClient.invalidateQueries({
-        queryKey: ["habitCompletions", user?.uid, input.dateKey],
+        queryKey: ["habitCompletions", uid, input.dateKey],
       });
       // The week query drives the times-per-week quota — refresh it.
-      queryClient.invalidateQueries({
-        queryKey: ["habitCompletionsWeek", user?.uid],
-      });
+      queryClient.invalidateQueries({ queryKey: ["habitCompletionsWeek", uid] });
       // Range queries (streaks/heatmap) overlap this day — refresh them too.
       queryClient.invalidateQueries({
-        queryKey: ["habitCompletionsRange", user?.uid, input.habitId],
+        queryKey: ["habitCompletionsRange", uid, input.habitId],
       });
     },
   });
@@ -103,24 +141,51 @@ export function useToggleCompletion() {
  */
 export function useSpendShield() {
   const { user } = useAuth();
+  const uid = user?.uid;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: { habitId: string; profileId: string; dateKey: string }) =>
-      setCompletion(user!.uid, {
+      setCompletion(uid!, {
         habitId: input.habitId,
         profileId: input.profileId,
         dateKey: input.dateKey,
         state: "shielded",
       }),
-    onSuccess: (_r, input) => {
-      queryClient.invalidateQueries({
-        queryKey: ["habitCompletions", user?.uid, input.dateKey],
+    onMutate: async (input) => {
+      const key = ["habitCompletions", uid, input.dateKey];
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<HabitCompletion[]>(key);
+      queryClient.setQueryData<HabitCompletion[]>(key, (list) => {
+        const arr = list ?? [];
+        const optimistic: HabitCompletion = {
+          id: `${input.habitId}_${input.dateKey}`,
+          userId: uid ?? "",
+          habitId: input.habitId,
+          profileId: input.profileId,
+          dateKey: input.dateKey,
+          state: "shielded",
+          createdAt: Date.now(),
+        };
+        const idx = arr.findIndex((c) => c.habitId === input.habitId);
+        if (idx >= 0) {
+          const next = arr.slice();
+          next[idx] = optimistic;
+          return next;
+        }
+        return [...arr, optimistic];
       });
+      return { key, prev };
+    },
+    onError: (_err, _input, ctx) => {
+      if (ctx) queryClient.setQueryData(ctx.key, ctx.prev);
+    },
+    onSettled: (_data, _err, input) => {
       queryClient.invalidateQueries({
-        queryKey: ["habitCompletionsWeek", user?.uid],
+        queryKey: ["habitCompletions", uid, input.dateKey],
       });
+      queryClient.invalidateQueries({ queryKey: ["habitCompletionsWeek", uid] });
       queryClient.invalidateQueries({
-        queryKey: ["habitCompletionsRange", user?.uid, input.habitId],
+        queryKey: ["habitCompletionsRange", uid, input.habitId],
       });
     },
   });
