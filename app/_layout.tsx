@@ -214,6 +214,12 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="routines/profiles"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }

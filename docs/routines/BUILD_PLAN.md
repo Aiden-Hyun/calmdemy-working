@@ -49,7 +49,7 @@ This is **extra/additive** content. It is not wired into any existing content pi
 | 22 | Goal tags | M2 | 1 | ✅ |
 | 6 | Streaks & shields | M3 | 1, 2, 3 | ✅ |
 | 14 | Green Light system | M4 | 1, 5 (also 2, 3) | ✅ |
-| 7 | Routine profiles (≤10, Apply Today) | M5 | 1, 2, 4, 5, 22 | ⬜ |
+| 7 | Routine profiles (≤10, Apply Today) | M5 | 1, 2, 4, 5, 22 | ✅ |
 | 8 | To-dos | M6 | M0 | ⬜ |
 | 9 | To-do calendar | M6 | 8 | ⬜ |
 | 10 | Numeric trackers with charts | M6 | M0 | ⬜ |
@@ -108,9 +108,10 @@ This is **extra/additive** content. It is not wired into any existing content pi
 - [x] `GreenLightIndicator` (three vector circles + status label) on the `RoutinesHomeScreen` header.
 - [x] Live-updates as habits are checked — computed in-render via `useMemo` off the completions query (no extra fetch); reflects the WHOLE day (ignores the tag filter). Refactored Today so `allDueToday` feeds both Green Light and the header count, while `sections` applies the tag filter.
 
-**M5 — Profiles**
-- [ ] `types.ts`: `RoutineProfile`; `api/profiles.ts` (CRUD + `applyToday`); `hooks/useProfiles.ts`.
-- [ ] `screens/ProfilesScreen.tsx` + route; ≤10 cap enforced client-side; "Apply Today" toggles `isActive`.
+**M5 — Profiles** — ✅ done 2026-07-01 (`tsc` + `eslint` clean)
+- [x] `RoutineProfile` type (from M0); `api/profiles.ts` (CRUD + `getOrSeedProfiles` + `applyToday` batch + `MAX_PROFILES`); `hooks/useProfiles.ts` (`useProfiles`, `useApplyProfile`, `useCreateProfile`, `useUpdateProfile`, `useDeleteProfile`).
+- [x] `screens/ProfilesScreen.tsx` + route `app/routines/profiles.tsx` (+ `_layout` + `index.ts`); ≤10 cap enforced client-side; "Apply" swaps `isActive` in one batch; inline create; delete guarded (never the active or last profile).
+- [x] **Retired the M1 `DEFAULT_PROFILE_ID` placeholder:** the seeded default profile uses doc id `"default"`, so pre-M5 habits belong to it — no migration. Today now filters to the active profile; new habits are created into the active profile; a profile-switcher pill on the Today header opens the Profiles screen.
 
 **M6 — Standalone data islands**
 - [ ] Feature 8: `types.ts` `Todo`; `api/todos.ts`; `hooks/useTodos.ts`; to-do list on home + `screens/TodosScreen.tsx` + route.
@@ -943,9 +944,12 @@ Add `react-native-view-shot` + `expo-sharing` (§8.5); wrap `ShareableSummaryCar
 | 2026-07-01 | **M2 implemented & verified** (`tsc --noEmit` + `eslint` clean). Features 4/5/22: `DifficultyPicker`, `PriorityPicker`, `GoalTagChips`; `api/goalTags.ts` + `hooks/useGoalTags.ts` + `data/difficulty.ts`/`data/goalTags.ts`; `HabitRow` badges; Today priority-sort + tag filter. Editor made bidirectional (create/edit) + `[id]/edit` route. New query key `["goalTags", uid]`; goal tags seed on first use (idempotent slug ids). Data model unchanged. |
 | 2026-07-01 | **M3 implemented & verified** (`tsc --noEmit` + `eslint` clean). Feature 6: `domain/streaks.ts` (`computeStreak` returns `{value, unit}` — day streak for daily/weekdays, week streak for quota cadences; `shieldsRemaining`), `StreakBadge`, `useSpendShield`, editor shields stepper (0–3/wk), `HabitDetailScreen` + `[id]` route. Deployed the `(habitId, dateKey)` composite index (needed for the streak range query). OQ4 resolved (weekly shields). Data model unchanged. |
 | 2026-07-01 | **M4 implemented & verified** (`tsc --noEmit` + `eslint` clean). Feature 14: `domain/greenLight.ts` (`computeGreenLight`, priority-weighted, thresholds 0.8/0.4) + `GreenLightIndicator`. Today refactored to `allDueToday` (whole-day, feeds Green Light + count) vs. tag-filtered `sections`. OQ3 resolved. No new deps, no data-model change, no deploy needed (pure + UI). |
+| 2026-07-01 | **M5 implemented & verified** (`tsc --noEmit` + `eslint` clean). Feature 7: `api/profiles.ts` (+`MAX_PROFILES`, `applyToday` batch, `getOrSeedProfiles` with fixed `"default"` id) + `hooks/useProfiles.ts` + `ProfilesScreen` + route. Today filters to the active profile and shows a switcher pill; editor creates into the active profile. New query key `["routineProfiles", uid]`. `routineProfiles` rule already shipped in M0; no new index. Data model unchanged (RoutineProfile was defined in M0). |
 | 2026-07-01 | **Shipped M0+M1.** Committed the 21 routines files on branch `feat/routines-m0-m1` (`6b23e9c`), pushed to `origin` (github.com/Aiden-Hyun/calmdemy-working), and deployed `firestore.rules` to `calmnest-e910e`. Excluded unrelated working-tree changes (`.DS_Store`, iOS pbxproj, store-asset PNGs). Composite index `(habitId, dateKey)` still deferred until M3/M8. | M0, M1 | M2 |
 | 2026-07-01 | **M2 complete (features 4, 5, 22).** Difficulty + priority pickers, goal-tag CRUD with seeded defaults + inline create, row badges (difficulty pill + priority dots), Today priority-sort + goal-tag filter row. Made `HabitEditorScreen` bidirectional and added the `[id]/edit` route + Today "Edit habit" action. `tsc` + `eslint` clean. Not yet committed. | 4, 5, 22 (+ edit mode) | M3 — streaks & shields. Also: commit/push M2, and still-pending simulator smoke test. |
 | 2026-07-01 | **Committed + pushed M2** (`1210c48`) to `origin`. | 4, 5, 22 | M3 |
 | 2026-07-01 | **M3 complete (feature 6).** `domain/streaks.ts` (`computeStreak` day/week + `shieldsRemaining`), `StreakBadge`, `useSpendShield`, editor shields stepper, `HabitDetailScreen` + `[id]` route (streak/shields/summary/edit/archive), Today "Use shield" + "View details". Added & **deployed** the `(habitId, dateKey)` composite index. Resolved OQ4 (weekly shields). `tsc` + `eslint` clean. **Not yet committed.** | 6 (+ detail screen, archive) | M4 — Green Light. Also: commit/push M3; simulator smoke test still pending. |
 | 2026-07-01 | **Committed + pushed M3** (`cae018c`) to `origin`. | 6 | M4 |
 | 2026-07-01 | **M4 complete (feature 14).** `domain/greenLight.ts` (priority-weighted, thresholds 0.8/0.4) + `GreenLightIndicator` (three circles + label) on the Today header; refactored Today so `allDueToday` feeds Green Light + header count (whole day) while the tag filter only narrows the list. Resolved OQ3 (thresholds as constants). `tsc` + `eslint` clean. **Not yet committed.** | 14 | M5 — Profiles. Also: commit/push M4; simulator smoke test still pending. |
+| 2026-07-01 | **Committed + pushed M4** (`15050da`) to `origin`. | 14 | M5 |
+| 2026-07-01 | **M5 complete (feature 7).** `api/profiles.ts` (CRUD + `applyToday` batch + seed default), `hooks/useProfiles.ts`, `ProfilesScreen` + route, profile-switcher pill on Today. Today filters to the active profile; new habits created into it; `DEFAULT_PROFILE_ID` placeholder retired (default is now a real `"default"` profile doc). `tsc` + `eslint` clean. **Not yet committed.** | 7 | M6 — to-dos, calendar, trackers, timer. Also: commit/push M5; simulator smoke test still pending. |

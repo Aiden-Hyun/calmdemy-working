@@ -40,6 +40,7 @@ import {
   useSpendShield,
 } from "../hooks/useHabitCompletions";
 import { useGoalTags } from "../hooks/useGoalTags";
+import { useProfiles } from "../hooks/useProfiles";
 import { isDueToday } from "../domain/repeat";
 import { shieldsRemaining } from "../domain/streaks";
 import { computeGreenLight } from "../domain/greenLight";
@@ -63,9 +64,15 @@ export function RoutinesHomeScreen() {
   const { data: completions } = useTodayCompletions();
   const { data: weekCompletions } = useWeekCompletions();
   const { data: goalTags } = useGoalTags();
+  const { data: profiles } = useProfiles();
   const toggle = useToggleCompletion();
   const spendShield = useSpendShield();
   const dateKey = todayKey();
+
+  const activeProfile = useMemo(
+    () => (profiles ?? []).find((p) => p.isActive) ?? profiles?.[0],
+    [profiles]
+  );
 
   const [filterTagId, setFilterTagId] = useState<string | null>(null);
 
@@ -104,13 +111,14 @@ export function RoutinesHomeScreen() {
     const now = new Date();
     return (habits ?? []).filter((h) => {
       if (h.archivedAt) return false;
+      if (activeProfile && h.profileId !== activeProfile.id) return false;
       const st = stateByHabit.get(h.id);
       return isDueToday(h, now, {
         handledToday: st === "done" || st === "rest" || st === "shielded",
         weekDoneCount: weekDoneByHabit.get(h.id) ?? 0,
       });
     });
-  }, [habits, stateByHabit, weekDoneByHabit]);
+  }, [habits, stateByHabit, weekDoneByHabit, activeProfile]);
 
   // Tag-filtered, grouped into moment sections, sorted by priority within each.
   const sections = useMemo(() => {
@@ -187,7 +195,9 @@ export function RoutinesHomeScreen() {
     Alert.alert(habit.name, "Set today", options);
   };
 
-  const hasHabits = (habits ?? []).some((h) => !h.archivedAt);
+  const hasHabits = (habits ?? []).some(
+    (h) => !h.archivedAt && (!activeProfile || h.profileId === activeProfile.id)
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -210,6 +220,19 @@ export function RoutinesHomeScreen() {
             <Ionicons name="add" size={26} color={theme.colors.surface} />
           </AnimatedPressable>
         </View>
+
+        {activeProfile && (
+          <AnimatedPressable
+            style={styles.profilePill}
+            onPress={() => router.push("/routines/profiles")}
+          >
+            <Ionicons name={activeProfile.icon} size={15} color={activeProfile.color} />
+            <Text style={styles.profileName} numberOfLines={1}>
+              {activeProfile.name}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={theme.colors.textMuted} />
+          </AnimatedPressable>
+        )}
 
         {totalDue > 0 && (
           <View style={styles.greenLightRow}>
@@ -356,6 +379,25 @@ const createStyles = (theme: Theme) =>
       backgroundColor: ACCENT,
       alignItems: "center",
       justifyContent: "center",
+    },
+    profilePill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      alignSelf: "flex-start",
+      maxWidth: "70%",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: theme.spacing.sm,
+    },
+    profileName: {
+      fontFamily: theme.fonts.ui.semiBold,
+      fontSize: 14,
+      color: theme.colors.text,
     },
     greenLightRow: {
       paddingBottom: theme.spacing.sm,

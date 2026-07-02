@@ -33,6 +33,7 @@ import { PriorityPicker } from "../components/PriorityPicker";
 import { GoalTagChips } from "../components/GoalTagChips";
 import { useCreateHabit, useHabit, useUpdateHabit } from "../hooks/useHabits";
 import { useCreateGoalTag, useGoalTags } from "../hooks/useGoalTags";
+import { useProfiles } from "../hooks/useProfiles";
 import {
   HABIT_COLORS,
   HABIT_ICONS,
@@ -62,6 +63,8 @@ export function HabitEditorScreen({ habitId }: HabitEditorScreenProps) {
   const { data: existing, isLoading: loadingHabit } = useHabit(habitId);
   const { data: goalTags } = useGoalTags();
   const createGoalTag = useCreateGoalTag();
+  const { data: profiles } = useProfiles();
+  const activeProfileId = profiles?.find((p) => p.isActive)?.id;
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<IoniconName>(HABIT_ICONS[0]);
@@ -121,7 +124,10 @@ export function HabitEditorScreen({ habitId }: HabitEditorScreenProps) {
     if (isEditing && habitId) {
       updateHabit.mutate({ habitId, patch: fields }, { onSuccess: () => router.back() });
     } else {
-      createHabit.mutate(fields, { onSuccess: () => router.back() });
+      createHabit.mutate(
+        { ...fields, profileId: activeProfileId },
+        { onSuccess: () => router.back() }
+      );
     }
   };
 
