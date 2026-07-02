@@ -1,18 +1,18 @@
 /**
  * ============================================================
- * features/routines/screens/RoutinesHomeScreen.tsx — Today (M1)
+ * features/routines/screens/RoutinesHomeScreen.tsx — Today (M1 + M2)
  * ============================================================
  *
- * The /routines entry point. Shows today's due habits grouped by moment, each
- * tap-to-check (feature 1). Long-pressing a habit opens Done / Rest day / Clear
- * (feature 3). A "+" routes to the habit editor.
+ * The /routines entry point. Today's due habits grouped by moment, each
+ * tap-to-check (feat 1); long-press for Done / Rest day / Clear / Edit
+ * (feat 3 + edit). Within a moment, habits sort by priority (feat 5). A goal-tag
+ * filter row narrows the list to one tag (feat 22).
  *
- * "Due today" is decided by each habit's RepeatConfig via isDueOn (feature 2).
- * Streaks, Green Light, and stats arrive in later milestones.
+ * "Due today" is decided per habit by isDueToday (feat 2 — incl. weekly quota).
  * ============================================================
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -29,6 +29,7 @@ import {
   useToggleCompletion,
   useWeekCompletions,
 } from "../hooks/useHabitCompletions";
+import { useGoalTags } from "../hooks/useGoalTags";
 import { isDueToday } from "../domain/repeat";
 import { todayKey } from "../domain/dateKeys";
 import { MOMENT_META, MOMENT_ORDER } from "../data/presets";
@@ -49,8 +50,11 @@ export function RoutinesHomeScreen() {
   const { data: habits, isLoading } = useHabits();
   const { data: completions } = useTodayCompletions();
   const { data: weekCompletions } = useWeekCompletions();
+  const { data: goalTags } = useGoalTags();
   const toggle = useToggleCompletion();
   const dateKey = todayKey();
+
+  const [filterTagId, setFilterTagId] = useState<string | null>(null);
 
   // State by habit id for today (absence = not done).
   const stateByHabit = useMemo(() => {
@@ -71,11 +75,22 @@ export function RoutinesHomeScreen() {
     return map;
   }, [weekCompletions]);
 
-  // Today's due, non-archived habits grouped into moment sections (in order).
+  // Goal tags actually used by a live habit — only these get a filter chip.
+  const usedTags = useMemo(() => {
+    const used = new Set<string>();
+    (habits ?? []).forEach((h) => {
+      if (!h.archivedAt) h.goalTagIds.forEach((id) => used.add(id));
+    });
+    return (goalTags ?? []).filter((t) => used.has(t.id));
+  }, [habits, goalTags]);
+
+  // Today's due, non-archived habits (optionally tag-filtered), grouped into
+  // moment sections and sorted by priority within each.
   const sections = useMemo(() => {
     const now = new Date();
     const due = (habits ?? []).filter((h) => {
       if (h.archivedAt) return false;
+      if (filterTagId && !h.goalTagIds.includes(filterTagId)) return false;
       const st = stateByHabit.get(h.id);
       return isDueToday(h, now, {
         handledToday: st === "done" || st === "rest" || st === "shielded",
@@ -87,9 +102,9 @@ export function RoutinesHomeScreen() {
       meta: MOMENT_META[moment],
       items: due
         .filter((h) => h.moment === moment)
-        .sort((a, b) => a.order - b.order),
+        .sort((a, b) => b.priority - a.priority || a.order - b.order),
     })).filter((section) => section.items.length > 0);
-  }, [habits, stateByHabit, weekDoneByHabit]);
+  }, [habits, stateByHabit, weekDoneByHabit, filterTagId]);
 
   const totalDue = useMemo(
     () => sections.reduce((sum, s) => sum + s.items.length, 0),
@@ -124,6 +139,14 @@ export function RoutinesHomeScreen() {
       { text: "Done", onPress: () => mutate(habit, "done") },
       { text: "Rest day", onPress: () => mutate(habit, "rest") },
       { text: "Clear", style: "destructive", onPress: () => mutate(habit, null) },
+      {
+        text: "Edit habit",
+        onPress: () =>
+          router.push({
+            pathname: "/routines/habit/[id]/edit",
+            params: { id: habit.id },
+          }),
+      },
       { text: "Cancel", style: "cancel" },
     ]);
   };
@@ -152,6 +175,45 @@ export function RoutinesHomeScreen() {
           </AnimatedPressable>
         </View>
 
+        {usedTags.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+          >
+            <AnimatedPressable
+              style={[styles.filterChip, !filterTagId && styles.filterChipActive]}
+              onPress={() => setFilterTagId(null)}
+            >
+              <Text style={[styles.filterText, !filterTagId && styles.filterTextActive]}>
+                All
+              </Text>
+            </AnimatedPressable>
+            {usedTags.map((tag) => {
+              const active = filterTagId === tag.id;
+              return (
+                <AnimatedPressable
+                  key={tag.id}
+                  style={[
+                    styles.filterChip,
+                    active && { backgroundColor: `${tag.color}22`, borderColor: tag.color },
+                  ]}
+                  onPress={() => setFilterTagId(active ? null : tag.id)}
+                >
+                  <Ionicons
+                    name={tag.icon}
+                    size={13}
+                    color={active ? tag.color : theme.colors.textSecondary}
+                  />
+                  <Text style={[styles.filterText, active && { color: tag.color }]}>
+                    {tag.label}
+                  </Text>
+                </AnimatedPressable>
+              );
+            })}
+          </ScrollView>
+        )}
+
         {isLoading && !habits ? (
           <ActivityIndicator style={styles.loader} color={ACCENT} />
         ) : !hasHabits ? (
@@ -174,9 +236,13 @@ export function RoutinesHomeScreen() {
           </AnimatedView>
         ) : totalDue === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Nothing scheduled today</Text>
+            <Text style={styles.emptyTitle}>
+              {filterTagId ? "Nothing here today" : "Nothing scheduled today"}
+            </Text>
             <Text style={styles.emptyBody}>
-              None of your habits repeat today. Enjoy the breather.
+              {filterTagId
+                ? "No habits with this goal are due today."
+                : "None of your habits repeat today. Enjoy the breather."}
             </Text>
           </View>
         ) : (
@@ -248,6 +314,35 @@ const createStyles = (theme: Theme) =>
       backgroundColor: ACCENT,
       alignItems: "center",
       justifyContent: "center",
+    },
+    filterRow: {
+      gap: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      paddingRight: theme.spacing.lg,
+    },
+    filterChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingVertical: 7,
+      paddingHorizontal: 13,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    filterChipActive: {
+      backgroundColor: `${ACCENT}22`,
+      borderColor: ACCENT,
+    },
+    filterText: {
+      fontFamily: theme.fonts.ui.regular,
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+    },
+    filterTextActive: {
+      fontFamily: theme.fonts.ui.semiBold,
+      color: ACCENT,
     },
     loader: {
       marginTop: theme.spacing.xxl,

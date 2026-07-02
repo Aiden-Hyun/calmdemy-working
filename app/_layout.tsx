@@ -202,6 +202,12 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="routines/habit/[id]/edit"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
   );
 }

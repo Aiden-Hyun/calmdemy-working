@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AnimatedPressable } from "../../../core/ui/AnimatedPressable";
 import { useTheme } from "../../../core/theme/ThemeContext";
 import { Theme } from "../../../core/theme";
+import { DIFFICULTY_META } from "../data/difficulty";
 import type { CompletionState, Habit } from "../types";
 
 interface HabitRowProps {
@@ -56,17 +57,37 @@ export function HabitRow({ habit, state, subtitle, onToggle, onLongPress }: Habi
         <Ionicons name={habit.icon} size={20} color={habit.color} />
       </View>
       <View style={styles.textWrap}>
-        <Text
-          style={[styles.name, isDone && styles.nameDone]}
-          numberOfLines={1}
-        >
-          {habit.name}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text
+            style={[styles.name, isDone && styles.nameDone]}
+            numberOfLines={1}
+          >
+            {habit.name}
+          </Text>
+          {habit.difficulty !== "plus" && (
+            <View style={styles.diffBadge}>
+              <Text style={styles.diffBadgeText}>
+                {DIFFICULTY_META[habit.difficulty].label}
+              </Text>
+            </View>
+          )}
+        </View>
         {!!subtitle && (
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}
           </Text>
         )}
+      </View>
+      <View style={styles.priorityDots}>
+        {[1, 2, 3].map((dot) => (
+          <View
+            key={dot}
+            style={[
+              styles.pDot,
+              { backgroundColor: dot <= habit.priority ? habit.color : theme.colors.border },
+            ]}
+          />
+        ))}
       </View>
     </AnimatedPressable>
   );
@@ -90,10 +111,41 @@ const createStyles = (theme: Theme) =>
     textWrap: {
       flex: 1,
     },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
     name: {
+      flexShrink: 1,
       fontFamily: theme.fonts.ui.semiBold,
       fontSize: 15,
       color: theme.colors.text,
+    },
+    diffBadge: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: theme.borderRadius.sm,
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    diffBadgeText: {
+      fontFamily: theme.fonts.ui.semiBold,
+      fontSize: 10,
+      color: theme.colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    priorityDots: {
+      flexDirection: "row",
+      gap: 3,
+      alignItems: "center",
+    },
+    pDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
     },
     nameDone: {
       color: theme.colors.textMuted,

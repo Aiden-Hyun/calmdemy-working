@@ -1,17 +1,24 @@
 /**
  * ============================================================
- * features/routines/screens/HabitEditorScreen.tsx — Create a habit (M1)
+ * features/routines/screens/HabitEditorScreen.tsx — Create/edit a habit
  * ============================================================
  *
- * Minimal create form for feature 1 + 2: name, icon, color, moment anchor, and
- * repeat cadence. Attribute pickers (difficulty, priority, goal tags, reminders)
- * are added in later milestones; this screen already stores their type-safe
- * defaults via createHabit.
+ * Bidirectional editor. Without `habitId` it creates; with `habitId` it loads
+ * the habit, prefills, and saves via updateHabit. Fields: name, icon, color,
+ * moment anchor (feat 1), repeat (feat 2), difficulty (feat 4), priority
+ * (feat 5), and goal tags (feat 22).
  * ============================================================
  */
 
-import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TextInput } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,36 +28,99 @@ import { useTheme } from "../../../core/theme/ThemeContext";
 import { Theme } from "../../../core/theme";
 import { BackButton } from "../../../core/ui/BackButton";
 import { RepeatPicker } from "../components/RepeatPicker";
-import { useCreateHabit } from "../hooks/useHabits";
+import { DifficultyPicker } from "../components/DifficultyPicker";
+import { PriorityPicker } from "../components/PriorityPicker";
+import { GoalTagChips } from "../components/GoalTagChips";
+import { useCreateHabit, useHabit, useUpdateHabit } from "../hooks/useHabits";
+import { useCreateGoalTag, useGoalTags } from "../hooks/useGoalTags";
 import {
   HABIT_COLORS,
   HABIT_ICONS,
   MOMENT_META,
   MOMENT_ORDER,
 } from "../data/presets";
-import type { IoniconName, RepeatConfig, RoutineMoment } from "../types";
+import type {
+  Difficulty,
+  IoniconName,
+  Priority,
+  RepeatConfig,
+  RoutineMoment,
+} from "../types";
 
-export function HabitEditorScreen() {
+interface HabitEditorScreenProps {
+  habitId?: string;
+}
+
+export function HabitEditorScreen({ habitId }: HabitEditorScreenProps) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
+  const isEditing = !!habitId;
+
   const createHabit = useCreateHabit();
+  const updateHabit = useUpdateHabit();
+  const { data: existing, isLoading: loadingHabit } = useHabit(habitId);
+  const { data: goalTags } = useGoalTags();
+  const createGoalTag = useCreateGoalTag();
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<IoniconName>(HABIT_ICONS[0]);
   const [color, setColor] = useState<string>(HABIT_COLORS[0]);
   const [moment, setMoment] = useState<RoutineMoment>("morning");
   const [repeat, setRepeat] = useState<RepeatConfig>({ type: "daily" });
+  const [difficulty, setDifficulty] = useState<Difficulty>("plus");
+  const [priority, setPriority] = useState<Priority>(2);
+  const [tagIds, setTagIds] = useState<string[]>([]);
 
-  const canSave = name.trim().length > 0 && !createHabit.isPending;
+  // Prefill once the habit loads (edit mode), keyed on its id so a refetch
+  // doesn't clobber in-progress edits.
+  useEffect(() => {
+    if (existing) {
+      setName(existing.name);
+      setIcon(existing.icon);
+      setColor(existing.color);
+      setMoment(existing.moment);
+      setRepeat(existing.repeat);
+      setDifficulty(existing.difficulty);
+      setPriority(existing.priority);
+      setTagIds(existing.goalTagIds);
+    }
+  }, [existing?.id]);
+
+  const pending = createHabit.isPending || updateHabit.isPending;
+  const canSave = name.trim().length > 0 && !pending;
+
+  const toggleTag = (id: string) =>
+    setTagIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+
+  const handleCreateTag = async (label: string) => {
+    const nextColor = HABIT_COLORS[(goalTags?.length ?? 0) % HABIT_COLORS.length];
+    const id = await createGoalTag.mutateAsync({
+      label,
+      icon: "pricetag-outline",
+      color: nextColor,
+    });
+    setTagIds((prev) => [...prev, id]);
+  };
 
   const handleSave = () => {
     if (!canSave) return;
-    createHabit.mutate(
-      { name, icon, color, moment, repeat },
-      { onSuccess: () => router.back() }
-    );
+    const fields = { name, icon, color, moment, repeat, difficulty, priority, goalTagIds: tagIds };
+    if (isEditing && habitId) {
+      updateHabit.mutate({ habitId, patch: fields }, { onSuccess: () => router.back() });
+    } else {
+      createHabit.mutate(fields, { onSuccess: () => router.back() });
+    }
   };
+
+  if (isEditing && loadingHabit && !existing) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <BackButton />
+        <ActivityIndicator style={styles.loader} color="#8FA98C" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -61,7 +131,7 @@ export function HabitEditorScreen() {
       >
         <BackButton />
         <View style={styles.header}>
-          <Text style={styles.title}>New habit</Text>
+          <Text style={styles.title}>{isEditing ? "Edit habit" : "New habit"}</Text>
           <Text style={styles.subtitle}>A small, repeatable step.</Text>
         </View>
 
@@ -147,13 +217,27 @@ export function HabitEditorScreen() {
         <Text style={styles.sectionTitle}>Repeat</Text>
         <RepeatPicker value={repeat} onChange={setRepeat} />
 
+        <Text style={styles.sectionTitle}>Difficulty</Text>
+        <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+
+        <Text style={styles.sectionTitle}>Priority</Text>
+        <PriorityPicker value={priority} onChange={setPriority} />
+
+        <Text style={styles.sectionTitle}>Goals</Text>
+        <GoalTagChips
+          tags={goalTags ?? []}
+          selectedIds={tagIds}
+          onToggle={toggleTag}
+          onCreate={handleCreateTag}
+        />
+
         <AnimatedPressable
           style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={!canSave}
         >
           <Text style={styles.saveBtnText}>
-            {createHabit.isPending ? "Saving…" : "Create habit"}
+            {pending ? "Saving…" : isEditing ? "Save changes" : "Create habit"}
           </Text>
         </AnimatedPressable>
       </ScrollView>
@@ -166,6 +250,9 @@ const createStyles = (theme: Theme) =>
     safeArea: {
       flex: 1,
       backgroundColor: theme.colors.background,
+    },
+    loader: {
+      marginTop: theme.spacing.xxl,
     },
     content: {
       paddingHorizontal: theme.spacing.lg,

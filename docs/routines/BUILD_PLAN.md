@@ -44,9 +44,9 @@ This is **extra/additive** content. It is not wired into any existing content pi
 | 1 | Situation-based daily routines (habits + check-off + completions) | M1 | M0 | ✅ |
 | 2 | Flexible repeat patterns | M1 | 1 | ✅ |
 | 3 | Rest days | M1 | 1, 2 | ✅ |
-| 4 | Difficulty levels (Mini / Plus / Max) | M2 | 1 | ⬜ |
-| 5 | Habit priority (1–3) | M2 | 1 | ⬜ |
-| 22 | Goal tags | M2 | 1 | ⬜ |
+| 4 | Difficulty levels (Mini / Plus / Max) | M2 | 1 | ✅ |
+| 5 | Habit priority (1–3) | M2 | 1 | ✅ |
+| 22 | Goal tags | M2 | 1 | ✅ |
 | 6 | Streaks & shields | M3 | 1, 2, 3 | ⬜ |
 | 14 | Green Light system | M4 | 1, 5 (also 2, 3) | ⬜ |
 | 7 | Routine profiles (≤10, Apply Today) | M5 | 1, 2, 4, 5, 22 | ⬜ |
@@ -75,7 +75,7 @@ This is **extra/additive** content. It is not wired into any existing content pi
 - [x] Add `'routines'` to `TOOL_IDS` in `app/(tabs)/tools.tsx`.
 - [x] `domain/dateKeys.ts` — copied mood's `toDateKey` (pure) + added `todayKey`, `fromDateKey`, `addDaysToKey`, `monthBounds`.
 - [x] `domain/repeat.ts` skeleton (`isDueOn(habit, date)`; `weekly`/`times-per-week` return `true` pending quota context — TODO tagged for M1/M3).
-- [x] `firestore.rules`: added all 8 `routine*` blocks (incl. `routineReminders` mirror + nested `routineTrackers/entries`) **nested inside** `match /users/{userId}`, each null-guarded. ⚠️ Rules are edited but **not yet deployed** — run the Firebase deploy when M1 data writes land.
+- [x] `firestore.rules`: added all 8 `routine*` blocks (incl. `routineReminders` mirror + nested `routineTrackers/entries`) **nested inside** `match /users/{userId}`, each null-guarded. ✅ **Deployed** to `calmnest-e910e` on 2026-07-01 (`firebase deploy --only firestore:rules`).
 - [x] `tsc --noEmit` + `eslint` clean. ⏳ **Pending:** runtime smoke test of `/routines` on a simulator (not run this session).
 - [x] BONUS: full authoritative `types.ts` (all §6 entities) laid down ahead of M1.
 
@@ -87,12 +87,13 @@ This is **extra/additive** content. It is not wired into any existing content pi
 - [x] `screens/HabitEditorScreen.tsx` (create) + route `app/routines/habit/new.tsx` (+ `<Stack.Screen>` in `_layout`, + `index.ts` export). Editor: name, icon/color presets (`data/presets.ts`), moment picker, `RepeatPicker`.
 - [x] Feature 2: `RepeatConfig` union + `RepeatPicker`; `isDueOn` (daily/weekdays exact) + `weeklyQuota` + `isDueToday` (pure) so `times-per-week`/`weekly` habits drop off Today once the week's quota is met.
 - [x] Feature 3: `state: "rest"` via long-press menu (Done / Rest day / Clear) on `HabitRow`; rest counts as handled, not a miss.
-- [x] `firestore.rules` for `routineHabits` + `routineCompletions` — done in M0. ⚠️ **Deploy needed** before first write. Firestore will also prompt to create the composite index `(habitId ASC, dateKey ASC)` on first `getCompletionsRange` call (used by streaks/heatmap in M3/M8).
+- [x] `firestore.rules` for `routineHabits` + `routineCompletions` — done in M0, ✅ **deployed** 2026-07-01. Note: Firestore will still prompt to create the composite index `(habitId ASC, dateKey ASC)` on the first `getCompletionsRange` call (used by streaks/heatmap in M3/M8) — not needed until then.
 
-**M2 — Habit attributes**
-- [ ] Feature 4: add `difficulty` to `Habit`; `DifficultyPicker` + `data/difficulty.ts`.
-- [ ] Feature 5: add `priority` to `Habit`; `PriorityPicker`; sort Today by priority.
-- [ ] Feature 22: `api/goalTags.ts`, `hooks/useGoalTags.ts`, `data/goalTags.ts` (seed defaults), `GoalTagChips` multi-select, `goalTagIds` on `Habit`, filter by tag.
+**M2 — Habit attributes** — ✅ done 2026-07-01 (`tsc` + `eslint` clean)
+- [x] Feature 4: `difficulty` on `Habit` (already in type); `data/difficulty.ts` (Mini/Plus/Max meta) + `DifficultyPicker`; Mini/Max badge on `HabitRow` (Plus = default, unbadged).
+- [x] Feature 5: `priority` on `Habit`; `PriorityPicker` (Low/Med/High); Today sorts by priority desc within each moment; 3-dot priority indicator on `HabitRow`.
+- [x] Feature 22: `api/goalTags.ts` (CRUD + idempotent slug-seeded defaults via `getOrSeedGoalTags`), `hooks/useGoalTags.ts`, `data/goalTags.ts` (5 default tags), `GoalTagChips` multi-select **with inline "+ New" create**, `goalTagIds` assigned in the editor, and a goal-tag filter row on Today (only shows tags actually in use).
+- [x] BONUS: `HabitEditorScreen` is now **bidirectional** — added edit mode (loads via `useHabit`, saves via `updateHabit`), the `app/routines/habit/[id]/edit.tsx` route (+ `_layout` registration), and an "Edit habit" action in the Today long-press menu. (Completes the M1-planned edit route.)
 
 **M3 — Streaks & shields**
 - [ ] `domain/streaks.ts` (`computeStreak`, `shieldsRemaining`) — pure.
@@ -937,3 +938,6 @@ Add `react-native-view-shot` + `expo-sharing` (§8.5); wrap `ShareableSummaryCar
 | 2026-07-01 | Applied reviewer corrections: (1) §5.8 `firestore.rules` snippet now nests all `routine*` blocks inside `match /users/{userId}` and uses the repo's null-guarded `if request.auth != null && request.auth.uid == userId;` form (M0 checklist + facts-verified line updated to match); (2) §6.12/D5/§9 mood-reuse now requires mood's `index.ts` to additionally export a date-range query (or documented current-month client filter) **and** a numeric ordinal (`MOOD_ORDER`/`moodToScore`), and stops calling the stored `MoodValue` a "5-point score" (it is a string union); (3) §5.1 cross-feature imports reworded to "only via public `index.ts`"; (4) `toDateKey` located to `src/features/mood/api/moodEntries.ts` (not exported) with copy-not-import guidance; (5) feature-18 journal-read clause scoped to navigation-only; (6) §8.5/§9 M10/D9 specify the SDK 54 `expo-file-system` import surface (`File` API or `expo-file-system/legacy`). |
 | 2026-07-01 | **M0 implemented & verified** (`tsc --noEmit` + `eslint` clean). Created the `routines` module, wired registry/route/Tools tile/`_layout`, added all `firestore.rules` blocks, and laid down the full `types.ts` data model ahead of schedule. OQ1 resolved (free tier), OQ2 resolved (Firestore reminder mirror → collection I active). Data model, conventions, and phasing unchanged. |
 | 2026-07-01 | **M1 implemented & verified** (`tsc --noEmit` + `eslint` clean). Features 1–3: habit CRUD + completion log, Today screen, habit editor, repeat picker, rest days, and the times-per-week/weekly quota. Minor API refinement vs. the spec: `toggleCompletion` split into `setCompletion`/`clearCompletion` (so un-check deletes the doc); added `getCompletionsForRange` + `useWeekCompletions` for the quota. Data model unchanged. |
+| 2026-07-01 | **M2 implemented & verified** (`tsc --noEmit` + `eslint` clean). Features 4/5/22: `DifficultyPicker`, `PriorityPicker`, `GoalTagChips`; `api/goalTags.ts` + `hooks/useGoalTags.ts` + `data/difficulty.ts`/`data/goalTags.ts`; `HabitRow` badges; Today priority-sort + tag filter. Editor made bidirectional (create/edit) + `[id]/edit` route. New query key `["goalTags", uid]`; goal tags seed on first use (idempotent slug ids). Data model unchanged. |
+| 2026-07-01 | **Shipped M0+M1.** Committed the 21 routines files on branch `feat/routines-m0-m1` (`6b23e9c`), pushed to `origin` (github.com/Aiden-Hyun/calmdemy-working), and deployed `firestore.rules` to `calmnest-e910e`. Excluded unrelated working-tree changes (`.DS_Store`, iOS pbxproj, store-asset PNGs). Composite index `(habitId, dateKey)` still deferred until M3/M8. | M0, M1 | M2 |
+| 2026-07-01 | **M2 complete (features 4, 5, 22).** Difficulty + priority pickers, goal-tag CRUD with seeded defaults + inline create, row badges (difficulty pill + priority dots), Today priority-sort + goal-tag filter row. Made `HabitEditorScreen` bidirectional and added the `[id]/edit` route + Today "Edit habit" action. `tsc` + `eslint` clean. Not yet committed. | 4, 5, 22 (+ edit mode) | M3 — streaks & shields. Also: commit/push M2, and still-pending simulator smoke test. |
