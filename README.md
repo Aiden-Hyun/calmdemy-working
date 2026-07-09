@@ -1,4 +1,4 @@
-# CalmNest - Meditation & Mindfulness App
+# Calmdemy - Meditation & Mindfulness App
 
 A React Native app built with Expo for meditation, breathing exercises, and sleep stories.
 
@@ -7,7 +7,7 @@ A React Native app built with Expo for meditation, breathing exercises, and slee
 - **Expo SDK 55** with React Native 0.74
 - **Expo Router v3** for navigation
 - **TypeScript** (strict mode)
-- **Supabase** for authentication and database
+- **firebase** for authentication and database
 - **React Native StyleSheet** for styling
 
 ## Development Setup
